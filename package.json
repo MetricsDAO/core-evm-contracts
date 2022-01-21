@@ -1,0 +1,29 @@
+{
+  "name": "core-evm-contracts",
+  "version": "1.0.0",
+  "description": "Core contracts for the Metrics DAO",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MetricsDAO/core-evm-contracts.git"
+  },
+  "author": "MetricsDAO",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MetricsDAO/core-evm-contracts/issues"
+  },
+  "homepage": "https://github.com/MetricsDAO/core-evm-contracts#readme",
+  "dependencies": {
+    "truffle": "^5.4.26",
+    "@openzeppelin/contracts": "^4.4.0",
+    "@truffle/hdwallet-provider": "^2.0.0"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "truffle-flattener": "^1.5.0",
+    "truffle-plugin-verify": "^0.5.19"
+  }
+}
