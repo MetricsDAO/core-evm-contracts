@@ -1,36 +1,45 @@
-# Core EVM Contracts
+Core EVM Contracts
+===============
 
+Smart contracts and associated tooling for the Metrics DAO
 
+Pre-Requisites
+==============
 
-## Getting Started
+* NodeJS 14 or higher
+* [Ganache](http://trufflesuite.com/docs/ganache/quickstart)
+    * Make sure you have a high enough gas price/limit ceiling in your Ganache workspace!
+* Istanbul (or higher) Hard Fork config on Ganache
 
-1.  install depedencies with:
+Getting Started
+===============
 
-```
-yarn install
-```
+1) Install dependencies
 
-2.  make a copy of `.secret.json.template` and name it `.secret.json`, and update your keys
+> `yarn install`
+
+2) make a copy of `.secret.json.template` and name it `.secret.json`, and update your keys
 
 ```
 cp .secret.json.template .secret.json
 ```
 
+3) Compile the contracts
 
-3.  now you can run truffle commands using npx:
+> `npx truffle compile`
 
-```
-npx truffle compile
-```
+4) Execute the unit tests
+
+> `npx truffle test`
+
+5) Deploy to Ganache
+
+> `npx truffle migrate`
 
 
 
-{% note %}
+Notes
+===============
 
 **Note:** the /build/ directory is on github *on purpose* even though it's annoying.  Build artifacts include deployment metadata when deploying.
 
-{% endnote %}
-
-
-
-## Development
