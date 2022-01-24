@@ -35,11 +35,3 @@ cp .secret.json.template .secret.json
 5) Deploy to Ganache
 
 > `npx truffle migrate`
-
-
-
-Notes
-===============
-
-**Note:** the /build/ directory is on github *on purpose* even though it's annoying.  Build artifacts include deployment metadata when deploying.
-
