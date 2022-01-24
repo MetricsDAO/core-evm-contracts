@@ -7,11 +7,8 @@ Pre-Requisites
 ==============
 
 * NodeJS 14 or higher
-* [Ganache](http://trufflesuite.com/docs/ganache/quickstart)
-    * Make sure you have a high enough gas price/limit ceiling in your Ganache workspace!
-* Istanbul (or higher) Hard Fork config on Ganache
 
-Getting Started
+Setup
 ===============
 
 1) Install dependencies
@@ -24,14 +21,26 @@ Getting Started
 cp .secret.json.template .secret.json
 ```
 
-3) Compile the contracts
+Running Tests
+===============
 
-> `npx truffle compile`
+1) Run Ganache-CLI in it's own terminal
 
-4) Execute the unit tests
+> `npx ganache-cli`
+
+
+2)  Execute unit tests
 
 > `npx truffle test`
 
-5) Deploy to Ganache
+
+Active Development
+===============
+
+1) Compile the contracts
+
+> `npx truffle compile`
+
+2) Deploy to Ganache
 
 > `npx truffle migrate`

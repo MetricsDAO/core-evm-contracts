@@ -24,6 +24,7 @@
   "devDependencies": {
     "chai": "^4.3.4",
     "truffle-flattener": "^1.5.0",
-    "truffle-plugin-verify": "^0.5.19"
+    "truffle-plugin-verify": "^0.5.19",
+    "ganache-cli": "6.12.2"
   }
 }
