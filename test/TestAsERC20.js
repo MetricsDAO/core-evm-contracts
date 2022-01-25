@@ -6,7 +6,7 @@ const util = require("./TestUtil");
 // Use .sendTransaction for non-view functions
 
 contract('MetricToken', (accounts) => {
-    describe("Basic State Checks", () => {
+    describe("Basic ERC20 Checks", () => {
 
         it('should put a billion MetricToken in the first account', async () => {
             const MetricTokenInstance = await MetricToken.deployed();
@@ -26,23 +26,23 @@ contract('MetricToken', (accounts) => {
             const MetricTokenInstance = await MetricToken.deployed();
 
             // Get 2 accounts.
-            const accountOne = accounts[0];
-            const accountTwo = accounts[1];
+            const ownerAccount = accounts[0];
+            const firstAccount = accounts[1];
 
             // Get initial balances of first and second account.
-            const accountOneStartingBalance = (Number)(await MetricTokenInstance.balanceOf.call(accountOne));
-            const accountTwoStartingBalance = (Number)(await MetricTokenInstance.balanceOf.call(accountTwo));
+            const ownerAccountStartingBalance = (Number)(await MetricTokenInstance.balanceOf.call(ownerAccount));
+            const firstAccountStartingBalance = (Number)(await MetricTokenInstance.balanceOf.call(firstAccount));
 
             // Make transaction from first account to second.
             const amount = 100000;
-            util.seedAccounts(MetricTokenInstance, accounts, 1, amount);
+            await util.seedAccounts(MetricTokenInstance, accounts, 1, amount);
 
             // Get balances of first and second account after the transactions.
-            const accountOneEndingBalance = (Number)(await MetricTokenInstance.balanceOf.call(accountOne));
-            const accountTwoEndingBalance = (Number)(await MetricTokenInstance.balanceOf.call(accountTwo));
+            const ownerAccountEndingBalance = (Number)(await MetricTokenInstance.balanceOf.call(ownerAccount));
+            const firstAccountEndingBalance = (Number)(await MetricTokenInstance.balanceOf.call(firstAccount));
 
-            assert.equal(accountOneEndingBalance, accountOneStartingBalance - amount, "Amount wasn't correctly taken from the sender");
-            assert.equal(accountTwoEndingBalance, accountTwoStartingBalance + amount, "Amount wasn't correctly sent to the receiver");
+            assert.equal(ownerAccountEndingBalance, ownerAccountStartingBalance - amount, "Amount wasn't correctly taken from the sender");
+            assert.equal(firstAccountEndingBalance, firstAccountStartingBalance + amount, "Amount wasn't correctly sent to the receiver");
         });
     });
 });
