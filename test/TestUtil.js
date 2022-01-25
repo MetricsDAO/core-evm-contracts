@@ -7,6 +7,12 @@ module.exports = {
 
         await MetricTokenInstance.transfer(account, amount, { from: ownerAccount });
         return account;
+    },
+
+    getLatestEvent(transaction) {
+        const { logs } = transaction;
+        assert.ok(Array.isArray(logs));
+        return logs[logs.length -1];
     }
     
 }

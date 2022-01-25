@@ -12,11 +12,29 @@ contract MetricToken is ERC20, ERC20Burnable, ERC20Snapshot, AccessControl, ERC2
     bytes32 public constant SNAPSHOT_ROLE = keccak256("SNAPSHOT_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    bool advisorMode = true;
+
     constructor() ERC20("Metric Token", "METRIC") ERC20Permit("Metric Token") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(SNAPSHOT_ROLE, msg.sender);
         _mint(msg.sender, 1000000000 * 10 ** decimals());
         _grantRole(MINTER_ROLE, msg.sender);
+    }
+
+    function  _beforeTokenTransfer (address from, address to, uint256 amount) internal override(ERC20, ERC20Snapshot) {
+        if (advisorMode){
+            require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "Only Admin Role can perform transfers during Advisor Mode");
+        }
+
+        super._beforeTokenTransfer(from, to, amount);
+    }
+
+
+    // -------------------------------------------------------- admin
+
+    function disableAdvisorMode() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        advisorMode = false;
+        emit AdvisorModeOff(_msgSender(), block.timestamp);
     }
 
     function snapshot() public onlyRole(SNAPSHOT_ROLE) {
@@ -27,14 +45,20 @@ contract MetricToken is ERC20, ERC20Burnable, ERC20Snapshot, AccessControl, ERC2
         _mint(to, amount);
     }
 
-    // The following functions are overrides required by Solidity.
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        override(ERC20, ERC20Snapshot)
-    {
-        super._beforeTokenTransfer(from, to, amount);
+    // -------------------------------------------------------- view
+    
+    function getAdvisorMode() public view returns (bool) {
+        return advisorMode;
     }
+
+
+    // -------------------------------------------------------- events
+
+    event AdvisorModeOff(address indexed from, uint time);
+
+
+    // -------------------------------------------------------- Solidity
+    // The following functions are overrides required by Solidity.
 
     function _afterTokenTransfer(address from, address to, uint256 amount)
         internal
