@@ -27,7 +27,6 @@ an Allocator is a smart contract implementation with the following functionality
 4.  Trigger Distribution
     1. foreach AG, apply distribution method
 5. Get Total Shares across all AG
-get total shares
 
 That is not an inclusive list, and there will be permissioned accounts to manage access to functionality.
 
