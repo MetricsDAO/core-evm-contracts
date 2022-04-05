@@ -11,11 +11,11 @@ contract Allocator is AccessControl {
 
     bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
 
-    uint256 private MOONDUST_PER_BLOCK = 4 * 10**18;
-    uint256 private constant ACC_DUST_PRECISION = 1e12;
+    uint256 private METRIC_PER_BLOCK = 4 * 10**18;
+    uint256 private constant ACC_METRIC_PRECISION = 1e12;
 
     AllocationGroup[] private _allocations;
-    uint256 private totalAllocPoint;
+    uint256 private _totalAllocPoint;
 
     MetricToken private _metric;
 
@@ -26,35 +26,48 @@ contract Allocator is AccessControl {
     }
 
     function addAllocationGroup(
-        address toAdd,
-        uint8 shares,
-        bool distribution
+        address newAddress,
+        uint8 newShares,
+        bool newAutoDistribute
     ) external onlyRole(DISTRIBUTOR_ROLE) {
-        AllocationGroup memory group = AllocationGroup(toAdd, shares, distribution, block.number);
+        AllocationGroup memory group = AllocationGroup({
+            groupAddress: newAddress,
+            shares: newShares,
+            autodistribute: newAutoDistribute,
+            lastRewardBlock: block.number,
+            rewardDebt: 0,
+            accMETRICPerShare: 0
+        });
+
         _allocations.push(group);
-        totalAllocPoint = totalAllocPoint.add(group.allocPoint);
+        _totalAllocPoint = _totalAllocPoint.add(group.shares);
+    }
+
+    function setLP(uint256 agIndex, uint8 shares) public onlyRole(DISTRIBUTOR_ROLE) {
+        _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares).add(shares);
+        _allocations[agIndex].shares = shares;
+    }
+
+    function removeAllocationGroup(uint256 agIndex) external onlyRole(DISTRIBUTOR_ROLE) {
+        require(agIndex < _allocations.length);
+        _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares);
+
+        _allocations[agIndex] = _allocations[_allocations.length - 1];
+        _allocations.pop();
     }
 
     function getAllocationGroups() public view returns (AllocationGroup[] memory) {
         return _allocations;
     }
 
-    function removeAllocationGroup(uint8 index) external onlyRole(DISTRIBUTOR_ROLE) {
-        require(index < _allocations.length);
-        totalAllocPoint = totalAllocPoint.sub(_allocations[index]);
-
-        _allocations[index] = _allocations[_allocations.length - 1];
-        _allocations.pop();
-    }
-
     function getTotalAllocationPoints() public view returns (uint256) {
-        return totalAllocPoint;
+        return _totalAllocPoint;
     }
 
-    function updateAllocations(uint256 _agIndex) public {
-        AllocationGroup storage group = _allocations[_agIndex];
+    function distributeAllocations(uint256 agIndex) public {
+        AllocationGroup storage group = _allocations[agIndex];
 
-        if (block.number <= group._lastRewardBlock) {
+        if (block.number <= group.lastRewardBlock) {
             return;
         }
 
@@ -62,20 +75,22 @@ contract Allocator is AccessControl {
 
         uint256 blocks = block.number.sub(group.lastRewardBlock);
 
-        uint256 eggReward = blocks.mul(MOONDUST_PER_BLOCK).div(totalAllocPoint);
+        uint256 metricReward = blocks.mul(METRIC_PER_BLOCK).div(_totalAllocPoint);
 
-        _metric.transfer(group._address, eggReward);
+        if (group.autodistribute) {
+            _metric.transfer(group.groupAddress, metricReward);
+        }
 
-        group.accMoonPerShare = group.accMoonPerShare.add(eggReward.mul(ACC_DUST_PRECISION);
+        group.accMETRICPerShare = group.accMETRICPerShare.add(metricReward.mul(ACC_METRIC_PRECISION));
         group.lastRewardBlock = block.number;
     }
 
     struct AllocationGroup {
-        address _address;
-        uint8 _shares;
-        bool _autodistribute;
-        uint256 _lastRewardBlock;
+        address groupAddress;
+        uint8 shares;
+        bool autodistribute;
+        uint256 lastRewardBlock;
         uint256 rewardDebt; // Reward Debt is modelled after Sushi's MasterChefv2
-        uint256 accMoonPerShare;
+        uint256 accMETRICPerShare;
     }
 }
