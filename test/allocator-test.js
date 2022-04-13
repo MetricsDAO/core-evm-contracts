@@ -28,8 +28,8 @@ describe("Allocator Contract", function () {
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
       // sanity check permissions
-      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DISTRIBUTOR_ROLE")), owner.address)).to.equal(true);
-      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DISTRIBUTOR_ROLE")), addr1.address)).to.equal(false);
+      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), owner.address)).to.equal(true);
+      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), addr1.address)).to.equal(false);
     });
   });
 

@@ -5,13 +5,18 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./MetricToken.sol";
-// TODO remove before prod
+// TODO remove before prod, we don't need this dependency
 import "hardhat/console.sol";
+
+// Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
+// - We don't have a v1, so we don't need that wrapping
+// - We don't have two layers (pools and users), so the concept of pools is flattened into the contract itself.
+// ^^ This is because METRIC is the only token this will ever work with - it doesn't need to support multiple.
 
 contract Allocator is AccessControl {
     using SafeMath for uint256;
 
-    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+    bytes32 public constant ALLOCATION_ROLE = keccak256("ALLOCATION_ROLE");
 
     uint256 public METRIC_PER_BLOCK = 4 * 10**18;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
@@ -26,8 +31,9 @@ contract Allocator is AccessControl {
     constructor(MetricToken metric) {
         _metric = metric;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(DISTRIBUTOR_ROLE, msg.sender);
+        _grantRole(ALLOCATION_ROLE, msg.sender);
         // TODO we probably want to turn on rewards after it's live and AGs are setup?
+        // if so, we shouldn't set _lastRewardBlock here
         _lastRewardBlock = block.number;
     }
 
@@ -37,7 +43,7 @@ contract Allocator is AccessControl {
         address newAddress,
         uint256 newShares,
         bool newAutoDistribute
-    ) external onlyRole(DISTRIBUTOR_ROLE) nonDuplicated(newAddress) {
+    ) external onlyRole(ALLOCATION_ROLE) nonDuplicated(newAddress) {
         AllocationGroup memory group = AllocationGroup({groupAddress: newAddress, shares: newShares, autodistribute: newAutoDistribute, rewardDebt: 0});
 
         _allocations.push(group);
@@ -48,13 +54,13 @@ contract Allocator is AccessControl {
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyRole(DISTRIBUTOR_ROLE) {
+    ) public onlyRole(ALLOCATION_ROLE) {
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares).add(shares);
         _allocations[agIndex].shares = shares;
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyRole(DISTRIBUTOR_ROLE) {
+    function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
         require(agIndex < _allocations.length);
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares);
 
@@ -99,16 +105,17 @@ contract Allocator is AccessControl {
         _lastRewardBlock = block.number;
     }
 
-    function harvest(uint256 pid) public {
-        // PoolInfo storage pool = _poolInfo[pid];
-        // UserInfo storage user = userInfo[pid][msg.sender];
-        // updatePool(pid);
-        // uint256 pending = user.amount.mul(pool.accMoonPerShare).div(1e12).sub(user.rewardDebt);
-        // user.rewardDebt = pending;
-        // if (pending != 0) {
-        //     MOONDUST.transfer(_msgSender(), pending);
-        // }
-        // emit Harvest(msg.sender, pid, pending);
+    function harvest(uint256 agIndex) public {
+        AllocationGroup storage group = _allocations[agIndex];
+
+        updateAllocations();
+
+        uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+        group.rewardDebt = pending;
+        if (pending != 0) {
+            _metric.transfer(_msgSender(), pending);
+        }
+        emit Harvest(msg.sender, agIndex, pending);
     }
 
     //------------------------------------------------------Support Functions
@@ -122,12 +129,12 @@ contract Allocator is AccessControl {
 
     //------------------------------------------------------Structs
 
+    event Harvest(address harvester, uint256 agIndex, uint256 amount);
+
     struct AllocationGroup {
         address groupAddress;
         uint256 shares;
         bool autodistribute;
-        // uint256 lastRewardBlock;
-        uint256 rewardDebt; // Reward Debt is modelled after Sushi's MasterChefv2
-        // uint256 accMETRICPerShare;
+        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
     }
 }
