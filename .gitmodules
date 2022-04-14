@@ -1,3 +1,6 @@
-[submodule "protocol-contracts/lib/ds-test"]
-	path = protocol-contracts/lib/ds-test
+[submodule "contracts/lib/ds-test"]
+	path = contracts/lib/ds-test
 	url = https://github.com/dapphub/ds-test
+[submodule "contracts/lib/openzeppelin-contracts"]
+	path = contracts/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
