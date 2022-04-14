@@ -55,6 +55,25 @@ Foundry is popular amongst smart contract devs for prioritizing solidity and all
 
 ### How to get set up
 
+#### Install Foundry on your machine
+[Full Guide](https://book.getfoundry.sh/getting-started/installation.html)
+
+Linux/Mac Users
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+```
+
+Then run the following command
+
+```
+foundryup
+```
+
+#### Install project dependencies
+
+(install npm if you haven't already)
+
 Run the command below to install hardhat dependencies AND foundry dependencies
 
 The foundry directory is titled `contracts` and some configuration has been done to allow hardhat and foundry to use the same contract files.

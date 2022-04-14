@@ -7,3 +7,13 @@ typechain
 #Hardhat files
 cache
 artifacts
+
+.DS_STORE
+contracts/target
+contracts/out.json
+
+fmt/testdata/*
+
+contracts/.dapple
+contracts/build
+contracts/out
