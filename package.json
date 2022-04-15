@@ -4,7 +4,9 @@
   "description": "Core EVM contracts for MetricsDao",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "setup": "npm i && cd contracts && forge install && forge build && forge test",
+    "test:contracts": "cd contracts && forge test"
   },
   "repository": {
     "type": "git",
