@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 // Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
 // - We don't have a v1, so we don't need that wrapping
 // - We don't have two layers (pools and users), so the concept of pools is flattened into the contract itself.
-// ^^ This is because METRIC is the only token this will ever work with - it doesn't need to support multiple.
+// ^^ This is because METRIC is the only token this will ever work with.
 
 contract Allocator is AccessControl {
     using SafeMath for uint256;
@@ -44,7 +44,13 @@ contract Allocator is AccessControl {
         uint256 newShares,
         bool newAutoDistribute
     ) external onlyRole(ALLOCATION_ROLE) nonDuplicated(newAddress) {
-        AllocationGroup memory group = AllocationGroup({groupAddress: newAddress, shares: newShares, autodistribute: newAutoDistribute, rewardDebt: 0});
+        AllocationGroup memory group = AllocationGroup({
+            groupAddress: newAddress,
+            shares: newShares,
+            autodistribute: newAutoDistribute,
+            rewardDebt: 0,
+            pending: 0
+        });
 
         _allocations.push(group);
         _totalAllocPoint = _totalAllocPoint.add(group.shares);
@@ -86,8 +92,8 @@ contract Allocator is AccessControl {
         return group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
 
-    function updateAllocations() public {
-        // AllocationGroup storage group = _allocations[agIndex];
+    function updateAllocations(uint256 agIndex) public {
+        AllocationGroup storage group = _allocations[agIndex];
 
         if (block.number <= _lastRewardBlock) {
             return;
@@ -96,19 +102,29 @@ contract Allocator is AccessControl {
         // TODO confirm budget is correct with assertions
 
         uint256 blocks = block.number.sub(_lastRewardBlock);
-
+        console.log("blocks at %s", blocks);
         uint256 metricReward = blocks.mul(METRIC_PER_BLOCK).div(_totalAllocPoint);
 
-        // TODO if we mint, we mint here - else this is just bookkeeping.
+        if (!group.autodistribute) {
+            group.pending = group.pending.add(metricReward);
+        } else {
+            _metric.transfer(group.groupAddress, metricReward);
+        }
 
         _accMETRICPerShare = _accMETRICPerShare.add(metricReward.mul(ACC_METRIC_PRECISION));
         _lastRewardBlock = block.number;
     }
 
+    function updateAllAllocations() public {
+        for (uint256 i = 0; i < _allocations.length; i++) {
+            updateAllocations(i);
+        }
+    }
+
     function harvest(uint256 agIndex) public {
         AllocationGroup storage group = _allocations[agIndex];
 
-        updateAllocations();
+        updateAllocations(agIndex);
 
         uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
         group.rewardDebt = pending;
@@ -136,5 +152,6 @@ contract Allocator is AccessControl {
         uint256 shares;
         bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
+        uint256 pending;
     }
 }
