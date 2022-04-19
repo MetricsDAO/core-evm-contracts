@@ -51,4 +51,8 @@ contract ContractTest is DSTest {
     function testToggleRewards() public {
       allocator.toggleRewards(true);
     }
+
+    function testAllocatorInitialState() public {
+      allocator.getAllocationGroups();
+    }
 }
