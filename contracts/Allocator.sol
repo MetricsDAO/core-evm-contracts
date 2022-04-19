@@ -5,13 +5,14 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./MetricToken.sol";
-// TODO remove before prod, we don't need this dependency
-import "hardhat/console.sol";
 
 // Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
 // - We don't have a v1, so we don't need that wrapping
 // - We don't have two layers (pools and users), so the concept of pools is flattened into the contract itself.
 // ^^ This is because METRIC is the only token this will ever work with.
+
+// Read this: https://dev.sushi.com/sushiswap/contracts/masterchefv2
+// Also read this: https://soliditydeveloper.com/sushi-swap
 
 contract Allocator is AccessControl {
     using SafeMath for uint256;
@@ -21,6 +22,7 @@ contract Allocator is AccessControl {
     uint256 public METRIC_PER_BLOCK = 4 * 10**18;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
+    bool private _rewardsActive;
     AllocationGroup[] private _allocations;
     uint256 private _totalAllocPoint;
     uint256 private _accMETRICPerShare = 0;
@@ -32,9 +34,6 @@ contract Allocator is AccessControl {
         _metric = metric;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ALLOCATION_ROLE, msg.sender);
-        // TODO we probably want to turn on rewards after it's live and AGs are setup?
-        // if so, we shouldn't set _lastRewardBlock here
-        _lastRewardBlock = block.number;
     }
 
     //------------------------------------------------------Manage Allocation Groups
@@ -74,6 +73,11 @@ contract Allocator is AccessControl {
         _allocations.pop();
     }
 
+    function toggleRewards(bool isOn) external onlyRole(ALLOCATION_ROLE) {
+        _rewardsActive = isOn;
+        _lastRewardBlock = block.number;
+    }
+
     //------------------------------------------------------Getters
 
     function getAllocationGroups() public view returns (AllocationGroup[] memory) {
@@ -93,11 +97,15 @@ contract Allocator is AccessControl {
     }
 
     function updateAccumulatedAllocations() public {
+        require(_rewardsActive, "Rewards are not active");
         if (block.number <= _lastRewardBlock) {
             return;
         }
 
         // TODO confirm budget is correct with assertions
+        // Not sure we can project emission rate over X years?
+        // Not entirely sure how to handle this, but we can at least try to make it work.
+        // ^^ will help with fuzz testing
 
         uint256 blocks = block.number.sub(_lastRewardBlock);
 

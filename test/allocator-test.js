@@ -35,6 +35,7 @@ describe("Allocator Contract", function () {
 
   describe("Allocation Groups", function () {
     it("Should add and track added AGs", async function () {
+      await allocator.toggleRewards(true);
       // Everything should start empty
       let groups = await allocator.getAllocationGroups();
       expect(0).to.equal(groups.length);
@@ -64,6 +65,7 @@ describe("Allocator Contract", function () {
     });
 
     it("Should update edited AGs", async function () {
+      await allocator.toggleRewards(true);
       // add two allocation groups
       await allocator.addAllocationGroup(allocationGroup1.address, 20, true);
       await allocator.addAllocationGroup(allocationGroup2.address, 30, true);
@@ -79,6 +81,7 @@ describe("Allocator Contract", function () {
     });
 
     it("Should support deleting AGs", async function () {
+      await allocator.toggleRewards(true);
       // add two allocation groups
       await allocator.addAllocationGroup(allocationGroup1.address, 20, true);
       await allocator.addAllocationGroup(allocationGroup2.address, 30, true);
@@ -96,6 +99,7 @@ describe("Allocator Contract", function () {
 
   describe("Distribution", function () {
     it("Should track pending rewards", async function () {
+      await allocator.toggleRewards(true);
       // add an allocation group (requires mining 1 block)
       await allocator.addAllocationGroup(allocationGroup1.address, 20, false);
 
@@ -120,6 +124,7 @@ describe("Allocator Contract", function () {
     });
 
     it("Should track pending rewards with multiple groups", async function () {
+      await allocator.toggleRewards(true);
       // add an allocation group (requires mining 1 block)
       await allocator.addAllocationGroup(allocationGroup1.address, 1, false);
 
