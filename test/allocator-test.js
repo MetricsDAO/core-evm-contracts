@@ -104,7 +104,7 @@ describe("Allocator Contract", function () {
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAllocations(0);
+      await allocator.updateAccumulatedAllocations();
 
       // should have 2 pending allocation
       const metricPerBlock = await allocator.METRIC_PER_BLOCK();
@@ -112,7 +112,7 @@ describe("Allocator Contract", function () {
       expect(add(metricPerBlock, metricPerBlock)).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAllocations(0);
+      await allocator.updateAccumulatedAllocations();
 
       // should have 3 pending allocations
       pending = await allocator.viewPendingAllocations(0);
@@ -133,7 +133,7 @@ describe("Allocator Contract", function () {
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAllAllocations();
+      await allocator.updateAccumulatedAllocations();
 
       // should have 3 pending allocation of 4 tokens each - and checking shares above we can get expected
 

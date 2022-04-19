@@ -92,9 +92,7 @@ contract Allocator is AccessControl {
         return group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
 
-    function updateAllocations(uint256 agIndex) public {
-        AllocationGroup storage group = _allocations[agIndex];
-
+    function updateAccumulatedAllocations() public {
         if (block.number <= _lastRewardBlock) {
             return;
         }
@@ -102,35 +100,35 @@ contract Allocator is AccessControl {
         // TODO confirm budget is correct with assertions
 
         uint256 blocks = block.number.sub(_lastRewardBlock);
-        console.log("blocks at %s", blocks);
-        uint256 metricReward = blocks.mul(METRIC_PER_BLOCK).div(_totalAllocPoint);
 
-        if (!group.autodistribute) {
-            group.pending = group.pending.add(metricReward);
-        } else {
-            _metric.transfer(group.groupAddress, metricReward);
-        }
+        uint256 accumulated = blocks.mul(METRIC_PER_BLOCK);
 
-        _accMETRICPerShare = _accMETRICPerShare.add(metricReward.mul(ACC_METRIC_PRECISION));
+        _accMETRICPerShare = _accMETRICPerShare.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
         _lastRewardBlock = block.number;
     }
 
-    function updateAllAllocations() public {
+    function harvestAll() public {
         for (uint256 i = 0; i < _allocations.length; i++) {
-            updateAllocations(i);
+            harvest(i);
         }
     }
 
     function harvest(uint256 agIndex) public {
         AllocationGroup storage group = _allocations[agIndex];
 
-        updateAllocations(agIndex);
+        updateAccumulatedAllocations();
 
         uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+
         group.rewardDebt = pending;
         if (pending != 0) {
-            _metric.transfer(_msgSender(), pending);
+            if (!group.autodistribute) {
+                group.pending = group.pending.add(pending);
+            } else {
+                _metric.transfer(group.groupAddress, pending);
+            }
         }
+
         emit Harvest(msg.sender, agIndex, pending);
     }
 
