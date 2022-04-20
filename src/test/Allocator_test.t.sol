@@ -52,7 +52,9 @@ contract ContractTest is DSTest {
       allocator.toggleRewards(true);
     }
 
-    function testAllocatorInitialState() public {
-      allocator.getAllocationGroups();
+    function testAddAllocationGroup() public {
+      assertEq(allocator._numberOfAllocationGroups(), 0);
+      allocator.addAllocationGroup(address(this), 100, true);
+      assertEq(allocator._numberOfAllocationGroups(), 1);
     }
 }

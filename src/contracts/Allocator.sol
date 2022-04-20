@@ -44,8 +44,10 @@ contract Allocator is AccessControl {
     uint256 public METRIC_PER_BLOCK = 4 * 10**18;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
+    uint256 public _numberOfAllocationGroups;
     bool private _rewardsActive;
-    AllocationGroup[] private _allocations;
+    mapping(uint => AllocationGroup) private _allocationGroups;
+    // AllocationGroup[] private _allocationGroups;
     uint256 private _totalAllocPoint;
     uint256 private _accMETRICPerShare = 0;
     uint256 private _lastRewardBlock;
@@ -70,10 +72,12 @@ contract Allocator is AccessControl {
             shares: newShares,
             autodistribute: newAutoDistribute,
             rewardDebt: 0,
-            pending: 0
+            pending: 0,
+            active: true
         });
 
-        _allocations.push(group);
+        _allocationGroups[_numberOfAllocationGroups] = group;
+        _numberOfAllocationGroups++;
         _totalAllocPoint = _totalAllocPoint.add(group.shares);
     }
 
@@ -82,18 +86,19 @@ contract Allocator is AccessControl {
         uint256 shares,
         bool newAutoDistribute
     ) public onlyRole(ALLOCATION_ROLE) {
-        _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares).add(shares);
-        _allocations[agIndex].shares = shares;
-        _allocations[agIndex].autodistribute = newAutoDistribute;
+        _totalAllocPoint = _totalAllocPoint.sub(_allocationGroups[agIndex].shares).add(shares);
+        _allocationGroups[agIndex].shares = shares;
+        _allocationGroups[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
-        require(agIndex < _allocations.length);
-        _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares);
+    // TODO: replace with a function that toggles active status of the allocation group
+    // function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
+    //     require(agIndex < _allocationGroups.length);
+    //     _totalAllocPoint = _totalAllocPoint.sub(_allocationGroups[agIndex].shares);
 
-        _allocations[agIndex] = _allocations[_allocations.length - 1];
-        _allocations.pop();
-    }
+    //     _allocationGroups[agIndex] = _allocationGroups[_allocationGroups.length - 1];
+    //     _allocationGroups.pop();
+    // }
 
     function toggleRewards(bool isOn) external onlyRole(ALLOCATION_ROLE) {
         _rewardsActive = isOn;
@@ -102,9 +107,9 @@ contract Allocator is AccessControl {
 
     //------------------------------------------------------Getters
 
-    function getAllocationGroups() public view returns (AllocationGroup[] memory) {
-        return _allocations;
-    }
+    // function getAllocationGroups() public view returns (AllocationGroup[] memory) {
+    //     return _allocationGroups;
+    // }
 
     function getTotalAllocationPoints() public view returns (uint256) {
         return _totalAllocPoint;
@@ -113,7 +118,7 @@ contract Allocator is AccessControl {
     //------------------------------------------------------Distribution
 
     function viewPendingAllocations(uint256 agIndex) public view returns (uint256) {
-        AllocationGroup storage group = _allocations[agIndex];
+        AllocationGroup storage group = _allocationGroups[agIndex];
 
         return group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
@@ -138,14 +143,14 @@ contract Allocator is AccessControl {
     }
 
     function harvestAll() public {
-        for (uint256 i = 0; i < _allocations.length; i++) {
+        for (uint256 i = 0; i < _numberOfAllocationGroups; i++) {
             harvest(i);
         }
     }
 
     function harvest(uint256 agIndex) public {
-        AllocationGroup storage group = _allocations[agIndex];
-
+        AllocationGroup storage group = _allocationGroups[agIndex];
+        require(group.active, "Allocation group is not active");
         updateAccumulatedAllocations();
 
         uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
@@ -181,5 +186,6 @@ contract Allocator is AccessControl {
         bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
         uint256 pending;
+        bool active;
     }
 }
