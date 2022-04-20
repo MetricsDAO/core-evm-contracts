@@ -37,7 +37,7 @@ This contract is a bit more simplified.  Basically there are no LP tokens - so t
 
  */
 
-contract Allocator is AccessControl {
+contract Chef is AccessControl {
     using SafeMath for uint256;
 
     bytes32 public constant ALLOCATION_ROLE = keccak256("ALLOCATION_ROLE");
@@ -159,8 +159,19 @@ contract Allocator is AccessControl {
                 _metric.transfer(group.groupAddress, pending);
             }
         }
-
         emit Harvest(msg.sender, agIndex, pending);
+    }
+
+    //TODO can we avoid requiring index here?
+    function withdraw(uint256 agIndex) public {
+        AllocationGroup storage group = _allocations[agIndex];
+
+        require(group.pending != 0, "No pending rewards to withdraw");
+        require(group.groupAddress == _msgSender(), "sender does not represent group");
+        _metric.transfer(msg.sender, group.pending);
+        group.pending = 0;
+
+        emit Withdraw(msg.sender, agIndex, group.pending);
     }
 
     //------------------------------------------------------Support Functions
@@ -175,6 +186,7 @@ contract Allocator is AccessControl {
     //------------------------------------------------------Structs
 
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
+    event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
 
     struct AllocationGroup {
         address groupAddress;

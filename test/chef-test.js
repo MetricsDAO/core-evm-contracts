@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
 
 describe("Allocator Contract", function () {
-  let allocator;
+  let chef;
   let metric;
   let owner;
   let addr1;
@@ -21,130 +21,130 @@ describe("Allocator Contract", function () {
     metric = await metricContract.deploy();
 
     // deploy Allocator, which requires a reference to METRIC
-    const allocatorContract = await ethers.getContractFactory("Allocator");
-    allocator = await allocatorContract.deploy(metric.address);
+    const chefContract = await ethers.getContractFactory("Chef");
+    chef = await chefContract.deploy(metric.address);
   });
 
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
       // sanity check permissions
-      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), owner.address)).to.equal(true);
-      expect(await allocator.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), addr1.address)).to.equal(false);
+      expect(await chef.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), owner.address)).to.equal(true);
+      expect(await chef.hasRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ALLOCATION_ROLE")), addr1.address)).to.equal(false);
     });
   });
 
   describe("Allocation Groups", function () {
     it("Should add and track added AGs", async function () {
-      await allocator.toggleRewards(true);
+      await chef.toggleRewards(true);
       // Everything should start empty
-      let groups = await allocator.getAllocationGroups();
+      let groups = await chef.getAllocationGroups();
       expect(0).to.equal(groups.length);
-      let alloc = await allocator.getTotalAllocationPoints();
+      let alloc = await chef.getTotalAllocationPoints();
       expect(0).to.equal(alloc);
 
       // add our first allocation group
-      await allocator.addAllocationGroup(allocationGroup1.address, 20, true);
+      await chef.addAllocationGroup(allocationGroup1.address, 20, true);
 
       // check that it was added
-      groups = await allocator.getAllocationGroups();
+      groups = await chef.getAllocationGroups();
       expect(1).to.equal(groups.length);
-      alloc = await allocator.getTotalAllocationPoints();
+      alloc = await chef.getTotalAllocationPoints();
       expect(20).to.equal(alloc);
 
       // add our second allocation group
-      await allocator.addAllocationGroup(allocationGroup2.address, 30, true);
+      await chef.addAllocationGroup(allocationGroup2.address, 30, true);
 
       // check that it was added
-      groups = await allocator.getAllocationGroups();
+      groups = await chef.getAllocationGroups();
       expect(2).to.equal(groups.length);
-      alloc = await allocator.getTotalAllocationPoints();
+      alloc = await chef.getTotalAllocationPoints();
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
-      await expect(allocator.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("nonDuplicated: duplicated");
+      await expect(chef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("nonDuplicated: duplicated");
     });
 
     it("Should update edited AGs", async function () {
-      await allocator.toggleRewards(true);
+      await chef.toggleRewards(true);
       // add two allocation groups
-      await allocator.addAllocationGroup(allocationGroup1.address, 20, true);
-      await allocator.addAllocationGroup(allocationGroup2.address, 30, true);
+      await chef.addAllocationGroup(allocationGroup1.address, 20, true);
+      await chef.addAllocationGroup(allocationGroup2.address, 30, true);
 
       // check that they were added
-      let alloc = await allocator.getTotalAllocationPoints();
+      let alloc = await chef.getTotalAllocationPoints();
       expect(50).to.equal(alloc);
 
       // edit the first one
-      await allocator.updateAllocationGroup(0, 30, true);
-      alloc = await allocator.getTotalAllocationPoints();
+      await chef.updateAllocationGroup(0, 30, true);
+      alloc = await chef.getTotalAllocationPoints();
       expect(60).to.equal(alloc);
     });
 
     it("Should support deleting AGs", async function () {
-      await allocator.toggleRewards(true);
+      await chef.toggleRewards(true);
       // add two allocation groups
-      await allocator.addAllocationGroup(allocationGroup1.address, 20, true);
-      await allocator.addAllocationGroup(allocationGroup2.address, 30, true);
+      await chef.addAllocationGroup(allocationGroup1.address, 20, true);
+      await chef.addAllocationGroup(allocationGroup2.address, 30, true);
 
       // remove the first one
-      await allocator.removeAllocationGroup(0);
-      const alloc = await allocator.getTotalAllocationPoints();
+      await chef.removeAllocationGroup(0);
+      const alloc = await chef.getTotalAllocationPoints();
       expect(30).to.equal(alloc);
 
       // ensure the second added one is now the first one in the array
-      const groups = await allocator.getAllocationGroups();
+      const groups = await chef.getAllocationGroups();
       expect(30).to.equal(groups[0].shares);
     });
   });
 
   describe("Distribution", function () {
     it("Should track pending rewards", async function () {
-      await allocator.toggleRewards(true);
+      await chef.toggleRewards(true);
       // add an allocation group (requires mining 1 block)
-      await allocator.addAllocationGroup(allocationGroup1.address, 20, false);
+      await chef.addAllocationGroup(allocationGroup1.address, 20, false);
 
       // new group should have 0 metric
-      let pending = await allocator.viewPendingAllocations(0);
+      let pending = await chef.viewPendingAllocations(0);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAccumulatedAllocations();
+      await chef.updateAccumulatedAllocations();
 
       // should have 2 pending allocation
-      const metricPerBlock = await allocator.METRIC_PER_BLOCK();
-      pending = await allocator.viewPendingAllocations(0);
+      const metricPerBlock = await chef.METRIC_PER_BLOCK();
+      pending = await chef.viewPendingAllocations(0);
       expect(add(metricPerBlock, metricPerBlock)).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAccumulatedAllocations();
+      await chef.updateAccumulatedAllocations();
 
       // should have 3 pending allocations
-      pending = await allocator.viewPendingAllocations(0);
+      pending = await chef.viewPendingAllocations(0);
       expect(BN(metricPerBlock).add(BN(metricPerBlock)).add(metricPerBlock)).to.equal(pending);
     });
 
     it("Should track pending rewards with multiple groups", async function () {
-      await allocator.toggleRewards(true);
+      await chef.toggleRewards(true);
       // add an allocation group (requires mining 1 block)
-      await allocator.addAllocationGroup(allocationGroup1.address, 1, false);
+      await chef.addAllocationGroup(allocationGroup1.address, 1, false);
 
       // add an allocation group (requires mining 1 block)
-      await allocator.addAllocationGroup(allocationGroup2.address, 3, false);
+      await chef.addAllocationGroup(allocationGroup2.address, 3, false);
 
       // new groups should have 0 metric
-      let pending = await allocator.viewPendingAllocations(0);
+      let pending = await chef.viewPendingAllocations(0);
       expect(0).to.equal(pending);
-      pending = await allocator.viewPendingAllocations(1);
+      pending = await chef.viewPendingAllocations(1);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
-      await allocator.updateAccumulatedAllocations();
+      await chef.updateAccumulatedAllocations();
 
       // should have 3 pending allocation of 4 tokens each - and checking shares above we can get expected
 
-      pending = await allocator.viewPendingAllocations(0);
+      pending = await chef.viewPendingAllocations(0);
       expect(utils.parseEther("3")).to.equal(pending); // should be 3 would love to dynamically find this
-      pending = await allocator.viewPendingAllocations(1);
+      pending = await chef.viewPendingAllocations(1);
       expect(utils.parseEther("9")).to.equal(pending); // should be 9 would love to dynamically find this
     });
   });
