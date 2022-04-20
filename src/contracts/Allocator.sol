@@ -73,7 +73,7 @@ contract Allocator is AccessControl {
             autodistribute: newAutoDistribute,
             rewardDebt: 0,
             pending: 0,
-            active: true
+            isActive: true
         });
 
         _allocationGroups[_numberOfAllocationGroups] = group;
@@ -91,6 +91,29 @@ contract Allocator is AccessControl {
         _allocationGroups[agIndex].autodistribute = newAutoDistribute;
     }
 
+    function updateAllocationGroupShares(
+        uint256 agIndex,
+        uint256 newShares
+    ) public onlyRole(ALLOCATION_ROLE) {
+        _totalAllocPoint = _totalAllocPoint.sub(_allocationGroups[agIndex].shares).add(newShares);
+        _allocationGroups[agIndex].shares = newShares;
+    }
+
+    function updateAllocationGroupAutoDistribute(
+        uint256 agIndex,
+        bool newAutoDistribute
+    ) public onlyRole(ALLOCATION_ROLE) {
+        _allocationGroups[agIndex].autodistribute = newAutoDistribute;
+    }
+
+    function updateAllocationGroupStatus(
+        uint256 agIndex,
+        bool isActive
+    ) public onlyRole(ALLOCATION_ROLE) {
+        _allocationGroups[agIndex].isActive = isActive;
+    }
+
+    
     // TODO: replace with a function that toggles active status of the allocation group
     // function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
     //     require(agIndex < _allocationGroups.length);
@@ -107,9 +130,10 @@ contract Allocator is AccessControl {
 
     //------------------------------------------------------Getters
 
-    // function getAllocationGroups() public view returns (AllocationGroup[] memory) {
-    //     return _allocationGroups;
-    // }
+    function getAllocationGroup(uint index) public view returns (AllocationGroup memory) {
+        return _allocationGroups[index];
+    }
+    
 
     function getTotalAllocationPoints() public view returns (uint256) {
         return _totalAllocPoint;
@@ -150,7 +174,7 @@ contract Allocator is AccessControl {
 
     function harvest(uint256 agIndex) public {
         AllocationGroup storage group = _allocationGroups[agIndex];
-        require(group.active, "Allocation group is not active");
+        require(group.isActive, "Allocation group is not active");
         updateAccumulatedAllocations();
 
         uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
@@ -186,6 +210,6 @@ contract Allocator is AccessControl {
         bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
         uint256 pending;
-        bool active;
+        bool isActive;
     }
 }
