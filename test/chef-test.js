@@ -193,5 +193,25 @@ describe("Allocator Contract", function () {
       balance = await metric.balanceOf(allocationGroup1.address);
       expect(balance).to.equal(withdrawlable);
     });
+
+    it("Should Harvest All for multiple groups", async function () {
+      await chef.toggleRewards(true);
+      // block 1
+      await chef.addAllocationGroup(allocationGroup1.address, 1, true);
+      // block 2
+      await chef.addAllocationGroup(allocationGroup2.address, 3, true);
+
+      // block 3
+      await chef.updateAccumulatedAllocations();
+
+      // block 4
+      await chef.harvestAll();
+
+      const balance1 = await metric.balanceOf(allocationGroup1.address);
+      expect(balance1).to.equal(utils.parseEther("4"));
+
+      const balance2 = await metric.balanceOf(allocationGroup2.address);
+      expect(balance2).to.equal(utils.parseEther("12"));
+    });
   });
 });
