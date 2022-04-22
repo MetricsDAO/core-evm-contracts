@@ -20,9 +20,12 @@ describe("Allocator Contract", function () {
     const metricContract = await ethers.getContractFactory("MetricToken");
     metric = await metricContract.deploy();
 
-    // deploy Allocator, which requires a reference to METRIC
+    // deploy Chef, which requires a reference to METRIC
     const chefContract = await ethers.getContractFactory("Chef");
     chef = await chefContract.deploy(metric.address);
+
+    // send all METRIC to the chef
+    await metric.transfer(chef.address, await metric.totalSupply());
   });
 
   describe("Deployment", function () {
@@ -97,14 +100,14 @@ describe("Allocator Contract", function () {
     });
   });
 
-  describe("Distribution", function () {
+  describe("Pending Rewards", function () {
     it("Should track pending rewards", async function () {
       await chef.toggleRewards(true);
       // add an allocation group (requires mining 1 block)
       await chef.addAllocationGroup(allocationGroup1.address, 20, false);
 
       // new group should have 0 metric
-      let pending = await chef.viewPendingAllocations(0);
+      let pending = await chef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
@@ -112,14 +115,14 @@ describe("Allocator Contract", function () {
 
       // should have 2 pending allocation
       const metricPerBlock = await chef.METRIC_PER_BLOCK();
-      pending = await chef.viewPendingAllocations(0);
+      pending = await chef.viewPendingHarvest(0);
       expect(add(metricPerBlock, metricPerBlock)).to.equal(pending);
 
       // update distributions (requires mining 1 block)
       await chef.updateAccumulatedAllocations();
 
       // should have 3 pending allocations
-      pending = await chef.viewPendingAllocations(0);
+      pending = await chef.viewPendingHarvest(0);
       expect(BN(metricPerBlock).add(BN(metricPerBlock)).add(metricPerBlock)).to.equal(pending);
     });
 
@@ -132,9 +135,9 @@ describe("Allocator Contract", function () {
       await chef.addAllocationGroup(allocationGroup2.address, 3, false);
 
       // new groups should have 0 metric
-      let pending = await chef.viewPendingAllocations(0);
+      let pending = await chef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
-      pending = await chef.viewPendingAllocations(1);
+      pending = await chef.viewPendingHarvest(1);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
@@ -142,10 +145,53 @@ describe("Allocator Contract", function () {
 
       // should have 3 pending allocation of 4 tokens each - and checking shares above we can get expected
 
-      pending = await chef.viewPendingAllocations(0);
+      pending = await chef.viewPendingHarvest(0);
       expect(utils.parseEther("3")).to.equal(pending); // should be 3 would love to dynamically find this
-      pending = await chef.viewPendingAllocations(1);
+      pending = await chef.viewPendingHarvest(1);
       expect(utils.parseEther("9")).to.equal(pending); // should be 9 would love to dynamically find this
+    });
+  });
+  describe("Harvest Rewards", function () {
+    it("Should transfer earned rewards", async function () {
+      // start at block 1
+      await chef.toggleRewards(true);
+      // block 2
+      await chef.addAllocationGroup(allocationGroup1.address, 1, true);
+
+      // block 3
+      await chef.updateAccumulatedAllocations();
+
+      await chef.harvest(0);
+
+      const balance = await metric.balanceOf(allocationGroup1.address);
+      const metricPerBlock = await chef.METRIC_PER_BLOCK();
+
+      expect(metricPerBlock.mul(3)).to.equal(balance);
+    });
+
+    it("Should track claimable rewards", async function () {
+      // start at block 1
+      await chef.toggleRewards(true);
+      // block 2
+      await chef.addAllocationGroup(allocationGroup1.address, 1, false);
+
+      // block 3
+      await chef.updateAccumulatedAllocations();
+
+      await chef.harvest(0);
+
+      let balance = await metric.balanceOf(allocationGroup1.address);
+      const withdrawlable = await chef.viewPendingWithdraw(0);
+      const metricPerBlock = await chef.METRIC_PER_BLOCK();
+
+      expect(0).to.equal(balance);
+
+      expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
+
+      await chef.withdraw(0);
+
+      balance = await metric.balanceOf(allocationGroup1.address);
+      expect(balance).to.equal(withdrawlable);
     });
   });
 });

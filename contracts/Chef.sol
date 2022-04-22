@@ -23,7 +23,7 @@ import "./MetricToken.sol";
 
  1.  Every `x` blocks, calculate minted Sushi Tokens for each LP contract based on their (shares / total shares)
  2.  Then, do the math to figure out how many rewards each LP token is worth (based on the total amount of LP tokens staked)
- 3.  Then, when a user requests their rewards, their pending amount is based on how many tokens they have staked - and from the previous step, we know how many rewards each LP token gets.
+ 3.  Then, when a user requests their rewards, their claimable amount is based on how many tokens they have staked - and from the previous step, we know how many rewards each LP token gets.
  4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 
@@ -31,7 +31,7 @@ This contract is a bit more simplified.  Basically there are no LP tokens - so t
 
  1.  Every `x` blocks, calculate  METRIC Tokens for each AG based on their (shares / total shares)
  2.  Then, do the math to figure out how many METRIC tokens will be distributed in total
- 3.  Then, when a user requests their rewards, their pending amount is based on how many shares they have - and from the previous step, we know how many rewards each AG group gets.
+ 3.  Then, when a user requests their rewards, their claimable amount is based on how many shares they have - and from the previous step, we know how many rewards each AG group gets.
  4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 
@@ -71,7 +71,7 @@ contract Chef is AccessControl {
             shares: newShares,
             autodistribute: newAutoDistribute,
             rewardDebt: 0,
-            pending: 0
+            claimable: 0
         });
 
         _allocations.push(group);
@@ -113,10 +113,16 @@ contract Chef is AccessControl {
 
     //------------------------------------------------------Distribution
 
-    function viewPendingAllocations(uint256 agIndex) public view returns (uint256) {
+    function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
         AllocationGroup storage group = _allocations[agIndex];
 
         return group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+    }
+
+    function viewPendingWithdraw(uint256 agIndex) public view returns (uint256) {
+        AllocationGroup storage group = _allocations[agIndex];
+
+        return group.claimable;
     }
 
     function updateAccumulatedAllocations() public {
@@ -138,6 +144,8 @@ contract Chef is AccessControl {
         _lastRewardBlock = block.number;
     }
 
+    // TODO when we implement the emission rate, ensure this function is called before update the rate
+    // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
     function harvestAll() public {
         for (uint256 i = 0; i < _allocations.length; i++) {
             harvest(i);
@@ -149,29 +157,30 @@ contract Chef is AccessControl {
 
         updateAccumulatedAllocations();
 
-        uint256 pending = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+        uint256 claimable = group.shares.mul(_accMETRICPerShare).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
 
-        group.rewardDebt = pending;
-        if (pending != 0) {
+        group.rewardDebt = claimable;
+        if (claimable != 0) {
             if (!group.autodistribute) {
-                group.pending = group.pending.add(pending);
+                group.claimable = group.claimable.add(claimable);
             } else {
-                _metric.transfer(group.groupAddress, pending);
+                _metric.transfer(group.groupAddress, claimable);
             }
         }
-        emit Harvest(msg.sender, agIndex, pending);
+        emit Harvest(msg.sender, agIndex, claimable);
     }
 
     //TODO can we avoid requiring index here?
     function withdraw(uint256 agIndex) public {
         AllocationGroup storage group = _allocations[agIndex];
 
-        require(group.pending != 0, "No pending rewards to withdraw");
-        require(group.groupAddress == _msgSender(), "sender does not represent group");
-        _metric.transfer(msg.sender, group.pending);
-        group.pending = 0;
+        require(group.claimable != 0, "No claimable rewards to withdraw");
+        // TODO can only the address kick off a withdraw?
+        // require(group.groupAddress == _msgSender(), "sender does not represent group");
+        _metric.transfer(group.groupAddress, group.claimable);
+        group.claimable = 0;
 
-        emit Withdraw(msg.sender, agIndex, group.pending);
+        emit Withdraw(msg.sender, agIndex, group.claimable);
     }
 
     //------------------------------------------------------Support Functions
@@ -193,6 +202,6 @@ contract Chef is AccessControl {
         uint256 shares;
         bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
-        uint256 pending;
+        uint256 claimable;
     }
 }
