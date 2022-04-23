@@ -78,7 +78,7 @@ describe("Allocator Contract", function () {
       expect(50).to.equal(alloc);
 
       // edit the first one
-      await chef.updateAllocationGroup(0, 30, true);
+      await chef.updateAllocationGroup(allocationGroup1.address, 0, 30, true);
       alloc = await chef.getTotalAllocationPoints();
       expect(60).to.equal(alloc);
     });
@@ -181,14 +181,14 @@ describe("Allocator Contract", function () {
       await chef.harvest(0);
 
       let balance = await metric.balanceOf(allocationGroup1.address);
-      const withdrawlable = await chef.viewPendingWithdraw(0);
+      const withdrawlable = await chef.viewPendingClaims(0);
       const metricPerBlock = await chef.METRIC_PER_BLOCK();
 
       expect(0).to.equal(balance);
 
       expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
 
-      await chef.withdraw(0);
+      await chef.connect(allocationGroup1).claim(0);
 
       balance = await metric.balanceOf(allocationGroup1.address);
       expect(balance).to.equal(withdrawlable);
@@ -212,6 +212,31 @@ describe("Allocator Contract", function () {
 
       const balance2 = await metric.balanceOf(allocationGroup2.address);
       expect(balance2).to.equal(utils.parseEther("12"));
+    });
+  });
+  describe("Maintain AGs over time ", function () {
+    it("Should handle adding an AG after intial startup", async function () {
+      await chef.addAllocationGroup(allocationGroup1.address, 1, true);
+      await chef.toggleRewards(true);
+
+      // block 5
+      await mineBlocks(5);
+      // block 6
+      await chef.updateAccumulatedAllocations();
+
+      const pending1 = await chef.viewPendingHarvest(0);
+      expect(pending1).to.equal(utils.parseEther("24"));
+
+      // block 7
+      await chef.addAllocationGroup(allocationGroup2.address, 3, true);
+      // block 8
+      await chef.harvestAll();
+
+      const balance1 = await metric.balanceOf(allocationGroup1.address);
+      expect(balance1).to.equal(utils.parseEther("29"));
+
+      const balance2 = await metric.balanceOf(allocationGroup2.address);
+      expect(balance2).to.equal(utils.parseEther("3"));
     });
   });
 });
