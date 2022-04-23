@@ -229,7 +229,7 @@ describe("Allocator Contract", function () {
 
       // block 7
       await chef.addAllocationGroup(allocationGroup2.address, 3, true);
-      // block 8
+      // block 8 (block 1 for group 2)
       await chef.harvestAll();
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);
