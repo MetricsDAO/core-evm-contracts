@@ -40,15 +40,52 @@ With that abstraction, oversimplified, we can:
 
 
 ---------
-# Hardhat Docs
+# Project Setup
+This project utilizes two of the popular smart contract development frameworks:
+1. [Hardhat](https://hardhat.org/getting-started/) 
+2. [Foundry](https://book.getfoundry.sh/index.html)
 
-## Advanced Sample Hardhat Project
+Why two frameworks?
+Given how early we are (we know), some frameworks have significant strengths and significant weaknesses or gaps.
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+Hardhat is easier for developers from JS backgrounds to get up to speed and offers a wide set of plugins and tools.
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+Foundry is popular amongst smart contract devs for prioritizing solidity and allows devs to write tests in Solidity, which makes it easier to comprehensively test the projects contracts.
 
-Try running some of the following tasks:
+### How to get set up
+
+#### Install Foundry on your machine
+[Full Guide](https://book.getfoundry.sh/getting-started/installation.html)
+
+Linux/Mac Users
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+```
+
+Then run the following command
+
+```
+foundryup
+```
+
+#### Install project dependencies
+
+(install npm if you haven't already)
+
+Run the command below to install hardhat dependencies AND foundry dependencies
+
+The foundry directory is titled `contracts` and some configuration has been done to allow hardhat and foundry to use the same contract files.
+```
+npm run setup
+
+```
+
+## Foundry
+
+Foundry has a [cute guide](https://book.getfoundry.sh/index.html) that will help any questions, just remember that foundry specific commands like `forge test` will need to be run from within the `contracts/` directory.
+
+## Hardhat
 
 ```shell
 npx hardhat accounts
