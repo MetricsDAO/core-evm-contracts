@@ -4,16 +4,19 @@ coverage
 coverage.json
 typechain
 
+
 #Hardhat files
-cache
+hh-cache
 artifacts
 
+cache
+
 .DS_STORE
-contracts/target
-contracts/out.json
+target
+out.json
 
 fmt/testdata/*
 
-contracts/.dapple
-contracts/build
-contracts/out
+.dapple
+build
+out
