@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const { Certificate } = require("crypto");
 const { utils } = require("ethers");
 const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
@@ -102,9 +103,10 @@ describe("Allocator Contract", function () {
 
   describe("Pending Rewards", function () {
     it("Should track pending rewards", async function () {
-      await chef.toggleRewards(true);
-      // add an allocation group (requires mining 1 block)
+      // add an allocation group
       await chef.addAllocationGroup(allocationGroup1.address, 20, false);
+
+      await chef.toggleRewards(true);
 
       // new group should have 0 metric
       let pending = await chef.viewPendingHarvest(0);
@@ -113,32 +115,35 @@ describe("Allocator Contract", function () {
       // update distributions (requires mining 1 block)
       await chef.updateAccumulatedAllocations();
 
-      // should have 2 pending allocation
+      // should have 1 pending allocation
       const metricPerBlock = await chef.METRIC_PER_BLOCK();
       pending = await chef.viewPendingHarvest(0);
-      expect(add(metricPerBlock, metricPerBlock)).to.equal(pending);
+      expect(metricPerBlock).to.equal(pending);
 
       // update distributions (requires mining 1 block)
       await chef.updateAccumulatedAllocations();
 
-      // should have 3 pending allocations
+      // should have 2 pending allocations
       pending = await chef.viewPendingHarvest(0);
-      expect(BN(metricPerBlock).add(BN(metricPerBlock)).add(metricPerBlock)).to.equal(pending);
+      expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
     });
 
     it("Should track pending rewards with multiple groups", async function () {
-      await chef.toggleRewards(true);
-      // add an allocation group (requires mining 1 block)
+      // add an allocation group
       await chef.addAllocationGroup(allocationGroup1.address, 1, false);
 
-      // add an allocation group (requires mining 1 block)
+      // add an allocation group
       await chef.addAllocationGroup(allocationGroup2.address, 3, false);
+
+      await chef.toggleRewards(true);
 
       // new groups should have 0 metric
       let pending = await chef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
       pending = await chef.viewPendingHarvest(1);
       expect(0).to.equal(pending);
+
+      await mineBlocks(2);
 
       // update distributions (requires mining 1 block)
       await chef.updateAccumulatedAllocations();
@@ -195,16 +200,18 @@ describe("Allocator Contract", function () {
     });
 
     it("Should Harvest All for multiple groups", async function () {
-      await chef.toggleRewards(true);
-      // block 1
       await chef.addAllocationGroup(allocationGroup1.address, 1, true);
-      // block 2
+
       await chef.addAllocationGroup(allocationGroup2.address, 3, true);
 
-      // block 3
+      await chef.toggleRewards(true);
+
+      await mineBlocks(2);
+
+      // block 1
       await chef.updateAccumulatedAllocations();
 
-      // block 4
+      // block 2
       await chef.harvestAll();
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);

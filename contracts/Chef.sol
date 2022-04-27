@@ -1,11 +1,9 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./MetricToken.sol";
-import "hardhat/console.sol";
 
 // Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
 // - We don't have a v1, so we don't need that wrapping
@@ -62,8 +60,8 @@ contract Chef is AccessControl {
 
     MetricToken private _metric;
 
-    constructor(MetricToken metric) {
-        _metric = metric;
+    constructor(address metricTokenAddress) {
+        _metric = MetricToken(metricTokenAddress);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ALLOCATION_ROLE, msg.sender);
     }
@@ -75,7 +73,7 @@ contract Chef is AccessControl {
         uint256 newShares,
         bool newAutoDistribute
     ) external onlyRole(ALLOCATION_ROLE) nonDuplicated(newAddress) {
-        if (_rewardsActive) {
+        if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         AllocationGroup memory group = AllocationGroup({
@@ -96,7 +94,7 @@ contract Chef is AccessControl {
         uint256 shares,
         bool newAutoDistribute
     ) public onlyRole(ALLOCATION_ROLE) {
-        if (_rewardsActive) {
+        if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares).add(shares);
@@ -107,7 +105,7 @@ contract Chef is AccessControl {
 
     function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
         require(agIndex < _allocations.length);
-        if (_rewardsActive) {
+        if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares);
@@ -157,7 +155,6 @@ contract Chef is AccessControl {
         // ^^ will help with fuzz testing
 
         uint256 blocks = block.number.sub(_lastRewardBlock);
-        console.log("blocks %s", blocks);
 
         uint256 accumulated = blocks.mul(METRIC_PER_BLOCK);
 
@@ -168,7 +165,7 @@ contract Chef is AccessControl {
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
     function harvestAll() public {
-        for (uint256 i = 0; i < _allocations.length; i++) {
+        for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
     }
