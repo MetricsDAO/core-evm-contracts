@@ -1,0 +1,13 @@
+[default]
+src = 'src/contracts'
+test = 'src/test'
+out = 'out'
+libs = ['lib']
+remappings = [
+    'ds-test/=lib/ds-test/src/',
+    '@openzeppelin/=node_modules/@openzeppelin/',
+    '@rari-capital/solmate/=node_modules/@rari-capital/solmate/',
+    '@contracts/=src/contracts/'
+]
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config

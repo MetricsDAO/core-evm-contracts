@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "setup": "npm i && cd contracts && forge install && forge build && forge test",
-    "test:contracts": "cd contracts && forge test"
+    "setup": "npm i && forge install && forge build && forge test",
+    "test:contracts": "forge test"
   },
   "repository": {
     "type": "git",
