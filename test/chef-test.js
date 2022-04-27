@@ -12,21 +12,23 @@ describe("Allocator Contract", function () {
 
   let allocationGroup1;
   let allocationGroup2;
+  let vestingContract;
   let addrs;
 
   beforeEach(async function () {
-    [owner, addr1, allocationGroup1, allocationGroup2, ...addrs] = await ethers.getSigners();
+    [owner, addr1, allocationGroup1, allocationGroup2, vestingContract, ...addrs] = await ethers.getSigners();
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
-    metric = await metricContract.deploy();
+    metric = await metricContract.deploy(vestingContract.address);
 
     // deploy Chef, which requires a reference to METRIC
     const chefContract = await ethers.getContractFactory("Chef");
     chef = await chefContract.deploy(metric.address);
 
     // send all METRIC to the chef
-    await metric.transfer(chef.address, await metric.totalSupply());
+    const metricTokenConnectedToVestingContract = await metric.connect(vestingContract)
+    await metricTokenConnectedToVestingContract.transfer(chef.address, await metric.totalSupply());
   });
 
   describe("Deployment", function () {
