@@ -2,15 +2,15 @@
 pragma solidity 0.8.10;
 
 import "ds-test/test.sol";
-import "@contracts/Allocator.sol";
+import "@contracts/Chef.sol";
 import "@contracts/MetricToken.sol";
 
 
 
 contract TokenUser {
   MetricToken _metric;
-  Allocator _allocator;
-    constructor(MetricToken token_, Allocator allocator) {
+  Chef _allocator;
+    constructor(MetricToken token_, Chef allocator) {
         _metric = token_;
         _allocator = allocator;
     }
@@ -20,15 +20,21 @@ contract TokenUser {
     }
 }
 
+contract VestingContract {
+    constructor() public payable {
+    }
+}
+
 contract ContractTest is DSTest {
     address _metricTokenAddress;
-    Allocator allocator;
+    Chef allocator;
     TokenUser userOne;
 
     function setUp() public {
-      MetricToken metricToken = new MetricToken();
+      VestingContract _vestingContract;
+      MetricToken metricToken = new MetricToken(address(_vestingContract));
       _metricTokenAddress = address(metricToken);
-      allocator = new Allocator(metricToken);
+      allocator = new Chef(address(metricToken));
       userOne = new TokenUser(metricToken, allocator);
     }
 
@@ -52,7 +58,7 @@ contract ContractTest is DSTest {
       allocator.toggleRewards(true);
     }
 
-    function testAllocatorInitialState() public {
+    function testChefInitialState() public {
       allocator.getAllocationGroups();
     }
 }
