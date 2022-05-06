@@ -61,4 +61,8 @@ contract ContractTest is DSTest {
     function testChefInitialState() public {
       allocator.getAllocationGroups();
     }
+
+    function testChefHarvest() public {
+      allocator.harvestAll();
+    }
 }
