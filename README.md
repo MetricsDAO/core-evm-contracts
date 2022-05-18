@@ -87,6 +87,11 @@ Foundry has a [cute guide](https://book.getfoundry.sh/index.html) that will help
 
 ## Hardhat
 
+### Hardhat for deployments
+We utilize a hardhat library called [hardhat deploy](https://github.com/wighawag/hardhat-deploy) to help us deploy and organize our deployments across test/prod networks.
+
+You can run the base deployment to a test network with this command `npx hardhat deploy --network ropsten`
+
 ```shell
 npx hardhat accounts
 npx hardhat compile
