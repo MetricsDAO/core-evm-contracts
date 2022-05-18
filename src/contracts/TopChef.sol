@@ -179,10 +179,10 @@ contract TopChef is AccessControl {
 
         group.rewardDebt = claimable;
         if (claimable != 0) {
-            if (!group.autodistribute) {
-                group.claimable = group.claimable.add(claimable);
-            } else {
+            if (group.autodistribute) {
                 _metric.transfer(group.groupAddress, claimable);
+            } else {
+                group.claimable = group.claimable.add(claimable);
             }
         }
         emit Harvest(msg.sender, agIndex, claimable);
