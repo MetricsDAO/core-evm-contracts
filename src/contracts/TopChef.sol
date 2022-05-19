@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./Chef.sol";
 import "./MetricToken.sol";
 
 // Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
@@ -43,27 +43,17 @@ This contract is a bit more simplified.  Basically there are no LP tokens - so t
 
  */
 
-contract TopChef is AccessControl {
+contract TopChef is Chef {
     using SafeMath for uint256;
-
-    bytes32 public constant ALLOCATION_ROLE = keccak256("ALLOCATION_ROLE");
-
-    // TODO we probably need this behind a function so it can be dynamic
-    uint256 public METRIC_PER_BLOCK = 4 * 10**18;
-    uint256 public constant ACC_METRIC_PRECISION = 1e12;
-
-    bool private _rewardsActive;
     AllocationGroup[] private _allocations;
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue = 0;
-    uint256 private _lastRewardBlock;
 
     MetricToken private _metric;
 
     constructor(address metricTokenAddress) {
         _metric = MetricToken(metricTokenAddress);
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(ALLOCATION_ROLE, msg.sender);
+        setMetricPerBlock(4);
     }
 
     //------------------------------------------------------Manage Allocation Groups
@@ -72,8 +62,8 @@ contract TopChef is AccessControl {
         address newAddress,
         uint256 newShares,
         bool newAutoDistribute
-    ) external onlyRole(ALLOCATION_ROLE) nonDuplicated(newAddress) {
-        if (_rewardsActive && _totalAllocPoint > 0) {
+    ) external onlyOwner() nonDuplicated(newAddress) {
+        if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         AllocationGroup memory group = AllocationGroup({
@@ -93,8 +83,8 @@ contract TopChef is AccessControl {
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyRole(ALLOCATION_ROLE) {
-        if (_rewardsActive && _totalAllocPoint > 0) {
+    ) public onlyOwner() {
+        if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares).add(shares);
@@ -103,20 +93,15 @@ contract TopChef is AccessControl {
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyRole(ALLOCATION_ROLE) {
-        require(agIndex < _allocations.length);
-        if (_rewardsActive && _totalAllocPoint > 0) {
+    function removeAllocationGroup(uint256 agIndex) external onlyOwner() {
+        require(agIndex < _allocations.length, "Index does not match allocation");
+        if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
         }
         _totalAllocPoint = _totalAllocPoint.sub(_allocations[agIndex].shares);
 
         _allocations[agIndex] = _allocations[_allocations.length - 1];
         _allocations.pop();
-    }
-
-    function toggleRewards(bool isOn) external onlyRole(ALLOCATION_ROLE) {
-        _rewardsActive = isOn;
-        _lastRewardBlock = block.number;
     }
 
     //------------------------------------------------------Getters
@@ -144,8 +129,8 @@ contract TopChef is AccessControl {
     }
 
     function updateAccumulatedAllocations() public {
-        require(_rewardsActive, "Rewards are not active");
-        if (block.number <= _lastRewardBlock) {
+        require(areRewardsActive(), "Rewards are not active");
+        if (block.number <= getLastRewardBlock()) {
             return;
         }
 
@@ -154,12 +139,12 @@ contract TopChef is AccessControl {
         // Not entirely sure how to handle this, but we can at least try to make it work.
         // ^^ will help with fuzz testing
 
-        uint256 blocks = block.number.sub(_lastRewardBlock);
+        uint256 blocks = block.number.sub(getLastRewardBlock());
 
-        uint256 accumulated = blocks.mul(METRIC_PER_BLOCK);
+        uint256 accumulated = blocks.mul(getMetricPerBlock());
 
         _lifetimeShareValue = _lifetimeShareValue.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
-        _lastRewardBlock = block.number;
+        setLastRewardBlock(block.number);
     }
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
@@ -200,19 +185,7 @@ contract TopChef is AccessControl {
         emit Withdraw(msg.sender, agIndex, group.claimable);
     }
 
-    //------------------------------------------------------Support Functions
-
-    mapping(address => bool) public addressExistence;
-    modifier nonDuplicated(address _address) {
-        require(addressExistence[_address] == false, "nonDuplicated: duplicated");
-        addressExistence[_address] = true;
-        _;
-    }
-
     //------------------------------------------------------Structs
-
-    event Harvest(address harvester, uint256 agIndex, uint256 amount);
-    event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
 
     struct AllocationGroup {
         address groupAddress;

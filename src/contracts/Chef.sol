@@ -1,25 +1,48 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MetricToken.sol";
 
-abstract contract Chef {
-    using SafeMath for uint256;
-    uint256 public _metricPerBlock;
+abstract contract Chef is Ownable {
+    uint256 private _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
-    bool private _rewardsActive; // DO WE MAKE ubiquitous per each chef? 
+    bool private _rewardsActive; // DO WE MAKE ubiquitous per each chef?
+    uint256 private _lastRewardBlock; 
 
     MetricToken private _metric;
 
-    function setMetricPerBlock(uint256 metricAmount) public {
+    //------------------------------------------------------Setters
+
+    function toggleRewards(bool isOn) public onlyOwner() {
+        _rewardsActive = isOn;
+        _lastRewardBlock = block.number;
+    }
+
+    function setMetricPerBlock(uint256 metricAmount) public virtual {
         _metricPerBlock = metricAmount * 10**18;
+    }
+
+    function setLastRewardBlock(uint256 blockNumber) public virtual {
+        _lastRewardBlock = blockNumber;
+    }
+
+    //------------------------------------------------------Getters
+
+    function getMetricPerBlock() public view virtual returns(uint256) {
+        return _metricPerBlock;
+    }
+
+    function getLastRewardBlock() public view virtual returns(uint256) {
+        return _lastRewardBlock;
     }
 
     function areRewardsActive() public view virtual returns (bool) {
         return _rewardsActive;
     }
+
+    //------------------------------------------------------Support Functions
 
     mapping(address => bool) public addressExistence;
     modifier nonDuplicated(address _address) {
