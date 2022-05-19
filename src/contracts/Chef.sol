@@ -20,7 +20,7 @@ abstract contract Chef is Ownable {
         _lastRewardBlock = block.number;
     }
 
-    function setMetricPerBlock(uint256 metricAmount) public virtual {
+    function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner() {
         _metricPerBlock = metricAmount * 10**18;
     }
 
