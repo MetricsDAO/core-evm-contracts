@@ -8,7 +8,7 @@ abstract contract Chef is Ownable {
     uint256 private _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
-    bool private _rewardsActive; // DO WE MAKE ubiquitous per each chef?
+    bool private _rewardsActive;
     uint256 private _lastRewardBlock; 
 
     MetricToken private _metric;
