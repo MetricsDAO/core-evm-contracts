@@ -43,7 +43,7 @@ This contract is a bit more simplified.  Basically there are no LP tokens - so t
 
  */
 
-contract Chef is AccessControl {
+contract TopChef is AccessControl {
     using SafeMath for uint256;
 
     bytes32 public constant ALLOCATION_ROLE = keccak256("ALLOCATION_ROLE");
@@ -67,11 +67,12 @@ contract Chef is AccessControl {
     }
 
     //------------------------------------------------------Manage Allocation Groups
-
+    
     function addAllocationGroup(
         address newAddress,
         uint256 newShares,
-        bool newAutoDistribute
+        bool newAutoDistribute,
+        uint256 newStartDate
     ) external onlyRole(ALLOCATION_ROLE) nonDuplicated(newAddress) {
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
@@ -80,6 +81,7 @@ contract Chef is AccessControl {
             groupAddress: newAddress,
             shares: newShares,
             autodistribute: newAutoDistribute,
+            startDate: newStartDate,
             rewardDebt: newShares.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
@@ -92,7 +94,8 @@ contract Chef is AccessControl {
         address groupAddress,
         uint256 agIndex,
         uint256 shares,
-        bool newAutoDistribute
+        bool newAutoDistribute,
+        uint256 newStartDate
     ) public onlyRole(ALLOCATION_ROLE) {
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedAllocations();
@@ -220,5 +223,6 @@ contract Chef is AccessControl {
         bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
         uint256 claimable;
+        uint256 startDate;
     }
 }
