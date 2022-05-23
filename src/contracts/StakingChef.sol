@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Chef.sol";
 import "./MetricToken.sol";
 
+//TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, and Claim can be moved to Chef
+//TODO Iron out logic for stakeMetric, and stakeAdditionalMetric function
+
 contract StakingChef is Chef {
     using SafeMath for uint256;
     uint256 public _metricPerBlock;
@@ -29,12 +32,11 @@ contract StakingChef is Chef {
         _;
     }
 
-    //TODO need to make this function payable in order to accept metric
     function stakeMetric(
         address newAddress,
         uint256 metricAmount,
         uint256 newStartDate
-    ) external payable nonDuplicated(newAddress) {
+    ) external nonDuplicated(newAddress) {
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateStaker();
         }
@@ -84,7 +86,7 @@ contract StakingChef is Chef {
         address stakerAddress,
         uint256 metricAmount,
         uint256 newStartDate
-        ) public payable {
+        ) public {
     Staker memory group = Staker({
         stakerAddress: stakerAddress,
         //TODO figure out what value shares should be
