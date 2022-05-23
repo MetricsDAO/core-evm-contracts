@@ -74,7 +74,7 @@ contract StakingChef is Chef {
         _totalAllocPoint = _totalAllocPoint.sub(_stakers[stakerIndex].shares);
 
         _stakers[stakerIndex] = _stakers[_stakers.length - 1];
-        _allocations.pop();
+        _stakers.pop();
     }
 
     function toggleRewards(bool isOn) external onlyOwner() {
