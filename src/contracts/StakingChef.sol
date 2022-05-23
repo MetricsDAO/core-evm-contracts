@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./MetricToken.sol";
 
 //TODO make this inherit from Chef
-contract Stake is Chef {
+contract StakingChef is Chef {
     using SafeMath for uint256;
     uint256 public _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
@@ -30,7 +30,7 @@ contract Stake is Chef {
     }
 
     //TODO need to make this function payable in order to accept metric
-    function stake(
+    function stakeMetric(
         address newAddress,
         uint256 metricAmount,
         uint256 newStartDate
