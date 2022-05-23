@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Chef.sol";
 import "./MetricToken.sol";
 
-//TODO make this inherit from Chef
 contract StakingChef is Chef {
     using SafeMath for uint256;
     uint256 public _metricPerBlock;
@@ -43,7 +42,6 @@ contract StakingChef is Chef {
             stakerAddress: newAddress,
             //TODO figure out what value shares should be
             shares: metricAmount,  //Don't think metricAmount is the correct value here same as in reward debt
-            autodistribute: newAutoDistribute,
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
             claimable: 0
@@ -78,9 +76,8 @@ contract StakingChef is Chef {
         _stakers.pop();
     }
 
-    function toggleRewards(bool isOn) external onlyOwner() {
-        _rewardsActive = isOn;
-        _lastRewardBlock = block.number;
+    function toggleRewards() public virtual override {
+    Chef.toggleRewards();
     }
 
     function stakeAdditionalMetric(
@@ -89,7 +86,7 @@ contract StakingChef is Chef {
         uint256 newStartDate
         ) public payable {
     Staker memory group = Staker({
-        stakerAddress: newAddress,
+        stakerAddress: stakerAddress,
         //TODO figure out what value shares should be
         shares: metricAmount + staker.metricAmount, //this logic is probably incorrect will need staker index to get current amount of metric staked
         startDate: newStartDate,
@@ -114,7 +111,7 @@ contract StakingChef is Chef {
 
         uint256 blocks = block.number.sub(_lastRewardBlock);
 
-        uint256 accumulated = blocks.mul(METRIC_PER_BLOCK);
+        uint256 accumulated = blocks.mul(_metricPerBlock);
 
         _lifetimeShareValue = _lifetimeShareValue.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
         _lastRewardBlock = block.number;
