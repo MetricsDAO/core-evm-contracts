@@ -8,6 +8,10 @@ contract ClaimController is Ownable, IClaimController {
     mapping(uint256 => uint256) private _claimLimit;
     mapping(uint256 => Claim[]) private _claims;
 
+    function initializeQuestion(uint256 questionId, uint256 claimLimit) public onlyOwner {
+        _claimLimit[questionId] = claimLimit;
+    }
+
     //------------------------------------------------------ Structs
 
     struct Claim {
