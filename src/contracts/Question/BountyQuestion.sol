@@ -13,14 +13,10 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     using Counters for Counters.Counter;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     Counters.Counter private _tokenIdCounter;
     mapping(uint256 => address) private _authors; // TODO if we want questions to be transferable, then owner != author
     mapping(uint256 => uint256) private _createdAt;
-    mapping(uint256 => uint256) private _claimLimit;
-    mapping(uint256 => string) private _metadata; // TODO standardize metadata format, including question copy
-    mapping(uint256 => Vote[]) private _votes;
-    mapping(uint256 => Claim[]) private _claims;
-    mapping(uint256 => STATE) private _state;
 
     constructor() ERC721("MetricsDAO Question", "MDQ") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -28,43 +24,13 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     }
 
     // TODO people can submit garbage as metadata if they want
-    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) {
+    // TODO standardize metadata format, including question copy
+    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-    }
-
-    function wtf() private {
-        safeMint(_msgSender(), "");
-    }
-
-    //------------------------------------------------------ Structs
-
-    struct Vote {
-        address _voter;
-        uint256 _amount;
-        uint256 _weightedVote;
-    }
-
-    struct Claim {
-        address _claimer;
-        Answer _answer;
-    }
-
-    struct Answer {
-        address _author;
-        string _url;
-        // TODO grades?
-        uint256 _finalGrade;
-    }
-
-    enum STATE {
-        DRAFT,
-        PUBLISHED,
-        IN_GRADING,
-        COMPLETED,
-        CANCELLED
+        return tokenId;
     }
 
     //------------------------------------------------------ Solidity Overrides
