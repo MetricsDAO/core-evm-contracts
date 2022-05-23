@@ -4,6 +4,18 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MetricToken.sol";
 
+// POSSIBLE FUTURE ITERATIONS
+// TODO implement claim(address)
+// TODO implement staking function
+// TODO implement payable function
+// TODO implement withdrawl function
+// TODO implement updatedAccumulatedAllocations
+
+// TODO WE ADD THESE TO MAIN CHEF or should each contract have it's own
+// TODO we make below more loosely coupled
+// TODO viewPendingHarvest  
+// TODO viewPendingClaims 
+
 abstract contract Chef is Ownable {
     uint256 private _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
@@ -55,14 +67,3 @@ abstract contract Chef is Ownable {
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
 
 }
-
-// DO WE ADD THESE TO MAIN CHEF OR PER TYPE OF CHEF
-// claim(address)
-// payable staking function
-// withdrawl function
-// claim function 
-
-// DO WE ADD THESE TO MAIN CHEF or should each contract have it's own
-// DO we make below more loosely coupled
-// viewPendingHarvest  
-// viewPendingClaims 

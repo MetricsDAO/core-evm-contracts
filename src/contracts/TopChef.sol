@@ -5,44 +5,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Chef.sol";
 import "./MetricToken.sol";
 
-// Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
-// - We don't have a v1, so we don't need that wrapping
-// - We don't have two layers (pools and users), so the concept of pools is flattened into the contract itself.
-// ^^ This is because METRIC is the only token this will ever work with.
-
-// Read this: https://dev.sushi.com/sushiswap/contracts/masterchefv2
-// Also read this: https://soliditydeveloper.com/sushi-swap
-
-/**
- In sushi's master chef, the design allows the controller to submit LP contracts for yield farming, and then user's can stake their LP tokens.
-
- In this contract, there is no concept of a user staking their LP tokens - and instead of LP contract, the controller is submitting Allocation Groups.
-
- So in sushi:
-
- 1.  Every `x` blocks, calculate minted Sushi Tokens for each LP contract based on their (shares / total shares)
- 2.  Then, do the math to figure out how many rewards each LP token is worth (based on the total amount of LP tokens staked)
- 3.  Then, when a user requests their rewards, their claimable amount is based on how many tokens they have staked - and from the previous step, we know how many rewards each LP token gets.
- 4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
-
-
-This contract is a bit more simplified.  Basically there are no LP tokens - so those values are tracked at the top level.
- 
- 1.  whenever updateAccumulatedAllocations() is called, we look at how many blocks it's been since the last time it called and multiply that by the `METRIC_PER_BLOCK` value.
- 2.  Then we use that value to determine how much each current "share" is going to be earning, and save that as _lifetimeShareValue
- 3.  Then, when an Allocation Group calls Harvest, we figure out how much they've earned based on the _lifetimeShareValue and their current allocation.
- 4.  We track historical harvests through "debt" - an AG's Debt is how much they've already harvested, so we subtract that from their lifetime earned rewards to get current earned rewards.
-
-    - OR, Same thing different lens - 
-
- 1.  Every `x` blocks, calculate  METRIC Tokens for each AG based on their (shares / total shares)
- 2.  Then, do the math to figure out how many METRIC tokens will be distributed in total
- 3.  Then, when a user requests their rewards, their claimable amount is based on how many shares they have - and from the previous step, we know how many rewards each AG group gets.
- 4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
-
-
- */
-
 contract TopChef is Chef {
     using SafeMath for uint256;
     AllocationGroup[] private _allocations;
@@ -153,7 +115,7 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() public {
+    function harvestAll() external {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
@@ -178,7 +140,7 @@ contract TopChef is Chef {
         emit Harvest(msg.sender, agIndex, claimable);
     }
 
-    function claim(uint256 agIndex) public {
+    function claim(uint256 agIndex) external {
         AllocationGroup storage group = _allocations[agIndex];
 
         require(group.claimable != 0, "No claimable rewards to withdraw");
