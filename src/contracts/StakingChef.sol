@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./Chef.sol";
 import "./MetricToken.sol";
 
 //TODO make this inherit from Chef
