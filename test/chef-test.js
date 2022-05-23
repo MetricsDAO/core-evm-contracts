@@ -218,6 +218,25 @@ describe("Allocator Contract", function () {
       const balance2 = await metric.balanceOf(allocationGroup2.address);
       expect(balance2).to.equal(utils.parseEther("12"));
     });
+
+    it("Should set claimable back to 0 if we toggle auto distribute and harvest", async () => {
+      await topChef.toggleRewards(true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 10, false);
+
+      await mineBlocks(2);
+
+      await topChef.harvest(0);
+
+      await topChef.updateAllocationGroup(allocationGroup1.address, 0, 15, true);
+
+      await mineBlocks(2);
+
+      await topChef.harvest(0);
+
+      const claimable = await topChef.viewPendingClaims(0);
+
+      expect(BN(claimable)).to.equal(0);
+    });
   });
   describe("Maintain AGs over time ", function () {
     it("Should handle adding an AG after intial startup", async function () {

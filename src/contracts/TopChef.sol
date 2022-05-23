@@ -47,7 +47,7 @@ contract TopChef is Chef {
     using SafeMath for uint256;
     AllocationGroup[] private _allocations;
     uint256 private _totalAllocPoint;
-    uint256 private _lifetimeShareValue = 0;
+    uint256 private _lifetimeShareValue;
 
     MetricToken private _metric;
 
@@ -114,6 +114,10 @@ contract TopChef is Chef {
         return _totalAllocPoint;
     }
 
+    function getLifetimeShareValue () public view returns (uint256) {
+        return _lifetimeShareValue;
+    }
+
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
@@ -166,6 +170,7 @@ contract TopChef is Chef {
         if (claimable != 0) {
             if (group.autodistribute) {
                 _metric.transfer(group.groupAddress, claimable);
+                group.claimable = 0;
             } else {
                 group.claimable = group.claimable.add(claimable);
             }
