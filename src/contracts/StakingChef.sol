@@ -6,7 +6,8 @@ import "./Chef.sol";
 import "./MetricToken.sol";
 
 //TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, and Claim can be moved to Chef
-//TODO Iron out logic for stakeMetric, and stakeAdditionalMetric function
+//TODO Iron out logic for stakeAdditionalMetric function
+//TODO Allow staker to withdrawl principal
 
 contract StakingChef is Chef {
     using SafeMath for uint256;
@@ -14,7 +15,7 @@ contract StakingChef is Chef {
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
     bool private _rewardsActive;
-    Staker[] private _stakers;
+    Staker[] private _stakes;
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue = 0;
     uint256 private _lastRewardBlock;
@@ -40,64 +41,67 @@ contract StakingChef is Chef {
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateStaker();
         }
-        Staker memory group = Staker({
+        Staker memory stake = Staker({
             stakerAddress: newAddress,
-            //TODO figure out what value shares should be
-            shares: metricAmount,  //Don't think metricAmount is the correct value here same as in reward debt
+            principalMetric: metricAmount, 
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
 
-        _stakers.push(group);
-        _totalAllocPoint = _totalAllocPoint.add(group.shares);
+        _stakes.push(stake);
+        _totalAllocPoint = _totalAllocPoint.add(stake.principalMetric);
+        _metric.transfer(address(this), stake.principalMetric);
+        
     }
 
     function updateStaker(
-        address groupAddress,
-        uint256 stakerIndex,
-        uint256 shares
+        address stakeAddress,
+        uint256 stakeIndex,
+        uint256 principalMetric //is there a better name for this?
     ) public {
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakers[stakerIndex].shares).add(shares);
-        _stakers[stakerIndex].groupAddress = groupAddress;
-        _stakers[stakerIndex].shares = shares;
+        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].principalMetric).add(principalMetric);
+        _stakes[stakeIndex].stakeAddress = stakeAddress;
+        _stakes[stakeIndex].principalMetric = principalMetric;
     }
 
-    function removeStaker(uint256 stakerIndex) external {
-        require(stakerIndex.stakerAddress == _msgSender(), "Can only remove self");
-        require(stakerIndex < _stakers.length);
+    function removeStaker(uint256 stakeIndex) external {
+        require(stakeIndex.stakeAddress == _msgSender(), "Can only remove self");
+        require(stakeIndex < _stakes.length);
         if (_rewardsActive && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakers[stakerIndex].shares);
+        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].principalMetric);
 
-        _stakers[stakerIndex] = _stakers[_stakers.length - 1];
-        _stakers.pop();
+        _stakes[stakeIndex] = _stakes[_stakes.length - 1];
+        _stakes.pop();
     }
 
     function toggleRewards() public virtual override {
-    Chef.toggleRewards();
+        Chef.toggleRewards();
     }
 
     function stakeAdditionalMetric(
-        address stakerAddress,
+        address stakeAddress,
         uint256 metricAmount,
         uint256 newStartDate
-        ) public {
-    Staker memory group = Staker({
-        stakerAddress: stakerAddress,
-        //TODO figure out what value shares should be
-        shares: metricAmount + staker.metricAmount, //this logic is probably incorrect will need staker index to get current amount of metric staked
-        startDate: newStartDate,
-        rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
-        claimable: 0
-        });
+    ) public {
+        // uint256 totalMetricStaked = metricAmount + 
 
-        _stakers.push(group);
-        _totalAllocPoint = _totalAllocPoint.add(group.shares);
+        Staker memory stake = Staker({
+            stakeAddress: stakeAddress,
+            // metricAmount: 
+            startDate: newStartDate,
+            rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
+            claimable: 0
+            });
+
+            _stakes.push(stake);
+            _totalAllocPoint = _totalAllocPoint.add(stake.shares);
+            _metric.transfer(address(this), stake.metricAmount);
     }
 
         function updateAccumulatedStakingRewards() public {
@@ -119,16 +123,15 @@ contract StakingChef is Chef {
         _lastRewardBlock = block.number;
     }
 
-    function claim(uint256 stakerIndex) public {
-        Staker[] storage group = _stakers[stakerIndex];
+    function claim(uint256 stakeIndex) public {
+        Staker[] storage stake = _stakes[stakeIndex];
 
-        require(group.claimable != 0, "No claimable rewards to withdraw");
-        // TODO do we want a backup in case a group loses access to their wallet
-        require(group.groupAddress == _msgSender(), "Sender can not claim");
-        _metric.transfer(group.groupAddress, group.claimable);
-        group.claimable = 0;
+        require(stake.claimable != 0, "No claimable rewards to withdraw");
+        require(stake.stakeAddress == _msgSender(), "Sender can not claim");
+        _metric.transfer(stake.stakeAddress, stake.claimable);
+        stake.claimable = 0;
 
-        emit Withdraw(msg.sender, stakerIndex, group.claimable);
+        emit Withdraw(msg.sender, stakeIndex, stake.claimable);
     }
 
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
