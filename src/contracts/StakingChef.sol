@@ -49,7 +49,7 @@ contract StakingChef is Chef {
     function updateStaker(
         address stakeAddress,
         uint256 stakeIndex,
-        uint256 metricAmount //is there a better name for this?
+        uint256 metricAmount 
     ) public {
         if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
@@ -149,7 +149,7 @@ contract StakingChef is Chef {
     struct Staker {
         address stakeAddress;
         uint256 metricAmount;
-        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
+        uint256 rewardDebt;
         uint256 claimable;
         uint256 startDate;
     }
