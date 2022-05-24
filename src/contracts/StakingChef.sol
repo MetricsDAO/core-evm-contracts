@@ -63,7 +63,7 @@ contract StakingChef is Chef {
         _stakes[stakeIndex].metricAmount = metricAmount;
     }
 
-    function removeStaker(uint256 stakeIndex, uint256 stakeAddress) external {
+    function removeStaker(uint256 stakeIndex) external {
         require(stakeIndex < _stakes.length);
         if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
@@ -80,7 +80,7 @@ contract StakingChef is Chef {
         uint256 metricAmount,
         uint256 newStartDate
     ) public {
-
+        //need to call harvest here to harvest current rewards
         uint256 principalMetric = _stakes[stakeIndex].metricAmount;
         uint256 totalMetricStaked = metricAmount + principalMetric;
 
@@ -125,6 +125,18 @@ contract StakingChef is Chef {
         stake.claimable = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.claimable);
+    }
+
+    function withdrawPrincipal(uint256 stakeIndex) public {
+        Staker storage stake = _stakes[stakeIndex];
+
+        require(stake.metricAmount != 0, "No Metric to withdraw");
+        require(stake.stakeAddress == _msgSender(), "Sender can not withdraw");
+
+         _metric.transfer(stake.stakeAddress, stake.metricAmount);
+        stake.metricAmount = 0;
+
+        emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
     }
 
 // --------------------------------------------------------------------- Structs
