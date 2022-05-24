@@ -6,27 +6,22 @@ import "./Chef.sol";
 import "./MetricToken.sol";
 
 //TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, and Claim can be moved to Chef
-//TODO Iron out logic for stakeAdditionalMetric function
 //TODO Allow staker to withdrawl principal
 
 contract StakingChef is Chef {
     using SafeMath for uint256;
-    uint256 public _metricPerBlock;
-    uint256 public constant ACC_METRIC_PRECISION = 1e12;
-
-    bool private _rewardsActive;
     Staker[] private _stakes;
     uint256 private _totalAllocPoint;
-    uint256 private _lifetimeShareValue = 0;
-    uint256 private _lastRewardBlock;
+    uint256 private _lifetimeShareValue;
 
-     MetricToken private _metric;
+    MetricToken private _metric;
 
-    function setMetricPerBlock(uint256 metricAmount) public {
-        _metricPerBlock = metricAmount * 10**18;
+    constructor(address metricTokenAddress) {
+        _metric = MetricToken(metricTokenAddress);
+        setMetricPerBlock(4);
     }
 
-    mapping(address => bool) public addressExistence;
+    mapping(address => bool) public override addressExistence;
     modifier nonDuplicated(address _address) {
         require(addressExistence[_address] == false, "nonDuplicated: duplicated");
         addressExistence[_address] = true;
@@ -38,75 +33,73 @@ contract StakingChef is Chef {
         uint256 metricAmount,
         uint256 newStartDate
     ) external nonDuplicated(newAddress) {
-        if (_rewardsActive && _totalAllocPoint > 0) {
-            updateStaker();
+    if (areRewardsActive() && _totalAllocPoint > 0) {
+            updateAccumulatedStakingRewards();
         }
         Staker memory stake = Staker({
-            stakerAddress: newAddress,
-            principalMetric: metricAmount, 
+            stakeAddress: newAddress,
+            metricAmount: metricAmount, 
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
 
         _stakes.push(stake);
-        _totalAllocPoint = _totalAllocPoint.add(stake.principalMetric);
-        _metric.transfer(address(this), stake.principalMetric);
+        _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
+        _metric.transfer(address(this), stake.metricAmount);
         
     }
 
     function updateStaker(
         address stakeAddress,
         uint256 stakeIndex,
-        uint256 principalMetric //is there a better name for this?
+        uint256 metricAmount //is there a better name for this?
     ) public {
-        if (_rewardsActive && _totalAllocPoint > 0) {
+        if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].principalMetric).add(principalMetric);
+        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].metricAmount).add(metricAmount);
         _stakes[stakeIndex].stakeAddress = stakeAddress;
-        _stakes[stakeIndex].principalMetric = principalMetric;
+        _stakes[stakeIndex].metricAmount = metricAmount;
     }
 
-    function removeStaker(uint256 stakeIndex) external {
-        require(stakeIndex.stakeAddress == _msgSender(), "Can only remove self");
+    function removeStaker(uint256 stakeIndex, uint256 stakeAddress) external {
         require(stakeIndex < _stakes.length);
-        if (_rewardsActive && _totalAllocPoint > 0) {
+        if (areRewardsActive() && _totalAllocPoint > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].principalMetric);
+        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].metricAmount);
 
         _stakes[stakeIndex] = _stakes[_stakes.length - 1];
         _stakes.pop();
     }
 
-    function toggleRewards() public virtual override {
-        Chef.toggleRewards();
-    }
-
     function stakeAdditionalMetric(
         address stakeAddress,
+        uint256 stakeIndex,
         uint256 metricAmount,
         uint256 newStartDate
     ) public {
-        // uint256 totalMetricStaked = metricAmount + 
+
+        uint256 principalMetric = _stakes[stakeIndex].metricAmount;
+        uint256 totalMetricStaked = metricAmount + principalMetric;
 
         Staker memory stake = Staker({
             stakeAddress: stakeAddress,
-            // metricAmount: 
+            metricAmount: totalMetricStaked,
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
             claimable: 0
             });
 
             _stakes.push(stake);
-            _totalAllocPoint = _totalAllocPoint.add(stake.shares);
+            _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
             _metric.transfer(address(this), stake.metricAmount);
     }
 
-        function updateAccumulatedStakingRewards() public {
-        require(_rewardsActive, "Rewards are not active");
-        if (block.number <= _lastRewardBlock) {
+    function updateAccumulatedStakingRewards() public {
+        require(areRewardsActive(), "Rewards are not active");
+        if (block.number <= getLastRewardBlock()) {
             return;
         }
 
@@ -115,16 +108,16 @@ contract StakingChef is Chef {
         // Not entirely sure how to handle this, but we can at least try to make it work.
         // ^^ will help with fuzz testing
 
-        uint256 blocks = block.number.sub(_lastRewardBlock);
+        uint256 blocks = block.number.sub(getLastRewardBlock());
 
-        uint256 accumulated = blocks.mul(_metricPerBlock);
+        uint256 accumulated = blocks.mul(getMetricPerBlock());
 
         _lifetimeShareValue = _lifetimeShareValue.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
-        _lastRewardBlock = block.number;
+        setLastRewardBlock(block.number);
     }
 
     function claim(uint256 stakeIndex) public {
-        Staker[] storage stake = _stakes[stakeIndex];
+        Staker storage stake = _stakes[stakeIndex];
 
         require(stake.claimable != 0, "No claimable rewards to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not claim");
@@ -134,11 +127,9 @@ contract StakingChef is Chef {
         emit Withdraw(msg.sender, stakeIndex, stake.claimable);
     }
 
-    event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
-
 // --------------------------------------------------------------------- Structs
     struct Staker {
-        address stakerAddress;
+        address stakeAddress;
         uint256 metricAmount;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
         uint256 claimable;
