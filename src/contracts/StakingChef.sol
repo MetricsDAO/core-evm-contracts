@@ -5,8 +5,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Chef.sol";
 import "./MetricToken.sol";
 
-//TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, and Claim can be moved to Chef
-//TODO Allow staker to withdrawl principal
+//TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, harvest and Claim can be moved to Chef
 
 contract StakingChef is Chef {
     using SafeMath for uint256;
@@ -22,12 +21,9 @@ contract StakingChef is Chef {
     }
 
     mapping(address => bool) public override addressExistence;
-    modifier nonDuplicated(address _address) {
-        require(addressExistence[_address] == false, "nonDuplicated: duplicated");
-        addressExistence[_address] = true;
-        _;
-    }
+    // modifier nonDuplicated(msg.sender);
 
+// --------------------------------------------------------------------- staking functions
     function stakeMetric(
         address newAddress,
         uint256 metricAmount,
@@ -80,7 +76,7 @@ contract StakingChef is Chef {
         uint256 metricAmount,
         uint256 newStartDate
     ) public {
-        //need to call harvest here to harvest current rewards
+        harvest(stakeIndex);
         uint256 principalMetric = _stakes[stakeIndex].metricAmount;
         uint256 totalMetricStaked = metricAmount + principalMetric;
 
@@ -103,11 +99,6 @@ contract StakingChef is Chef {
             return;
         }
 
-        // TODO confirm budget is correct with assertions
-        // Not sure we can project emission rate over X years?
-        // Not entirely sure how to handle this, but we can at least try to make it work.
-        // ^^ will help with fuzz testing
-
         uint256 blocks = block.number.sub(getLastRewardBlock());
 
         uint256 accumulated = blocks.mul(getMetricPerBlock());
@@ -115,6 +106,8 @@ contract StakingChef is Chef {
         _lifetimeShareValue = _lifetimeShareValue.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
         setLastRewardBlock(block.number);
     }
+
+// --------------------------------------------------------------------- Manage rewards and Principal
 
     function claim(uint256 stakeIndex) public {
         Staker storage stake = _stakes[stakeIndex];
@@ -138,6 +131,19 @@ contract StakingChef is Chef {
 
         emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
     }
+
+    function harvest(uint256 stakeIndex) public {
+        Staker storage stake = _stakes[stakeIndex];
+
+        updateAccumulatedStakingRewards();
+
+        uint256 claimable = stake.metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
+
+        stake.rewardDebt = claimable;
+        stake.claimable = stake.claimable.add(claimable);
+        emit Harvest(msg.sender, stakeIndex, claimable);
+    }
+
 
 // --------------------------------------------------------------------- Structs
     struct Staker {
