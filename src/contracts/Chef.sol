@@ -36,7 +36,7 @@ abstract contract Chef is Ownable {
         _metricPerBlock = metricAmount * 10**18;
     }
 
-    function setLastRewardBlock(uint256 blockNumber) public virtual {
+    function setLastRewardBlock(uint256 blockNumber) internal virtual {
         _lastRewardBlock = blockNumber;
     }
 
@@ -73,5 +73,12 @@ abstract contract Chef is Ownable {
 
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
+
+    receive() external payable virtual {}
+
+    function withdrawMoney() public onlyOwner() {
+        address payable to = payable(msg.sender);
+        to.transfer(address(this).balance);
+    }
 
 }
