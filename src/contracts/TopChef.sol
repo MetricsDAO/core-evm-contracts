@@ -3,8 +3,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
-import "./MetricToken.sol";
 
 contract TopChef is Chef {
     using SafeMath for uint256;
@@ -12,11 +12,10 @@ contract TopChef is Chef {
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue;
 
-    MetricToken private _metric;
-
     constructor(address metricTokenAddress) {
-        _metric = MetricToken(metricTokenAddress);
+        setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
+        toggleRewards(false); // locking contract initially
     }
 
     //------------------------------------------------------Manage Allocation Groups
@@ -123,6 +122,7 @@ contract TopChef is Chef {
     }
 
     function harvest(uint256 agIndex) public {
+        require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
 
         updateAccumulatedAllocations();
@@ -132,7 +132,8 @@ contract TopChef is Chef {
         group.rewardDebt = claimable;
         if (claimable != 0) {
             if (group.autodistribute) {
-                _metric.transfer(group.groupAddress, claimable);
+                MetricToken metric = getMetricToken();
+                SafeERC20.safeTransfer(IERC20(metric), group.groupAddress, claimable);
                 group.claimable = 0;
             } else {
                 group.claimable = group.claimable.add(claimable);
@@ -142,12 +143,14 @@ contract TopChef is Chef {
     }
 
     function claim(uint256 agIndex) external {
+        require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
 
         require(group.claimable != 0, "No claimable rewards to withdraw");
         // TODO do we want a backup in case a group looses access to their wallet
         require(group.groupAddress == _msgSender(), "Sender does not represent group");
-        _metric.transfer(group.groupAddress, group.claimable);
+        MetricToken metric = getMetricToken();
+        SafeERC20.safeTransfer(IERC20(metric), group.groupAddress, group.claimable);
         group.claimable = 0;
 
         emit Withdraw(msg.sender, agIndex, group.claimable);
