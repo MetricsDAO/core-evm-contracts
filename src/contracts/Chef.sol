@@ -76,9 +76,6 @@ abstract contract Chef is Ownable {
 
     receive() external payable virtual {}
 
-    function withdrawMoney() public onlyOwner() {
-        address payable to = payable(msg.sender);
-        to.transfer(address(this).balance);
-    }
+    function withdrawMoney() public onlyOwner() {}
 
 }
