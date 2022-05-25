@@ -40,8 +40,8 @@ abstract contract Chef is Ownable {
         _lastRewardBlock = blockNumber;
     }
 
-    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() {
-        _metric = MetricToken(metricTokenAddress);
+    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() returns (MetricToken) {
+        return MetricToken(metricTokenAddress);
     }
 
     //------------------------------------------------------Getters
@@ -56,10 +56,6 @@ abstract contract Chef is Ownable {
 
     function areRewardsActive() public view virtual returns (bool) {
         return _rewardsActive;
-    }
-
-    function getMetricToken() internal view virtual returns (MetricToken) {
-        return _metric;
     }
 
     //------------------------------------------------------Support Functions
