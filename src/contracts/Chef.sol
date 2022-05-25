@@ -36,8 +36,12 @@ abstract contract Chef is Ownable {
         _metricPerBlock = metricAmount * 10**18;
     }
 
-    function setLastRewardBlock(uint256 blockNumber) public virtual {
+    function setLastRewardBlock(uint256 blockNumber) internal virtual {
         _lastRewardBlock = blockNumber;
+    }
+
+    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() {
+        _metric = MetricToken(metricTokenAddress);
     }
 
     //------------------------------------------------------Getters
@@ -52,6 +56,10 @@ abstract contract Chef is Ownable {
 
     function areRewardsActive() public view virtual returns (bool) {
         return _rewardsActive;
+    }
+
+    function getMetricToken() internal view virtual returns (MetricToken) {
+        return _metric;
     }
 
     //------------------------------------------------------Support Functions
