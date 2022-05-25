@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
-import "./MetricToken.sol";
 
 //TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, harvest and Claim can be moved to Chef
 
@@ -12,16 +12,15 @@ contract StakingChef is Chef {
     Staker[] private _stakes;
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue;
+    MetricToken public metric;
 
-    MetricToken private _metric;
 
     constructor(address metricTokenAddress) {
-        _metric = MetricToken(metricTokenAddress);
+        metric = setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
-    }
+        toggleRewards(false);
 
-    mapping(address => bool) public override addressExistence;
-    // modifier nonDuplicated(msg.sender);
+    }
 
 // --------------------------------------------------------------------- staking functions
     function stakeMetric(
@@ -42,8 +41,7 @@ contract StakingChef is Chef {
 
         _stakes.push(stake);
         _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
-        _metric.transfer(address(this), stake.metricAmount);
-        
+        SafeERC20.safeTransferFrom(IERC20(metric), msg.sender, address(this), stake.metricAmount); 
     }
 
     function updateStaker(
@@ -90,7 +88,7 @@ contract StakingChef is Chef {
 
             _stakes.push(stake);
             _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
-            _metric.transfer(address(this), stake.metricAmount);
+             SafeERC20.safeTransferFrom(IERC20(metric), msg.sender, address(this), stake.metricAmount);
     }
 
     function updateAccumulatedStakingRewards() public {
@@ -114,7 +112,8 @@ contract StakingChef is Chef {
 
         require(stake.claimable != 0, "No claimable rewards to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not claim");
-        _metric.transfer(stake.stakeAddress, stake.claimable);
+
+        SafeERC20.safeTransferFrom(IERC20(metric), address(this), msg.sender, stake.claimable);
         stake.claimable = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.claimable);
@@ -126,7 +125,7 @@ contract StakingChef is Chef {
         require(stake.metricAmount != 0, "No Metric to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not withdraw");
 
-         _metric.transfer(stake.stakeAddress, stake.metricAmount);
+         SafeERC20.safeTransferFrom(IERC20(metric), address(this), msg.sender, stake.metricAmount);
         stake.metricAmount = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
@@ -143,7 +142,6 @@ contract StakingChef is Chef {
         stake.claimable = stake.claimable.add(claimable);
         emit Harvest(msg.sender, stakeIndex, claimable);
     }
-
 
 // --------------------------------------------------------------------- Structs
     struct Staker {
