@@ -22,9 +22,6 @@ abstract contract Chef is Ownable {
 
     bool private _rewardsActive;
     uint256 private _lastRewardBlock; 
-
-    MetricToken private _metric;
-
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner() {
