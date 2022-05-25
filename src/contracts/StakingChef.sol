@@ -5,15 +5,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
 
-//TODO StakeMetric, updateStaker, removeStaker, updateAccumulatedStakingRewards, harvest and Claim can be moved to Chef
-
 contract StakingChef is Chef {
     using SafeMath for uint256;
     Staker[] private _stakes;
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue;
     MetricToken public metric;
-
 
     constructor(address metricTokenAddress) {
         metric = setMetricToken(metricTokenAddress);
@@ -141,6 +138,34 @@ contract StakingChef is Chef {
         stake.rewardDebt = claimable;
         stake.claimable = stake.claimable.add(claimable);
         emit Harvest(msg.sender, stakeIndex, claimable);
+    }
+
+        //------------------------------------------------------Getters
+
+    function getStakes() public view returns (Staker[] memory) {
+        return _stakes;
+    }
+
+    function getTotalAllocationPoints() public view returns (uint256) {
+        return _totalAllocPoint;
+    }
+
+    function getLifetimeShareValue () public view returns (uint256) {
+        return _lifetimeShareValue;
+    }
+
+    //------------------------------------------------------Distribution
+
+    function viewPendingHarvest(uint256 stakeIndex) public view returns (uint256) {
+        Staker storage stake = _stakes[stakeIndex];
+
+        return stake.metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
+    }
+
+    function viewPendingClaims(uint256 stakeIndex) public view returns (uint256) {
+        Staker storage stake = _stakes[stakeIndex];
+
+        return stake.claimable;
     }
 
 // --------------------------------------------------------------------- Structs
