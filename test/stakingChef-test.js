@@ -45,39 +45,39 @@ describe("Staking Contract", function () {
       expect(0).to.equal(alloc);
 
       // add our first stake
-      await stakingChef.stakeMetric(staker1.address, 20, true);
+      await stakingChef.stakeMetric(staker1.address, 20, 1);
 
       // check that it was added
-      groups = await stakingChef.getAllocationGroups();
+      groups = await stakingChef.getStakes();
       expect(1).to.equal(groups.length);
       alloc = await stakingChef.getTotalAllocationPoints();
       expect(20).to.equal(alloc);
 
       // add our second allocation group
-      await stakingChef.addAllocationGroup(allocationGroup2.address, 30, true);
+      await stakingChef.stakeMetric(allocationGroup2.address, 30, 1);
 
       // check that it was added
-      groups = await stakingChef.getAllocationGroups();
+      groups = await stakingChef.getStakes();
       expect(2).to.equal(groups.length);
       alloc = await stakingChef.getTotalAllocationPoints();
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
-      await expect(stakingChef.addAllocationGroup(staker1.address, 50, true)).to.be.revertedWith("nonDuplicated: duplicated");
+      await expect(stakingChef.stakeMetric(staker1.address, 50, 1)).to.be.revertedWith("nonDuplicated: duplicated");
     });
 
     it("Should update edited Stakes", async function () {
       await stakingChef.toggleRewards(true);
       // add two allocation groups
-      await stakingChef.stakeMetric(staker1.address, 20, true);
-      await stakingChef.stakeMetric(staker2.address, 30, true);
+      await stakingChef.stakeMetric(staker1.address, 20, 1);
+      await stakingChef.stakeMetric(staker2.address, 30, 1);
 
       // check that they were added
       let alloc = await stakingChef.getTotalAllocationPoints();
       expect(50).to.equal(alloc);
 
       // edit the first one
-      await stakingChef.updateAllocationGroup(staker1.address, 0, 30, true);
+      await stakingChef.updateAllocationGroup(staker1.address, 0, 30, 1);
       alloc = await stakingChef.getTotalAllocationPoints();
       expect(60).to.equal(alloc);
     });
@@ -85,8 +85,8 @@ describe("Staking Contract", function () {
     it("Should support deleting AGs", async function () {
       await stakingChef.toggleRewards(true);
       // add two allocation groups
-      await stakingChef.stakeMetric(staker1.address, 20, true);
-      await stakingChef.stakeMetric(staker2.address, 30, true);
+      await stakingChef.stakeMetric(staker1.address, 20, 1);
+      await stakingChef.stakeMetric(staker2.address, 30, 1);
 
       // remove the first one
       await stakingChef.removeAllocationGroup(0);
@@ -94,7 +94,7 @@ describe("Staking Contract", function () {
       expect(30).to.equal(alloc);
 
       // ensure the second added one is now the first one in the array
-      const groups = await stakingChef.getAllocationGroups();
+      const groups = await stakingChef.getStakes();
       expect(30).to.equal(groups[0].shares);
     });
   });
@@ -102,7 +102,7 @@ describe("Staking Contract", function () {
   describe("Pending Rewards", function () {
     it("Should track pending rewards", async function () {
       // add an allocation group
-      await stakingChef.stakeMetric(staker1.address, 20, false);
+      await stakingChef.stakeMetric(staker1.address, 20, 1);
 
       await stakingChef.toggleRewards(true);
 
@@ -128,10 +128,10 @@ describe("Staking Contract", function () {
 
     it("Should track pending rewards with multiple stakes", async function () {
       // add an allocation group
-      await stakingChef.stakeMetric(staker1.address, 1, false);
+      await stakingChef.stakeMetric(staker1.address, 1, 1);
 
       // add a stake
-      await stakingChef.stakeMetric(staker2.address, 3, false);
+      await stakingChef.stakeMetric(staker2.address, 3, 1);
 
       await stakingChef.toggleRewards(true);
 
@@ -160,7 +160,7 @@ describe("Staking Contract", function () {
       // start at block 1
       await stakingChef.toggleRewards(true);
       // block 2
-      await stakingChef.stakeMetric(staker1.address, 1, true);
+      await stakingChef.stakeMetric(staker1.address, 1, 1);
 
       // block 3
       await stakingChef.updateAccumulatedAllocations();
@@ -177,7 +177,7 @@ describe("Staking Contract", function () {
       // start at block 1
       await stakingChef.toggleRewards(true);
       // block 2
-      await stakingChef.stakeMetric(staker1.address, 1, false);
+      await stakingChef.stakeMetric(staker1.address, 1, 1);
 
       // block 3
       await stakingChef.updateAccumulatedAllocations();
@@ -201,7 +201,7 @@ describe("Staking Contract", function () {
 
   describe("Maintain Stakes over time ", function () {
     it("Should handle adding a stake after intial startup", async function () {
-      await stakingChef.stakeMetric(staker1.address, 1, true);
+      await stakingChef.stakeMetric(staker1.address, 1, 1);
       await stakingChef.toggleRewards(true);
 
       // block 5
@@ -213,7 +213,7 @@ describe("Staking Contract", function () {
       expect(pending1).to.equal(utils.parseEther("24"));
 
       // block 7
-      await stakingChef.stakeMetric(staker2.address, 3, true);
+      await stakingChef.stakeMetric(staker2.address, 3, 1);
       // block 8 (block 1 for group 2)
       await stakingChef.harvestAll();
 
