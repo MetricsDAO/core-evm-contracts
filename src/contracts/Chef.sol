@@ -58,7 +58,7 @@ abstract contract Chef is Ownable {
         return _rewardsActive;
     }
 
-    function getMetricToken() public view virtual returns (MetricToken) {
+    function getMetricToken() internal view virtual returns (MetricToken) {
         return _metric;
     }
 
