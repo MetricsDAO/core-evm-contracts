@@ -22,21 +22,31 @@ describe("Staking Contract", function () {
     const stakingChefContract = await ethers.getContractFactory("StakingChef");
     stakingChef = await stakingChefContract.deploy(metric.address);
 
-    // send all METRIC to the stakingChef
+    // send METRIC to the stakingChef
     const metricTokenConnectedToVestingContract = await metric.connect(vestingContract);
-    await metricTokenConnectedToVestingContract.transfer(stakingChef.address, await metric.totalSupply());
+    await metricTokenConnectedToVestingContract.transfer(stakingChef.address, 1000);
+
+    //send METRIC to stakers
+    await metricTokenConnectedToVestingContract.transfer(staker1.address, 200);
+    await metricTokenConnectedToVestingContract.transfer(staker2.address, 200);
+
+    //approve METRIC Transfer
+
   });
 
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
       // confirm top chef owns all the tokens - this will change with staking chef most likely
       const ownerBalance = await metric.balanceOf(stakingChef.address);
-      expect(await metric.totalSupply()).to.equal(ownerBalance);
+      const stakerBalance = await metric.balanceOf(staker1.address);
+      console.log(stakerBalance);
+      expect(await 200).to.equal(stakerBalance);
+      expect(await 1000).to.equal(ownerBalance);
     });
   });
 
   describe("Staking", function () {
-    it("Should add and track added Stakes", async function () {
+    it.only("Should add and track added Stakes", async function () {
       await stakingChef.toggleRewards(true);
       // Everything should start empty
       let stakes = await stakingChef.getStakes();
@@ -45,7 +55,10 @@ describe("Staking Contract", function () {
       expect(0).to.equal(alloc);
 
       // add our first stake
-      await stakingChef.stakeMetric(staker1.address, 20, 1);
+    //   await metric.connect(staker1).approve(staker1.address, 20)
+    //   stakeMetric(staker1.address, 20, 1);
+
+      await stakingChef.stakeMetric(staker1.address, 20, 1).approve(staker1);
 
       // check that it was added
       groups = await stakingChef.getStakes();
