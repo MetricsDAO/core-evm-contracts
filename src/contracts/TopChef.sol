@@ -102,7 +102,7 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() external {
+    function harvestAll() external onlyOwner() {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
@@ -111,6 +111,8 @@ contract TopChef is Chef {
     function harvest(uint256 agIndex) public {
         require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
+        // TODO do we want a backup in case a group looses access to their wallet
+        require(group.groupAddress == _msgSender() || _msgSender() == owner(), "Sender is not group or owner");
 
         updateAccumulatedAllocations();
 
