@@ -105,11 +105,12 @@ contract StakingChef is Chef {
 
     function claim(uint256 stakeIndex) public {
         Staker storage stake = _stakes[stakeIndex];
+        harvest(stakeIndex);
 
         require(stake.claimable != 0, "No claimable rewards to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not claim");
 
-        SafeERC20.safeTransferFrom(IERC20(metric), address(this), msg.sender, stake.claimable);
+        SafeERC20.safeTransfer(IERC20(metric), msg.sender, stake.claimable);
         stake.claimable = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.claimable);
@@ -121,13 +122,13 @@ contract StakingChef is Chef {
         require(stake.metricAmount != 0, "No Metric to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not withdraw");
 
-         SafeERC20.safeTransferFrom(IERC20(metric), address(this), msg.sender, stake.metricAmount);
+         SafeERC20.safeTransfer(IERC20(metric), msg.sender, stake.metricAmount);
         stake.metricAmount = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
     }
 
-    function harvest(uint256 stakeIndex) public {
+    function harvest(uint256 stakeIndex) internal {
         Staker storage stake = _stakes[stakeIndex];
 
         updateAccumulatedStakingRewards();
