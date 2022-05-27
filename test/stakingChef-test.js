@@ -138,12 +138,12 @@ describe("Staking Contract", function () {
       expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
     });
 
-    it.only("Should track pending rewards with multiple stakes", async function () {
+    it("Should track pending rewards with multiple stakes", async function () {
       // add an allocation group
       await stakingChef.stakeMetric(staker1.address, 1, 1);
 
       // add a stake
-      await stakingChef.stakeMetric(staker2.address, 3, 1);
+      await stakingChef.stakeMetric(staker2.address, 1, 1);
 
       await stakingChef.toggleRewards(true);
 
