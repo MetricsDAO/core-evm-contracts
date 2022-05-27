@@ -18,7 +18,6 @@ contract StakingChef is Chef {
         toggleRewards(false);
 
     }
-
 // --------------------------------------------------------------------- staking functions
     function stakeMetric(
         address newAddress,
@@ -140,7 +139,7 @@ contract StakingChef is Chef {
         emit Harvest(msg.sender, stakeIndex, claimable);
     }
 
-        //------------------------------------------------------Getters
+//------------------------------------------------------Getters
 
     function getStakes() public view returns (Staker[] memory) {
         return _stakes;
@@ -154,7 +153,7 @@ contract StakingChef is Chef {
         return _lifetimeShareValue;
     }
 
-    //------------------------------------------------------Distribution
+//------------------------------------------------------Distribution
 
     function viewPendingHarvest(uint256 stakeIndex) public view returns (uint256) {
         Staker storage stake = _stakes[stakeIndex];
