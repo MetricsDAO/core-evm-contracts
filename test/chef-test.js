@@ -238,7 +238,7 @@ describe("Allocator Contract", function () {
       expect(BN(claimable)).to.equal(0);
     });
 
-    it("update allocationssssss", async function () {
+    it("will over time update single allocation group with lots of metric", async function () {
       await topChef.toggleRewards(true);
       await topChef.addAllocationGroup(allocationGroup1.address, 40, true);
       await mineBlocks(1000);
