@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { ethers } = require("hardhat");
-const { mineBlocks, BN } = require("./utils");
+const { mineBlocks, BN, closeEnough } = require("./utils");
 
 describe("Staking Contract", function () {
   let stakingChef;
@@ -38,6 +38,8 @@ describe("Staking Contract", function () {
     const staker2Balance = await metric.balanceOf(staker2.address);
     await metric.connect(staker1).approve(stakingChef.address, staker1Balance);
     await metric.connect(staker2).approve(stakingChef.address, staker2Balance);
+    await metric.connect(stakingChef).approve(staker1.address, staker1.claimable);
+
     
   });
 
@@ -119,7 +121,7 @@ describe("Staking Contract", function () {
       await stakingChef.stakeMetric(staker1.address, 20, 1);
 
       // new group should have 0 metric
-      let pending = await stakingChef.viewPendingHarvest(0);
+      let pending = await stakingChef.viewPendingClaims(0);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
@@ -127,14 +129,14 @@ describe("Staking Contract", function () {
 
       // should have 1 pending allocation
       const metricPerBlock = await stakingChef.getMetricPerBlock();
-      // pending = await stakingChef.viewPendingHarvest(0);
-      // expect(metricPerBlock).to.equal(pending);
+      pending = await stakingChef.viewPendingClaims(0);
+      expect(metricPerBlock).to.equal(pending);
 
       // update distributions (requires mining 1 block)
       await stakingChef.updateAccumulatedStakingRewards();
 
       // should have 2 pending allocations
-      pending = await stakingChef.viewPendingHarvest(0);
+      pending = await stakingChef.viewPendingClaims(0);
       expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
     });
 
@@ -148,9 +150,9 @@ describe("Staking Contract", function () {
       await stakingChef.toggleRewards(true);
 
       // new groups should have 0 metric
-      let pending = await stakingChef.viewPendingHarvest(0);
+      let pending = await stakingChef.viewPendingClaims(0);
       expect(0).to.equal(pending);
-      pending = await stakingChef.viewPendingHarvest(1);
+      pending = await stakingChef.viewPendingClaims(1);
       expect(0).to.equal(pending);
 
       await mineBlocks(2);
@@ -160,14 +162,14 @@ describe("Staking Contract", function () {
 
       // should have 3 pending allocation of 4 tokens each - and checking shares above we can get expected
 
-      pending = await stakingChef.viewPendingHarvest(0);
+      pending = await stakingChef.viewPendingClaims(0);
       expect(utils.parseEther("3")).to.equal(pending); // should be 3 would love to dynamically find this
-      pending = await stakingChef.viewPendingHarvest(1);
+      pending = await stakingChef.viewPendingClaims(1);
       expect(utils.parseEther("9")).to.equal(pending); // should be 9 would love to dynamically find this
     });
   });
 
-  describe("Harvest Rewards", function () {
+  describe("Claim Rewards", function () {
     it("Should transfer earned rewards", async function () {
       // start at block 1
       await stakingChef.toggleRewards(true);
@@ -177,7 +179,7 @@ describe("Staking Contract", function () {
       // block 3
       await stakingChef.updateAccumulatedStakingRewards();
 
-      await stakingChef.harvest(0);
+      await stakingChef.connect(staker1).claim(0);
 
       const balance = await metric.balanceOf(staker1.address);
       const metricPerBlock = await stakingChef.getMetricPerBlock();
@@ -185,22 +187,22 @@ describe("Staking Contract", function () {
       expect(metricPerBlock.mul(3)).to.equal(balance);
     });
 
-    it("Should track claimable rewards", async function () {
+    it.only("Should track claimable rewards", async function () {
       // start at block 1
       await stakingChef.toggleRewards(true);
       // block 2
-      await stakingChef.stakeMetric(staker1.address, 1, 1);
+      await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
 
       // block 3
       await stakingChef.updateAccumulatedStakingRewards();
 
-      await stakingChef.harvest(0);
+      await stakingChef.connect(staker1).claim(0);
 
       let balance = await metric.balanceOf(staker1.address);
       const withdrawlable = await stakingChef.viewPendingClaims(0);
       const metricPerBlock = await stakingChef.getMetricPerBlock();
 
-      expect(0).to.equal(balance);
+      expect(BN(200).div(10)).to.equal(balance);
 
       expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
 
@@ -213,7 +215,7 @@ describe("Staking Contract", function () {
 
   describe("Maintain Stakes over time ", function () {
     it("Should handle adding a stake after intial startup", async function () {
-      await stakingChef.stakeMetric(staker1.address, 1, 1);
+      await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
       await stakingChef.toggleRewards(true);
 
       // block 5
@@ -225,15 +227,18 @@ describe("Staking Contract", function () {
       expect(pending1).to.equal(utils.parseEther("24"));
 
       // block 7
-      await stakingChef.stakeMetric(staker2.address, 3, 1);
+      await stakingChef.stakeMetric(staker2.address, BN(200).div(10), 1);
       // block 8 (block 1 for group 2)
-      await stakingChef.harvestAll();
+      await stakingChef.connect(staker1).claim(0);
+      await stakingChef.connect(staker2).claim(1);
 
       const balance1 = await metric.balanceOf(staker1.address);
-      expect(balance1).to.equal(utils.parseEther("29"));
+      const value1 = closeEnough(balance1, utils.parseEther("30"));
+      expect(value1).to.equal(true);
 
       const balance2 = await metric.balanceOf(staker2.address);
-      expect(balance2).to.equal(utils.parseEther("3"));
+      const value2 = closeEnough(balance2, utils.parseEther("4"))
+      expect(value2).to.equal(true);
     });
   });
 });

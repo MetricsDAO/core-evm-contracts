@@ -10,7 +10,10 @@ contract StakingChef is Chef {
     Staker[] private _stakes;
     uint256 private _totalAllocPoint;
     uint256 private _lifetimeShareValue;
+    uint256 public UserStake;
     MetricToken public metric;
+
+    //mapping(address => mapping(address => userStakes)) public userStakes;
 
     constructor(address metricTokenAddress) {
         metric = setMetricToken(metricTokenAddress);
@@ -82,7 +85,7 @@ contract StakingChef is Chef {
             claimable: 0
             });
 
-            _stakes.push(stake);
+            _stakes[stakeIndex] = stake;
             _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
              SafeERC20.safeTransferFrom(IERC20(metric), msg.sender, address(this), stake.metricAmount);
     }
