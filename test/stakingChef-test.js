@@ -34,8 +34,6 @@ describe("Staking Contract", function () {
     await metricTokenConnectedToVestingContract.transfer(staker2.address, BN(2000).div(10));
 
     //approve Metric Transfers
-    await stakingChef.toggleRewards(true);
-    await stakingChef.toggleRewards(true);
     const staker1Balance = await metric.balanceOf(staker1.address);
     const staker2Balance = await metric.balanceOf(staker2.address);
     await metric.connect(staker1).approve(stakingChef.address, staker1Balance);
