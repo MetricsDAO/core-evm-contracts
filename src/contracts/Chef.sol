@@ -100,7 +100,7 @@ abstract contract Chef is Ownable {
         return accumulatedWithPrecision.div(getTotalAllocationShares());
     }
 
-    function getMetricToken() internal view returns (MetricToken) {
+    function getMetricToken() public view returns (MetricToken) {
         return metric;
     }
 
