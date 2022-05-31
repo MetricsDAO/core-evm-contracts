@@ -36,7 +36,7 @@ contract TopChef is Chef {
         });
 
         _allocations.push(group);
-        setTotalAllocShares(group.shares);
+        addTotalAllocShares(group.shares);
     }
     
     function updateAllocationGroup(
@@ -48,7 +48,7 @@ contract TopChef is Chef {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
-        setTotalAllocShares(_allocations[agIndex].shares, shares);
+        addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
         _allocations[agIndex].autodistribute = newAutoDistribute;

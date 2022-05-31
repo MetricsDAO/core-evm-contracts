@@ -51,11 +51,11 @@ abstract contract Chef is Ownable {
         _lifetimeShareValue = _lifetimeShareValue.add(accumulatedMetricDividedByShares(accumulatedWithMetricPrecision));
     }
 
-    function setTotalAllocShares(uint256 shares) internal virtual {
+    function addTotalAllocShares(uint256 shares) internal virtual {
         _totalAllocShares = _totalAllocShares.add(shares);
     }
 
-    function setTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
+    function addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
         _totalAllocShares = _totalAllocShares.sub(oldShares).add(newShares);
     }
 
