@@ -5,6 +5,7 @@ const { mineBlocks, BN, closeEnough } = require("./utils");
 
 describe("Staking Contract", function () {
   let stakingChef;
+  let stakingChefTotalSupply;
   let metric;
 
   let staker1;
@@ -25,6 +26,7 @@ describe("Staking Contract", function () {
     // send METRIC to the stakingChef
     const metricTokenConnectedToVestingContract = await metric.connect(vestingContract);
     const totalSupply = await metric.totalSupply();
+    stakingChefTotalSupply = BN(totalSupply).div(10);
     await metricTokenConnectedToVestingContract.transfer(stakingChef.address, BN(totalSupply).div(10));
 
     // send METRIC to stakers
@@ -42,9 +44,9 @@ describe("Staking Contract", function () {
   });
 
   describe("Deployment", function () {
-    xit("Should set the right owner", async function () {
+    it("Should set the right owner", async function () {
       const ownerBalance = await metric.balanceOf(stakingChef.address);
-      expect(BN(1000000000000).div(10)).to.equal(ownerBalance);
+      expect(BN(ownerBalance)).to.equal(stakingChefTotalSupply);
     });
   });
 
@@ -113,28 +115,27 @@ describe("Staking Contract", function () {
   });
 
   describe("Pending Rewards", function () {
-    xit("Should track pending rewards", async function () {
-      await stakingChef.toggleRewards(true);
+    it("Should track pending rewards", async function () {
       // add a stake group
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
-
+      
+      await stakingChef.toggleRewards(true);
       // new stake should have 0 metric
-      let pending = await stakingChef.viewPendingClaims(0);
+      let pending = await stakingChef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
 
       // update distributions (requires mining 1 block)
       await stakingChef.updateAccumulatedStakingRewards();
-      await mineBlocks(5);
-      console.log(pending);
+
       // should have 1 pending stake
       const metricPerBlock = await stakingChef.getMetricPerBlock();
+
       pending = await stakingChef.viewPendingHarvest(0);
-      console.log(pending);
-      // expect(metricPerBlock).to.equal(pending);
+
+      expect(metricPerBlock).to.equal(pending);
 
       // update distributions (requires mining 1 block)
       await stakingChef.updateAccumulatedStakingRewards();
-      console.log(pending);
       // should have 2 pending allocations
 
       pending = await stakingChef.viewPendingHarvest(0);
