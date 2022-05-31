@@ -25,7 +25,9 @@ abstract contract Chef is Ownable {
     bool private _rewardsActive;
     uint256 private _lastRewardBlock;
     uint256 private _lifetimeShareValue;
-    uint256 private _totalAllocShares; 
+    uint256 private _totalAllocShares;
+
+    MetricToken private metric; 
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner() {
@@ -41,8 +43,8 @@ abstract contract Chef is Ownable {
         _lastRewardBlock = blockNumber;
     }
 
-    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() returns (MetricToken) {
-        return MetricToken(metricTokenAddress);
+    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() {
+        metric = MetricToken(metricTokenAddress);
     }
 
     function setLifetimeShareValue() public virtual {
@@ -96,6 +98,10 @@ abstract contract Chef is Ownable {
 
     function accumulatedMetricDividedByShares(uint256 accumulatedWithPrecision) public view returns (uint256) {
         return accumulatedWithPrecision.div(getTotalAllocationShares());
+    }
+
+    function getMetricToken() internal view returns (MetricToken) {
+        return metric;
     }
 
     //------------------------------------------------------Support Functions

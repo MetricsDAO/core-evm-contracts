@@ -8,10 +8,9 @@ import "./Chef.sol";
 contract TopChef is Chef {
     using SafeMath for uint256;
     AllocationGroup[] private _allocations;
-    MetricToken public metric;
 
     constructor(address metricTokenAddress) {
-        metric = setMetricToken(metricTokenAddress);
+        setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
         toggleRewards(false); // locking contract initially
     }
@@ -121,7 +120,7 @@ contract TopChef is Chef {
         group.rewardDebt = claimable;
         if (claimable != 0) {
             if (group.autodistribute) {
-                SafeERC20.safeTransfer(IERC20(metric), group.groupAddress, claimable);
+                SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
                 group.claimable = 0;
             } else {
                 group.claimable = group.claimable.add(claimable);
@@ -137,7 +136,7 @@ contract TopChef is Chef {
         require(group.claimable != 0, "No claimable rewards to withdraw");
         // TODO do we want a backup in case a group looses access to their wallet
         require(group.groupAddress == _msgSender(), "Sender does not represent group");
-        SafeERC20.safeTransfer(IERC20(metric), group.groupAddress, group.claimable); 
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable); 
         group.claimable = 0;
         emit Withdraw(msg.sender, agIndex, group.claimable);
     }
