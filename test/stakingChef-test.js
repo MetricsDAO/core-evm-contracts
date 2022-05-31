@@ -124,7 +124,7 @@ describe("Staking Contract", function () {
 
       // update distributions (requires mining 1 block)
       await stakingChef.updateAccumulatedStakingRewards();
-
+    
       // should have 1 pending stake
       const metricPerBlock = await stakingChef.getMetricPerBlock();
       pending = await stakingChef.viewPendingHarvest(0);
@@ -137,22 +137,23 @@ describe("Staking Contract", function () {
       // should have 2 pending allocations
 
       pending = await stakingChef.viewPendingHarvest(0);
-      // expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
+      expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
     });
 
     it("Should track pending rewards with multiple stakes", async function () {
-      // add an allocation group
-      await stakingChef.stakeMetric(staker1.address, 1, 1);
-
-      // add a stake
-      await stakingChef.stakeMetric(staker2.address, 1, 1);
-
       await stakingChef.toggleRewards(true);
 
-      // new groups should have 0 metric
-      let pending = await stakingChef.viewPendingClaims(0);
+      // add a stake
+      await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
+      
+      // new stake should have 0 metric
+      let pending = await stakingChef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
-      pending = await stakingChef.viewPendingClaims(1);
+
+      // add an additional stake
+      await stakingChef.stakeMetric(staker2.address, BN(200).div(10), 1);
+
+      pending = await stakingChef.viewPendingHarvest(1);
       expect(0).to.equal(pending);
 
       await mineBlocks(2);
@@ -162,10 +163,10 @@ describe("Staking Contract", function () {
 
       // should have 3 pending allocation of 4 tokens each - and checking shares above we can get expected
 
-      pending = await stakingChef.viewPendingClaims(0);
-      expect(utils.parseEther("3")).to.equal(pending); // should be 3 would love to dynamically find this
-      pending = await stakingChef.viewPendingClaims(1);
-      expect(utils.parseEther("9")).to.equal(pending); // should be 9 would love to dynamically find this
+      pending = await stakingChef.viewPendingHarvest(0);
+      expect(utils.parseEther("14")).to.equal(pending); // should be 3 would love to dynamically find this
+      pending = await stakingChef.viewPendingHarvest(1);
+      expect(utils.parseEther("6")).to.equal(pending); // should be 9 would love to dynamically find this
     });
   });
 
@@ -200,17 +201,8 @@ describe("Staking Contract", function () {
       await stakingChef.connect(staker1).claim(0);
   
       let balance = await metric.balanceOf(staker1.address);
-      const withdrawlable = await stakingChef.viewPendingClaims(0);
-      const metricPerBlock = await stakingChef.getMetricPerBlock();
-
-      expect(BN(200).div(10)).to.equal(BN(balance).div(10));
-
-      expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
-
-      await stakingChef.connect(staker1).claim(0);
-
-      balance = await metric.balanceOf(staker1.address);
-      expect(balance).to.equal(withdrawlable);
+      const withdrawlable = await stakingChef.viewPendingHarvest(0);
+      expect(withdrawlable).to.equal(0);
     });
   });
 
@@ -240,6 +232,38 @@ describe("Staking Contract", function () {
       const balance2 = await metric.balanceOf(staker2.address);
       const value2 = closeEnough(balance2, utils.parseEther("4"))
       expect(value2);
+    });
+  });
+
+  describe("Stake Additional Metric", function () {
+    it("Should add metric to stake", async function () {
+      await stakingChef.toggleRewards(true);
+
+      //stake Metric
+      await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
+
+      //stake Additional Metric
+      await stakingChef.stakeAdditionalMetric(staker1.address, 0, BN(200).div(10), 1)
+
+      const stakes = await stakingChef.getStakes();
+      const metricStaked = stakes[0].metricAmount;
+      const userMetricStaked = BN(400).div(10);
+      expect(userMetricStaked).to.equal(metricStaked);
+    });
+  });
+
+  describe("Withdraw Principal Metric", function () {
+    it("Should withdraw initial Metric", async function () {
+      await stakingChef.toggleRewards(true);
+
+      //stake Metric
+      await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
+
+      await stakingChef.withdrawPrincipal(0);
+      const stakes = await stakingChef.getStakes();
+      const principalMetric = stakes[0].metricAmount;
+
+      expect(0).to.equal(principalMetric);
     });
   });
 });
