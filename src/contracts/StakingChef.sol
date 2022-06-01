@@ -137,4 +137,8 @@ contract StakingChef is Chef {
         uint256 claimable;
         uint256 startDate;
     }
+
+    // --------------------------------------------------------------------- Overloads
+    event Harvest(address harvester, StakingChef.Staker, uint256 amount);
+    event Withdraw(address withdrawer, StakingChef.Staker, uint256 amount);
 }
