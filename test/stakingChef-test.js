@@ -224,7 +224,7 @@ describe("Staking Contract", function () {
       expect(value1);
 
       const balance2 = await metric.balanceOf(staker2.address);
-      const value2 = closeEnough(balance2, utils.parseEther("4"))
+      const value2 = closeEnough(balance2, utils.parseEther("4"));
       expect(value2);
     });
   });
@@ -237,7 +237,7 @@ describe("Staking Contract", function () {
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
 
       // stake Additional Metric
-      await stakingChef.stakeAdditionalMetric(staker1.address, 0, BN(200).div(10), 1)
+      await stakingChef.stakeAdditionalMetric(staker1.address, 0, BN(200).div(10), 1);
 
       const stakes = await stakingChef.getStakes();
       const metricStaked = stakes[0].metricAmount;
