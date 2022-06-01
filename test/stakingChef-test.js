@@ -33,12 +33,11 @@ describe("Staking Contract", function () {
     await metricTokenConnectedToVestingContract.transfer(staker1.address, BN(2000).div(10));
     await metricTokenConnectedToVestingContract.transfer(staker2.address, BN(2000).div(10));
 
-    //approve Metric Transfers
+    // approve Metric Transfers
     const staker1Balance = await metric.balanceOf(staker1.address);
     const staker2Balance = await metric.balanceOf(staker2.address);
     await metric.connect(staker1).approve(stakingChef.address, staker1Balance);
     await metric.connect(staker2).approve(stakingChef.address, staker2Balance);
-   
   });
 
   describe("Deployment", function () {
@@ -51,20 +50,19 @@ describe("Staking Contract", function () {
   describe("Staking", function () {
     it("Should add and track added Stakes", async function () {
       await stakingChef.toggleRewards(true);
-           
       // Everything should start empty
       let stakes = await stakingChef.getStakes();
       expect(0).to.equal(stakes.length);
-      let alloc = await stakingChef.getTotalAllocationPoints();
+      let alloc = await stakingChef.getTotalAllocationShares();
       expect(0).to.equal(alloc);
 
-      //stake Metric
+      // stake Metric
       await stakingChef.stakeMetric(staker1.address, 20, 1);
 
       // check that it was added
       stakes = await stakingChef.getStakes();
       expect(1).to.equal(stakes.length);
-      alloc = await stakingChef.getTotalAllocationPoints();
+      alloc = await stakingChef.getTotalAllocationShares();
       expect(20).to.equal(alloc);
 
       // add our second stake
@@ -73,7 +71,7 @@ describe("Staking Contract", function () {
       // check that it was added
       stakes = await stakingChef.getStakes();
       expect(2).to.equal(stakes.length);
-      alloc = await stakingChef.getTotalAllocationPoints();
+      alloc = await stakingChef.getTotalAllocationShares();
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
@@ -85,12 +83,12 @@ describe("Staking Contract", function () {
       await stakingChef.stakeMetric(staker1.address, 20, 1);
 
       // check that they were added
-      let alloc = await stakingChef.getTotalAllocationPoints();
+      let alloc = await stakingChef.getTotalAllocationShares();
       expect(20).to.equal(alloc);
 
       // edit the first one
       await stakingChef.updateStaker(staker1.address, 0, BN(600).div(10));
-      alloc = await stakingChef.getTotalAllocationPoints();
+      alloc = await stakingChef.getTotalAllocationShares();
       expect(60).to.equal(alloc);
     });
 
@@ -103,7 +101,7 @@ describe("Staking Contract", function () {
 
       // remove the first one
       await stakingChef.removeStaker(0);
-      const alloc = await stakingChef.getTotalAllocationPoints();
+      const alloc = await stakingChef.getTotalAllocationShares();
       expect(30).to.equal(alloc);
 
       // ensure the second added one is now the first one in the array
@@ -116,7 +114,6 @@ describe("Staking Contract", function () {
     it("Should track pending rewards", async function () {
       // add a stake group
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
-      
       await stakingChef.toggleRewards(true);
       // new stake should have 0 metric
       let pending = await stakingChef.viewPendingHarvest(0);
@@ -145,7 +142,6 @@ describe("Staking Contract", function () {
 
       // add a stake
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
-      
       // new stake should have 0 metric
       let pending = await stakingChef.viewPendingHarvest(0);
       expect(0).to.equal(pending);
@@ -199,8 +195,6 @@ describe("Staking Contract", function () {
       await stakingChef.updateAccumulatedStakingRewards();
 
       await stakingChef.connect(staker1).claim(0);
-  
-      let balance = await metric.balanceOf(staker1.address);
       const withdrawlable = await stakingChef.viewPendingHarvest(0);
       expect(withdrawlable).to.equal(0);
     });
@@ -239,10 +233,10 @@ describe("Staking Contract", function () {
     it("Should add metric to stake", async function () {
       await stakingChef.toggleRewards(true);
 
-      //stake Metric
+      // stake Metric
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
 
-      //stake Additional Metric
+      // stake Additional Metric
       await stakingChef.stakeAdditionalMetric(staker1.address, 0, BN(200).div(10), 1)
 
       const stakes = await stakingChef.getStakes();
@@ -250,27 +244,26 @@ describe("Staking Contract", function () {
       const userMetricStaked = BN(400).div(10);
       expect(userMetricStaked).to.equal(metricStaked);
     });
-
   });
 
   describe("Withdraw Principal Metric", function () {
     it("Should withdraw initial Metric", async function () {
       await stakingChef.toggleRewards(true);
 
-      //stake Metric
+      // stake Metric
       await stakingChef.stakeMetric(staker1.address, BN(200).div(10), 1);
 
-      //check Metric Principal before withdraw
+      // check Metric Principal before withdraw
       let stakes = await stakingChef.getStakes();
       let principalMetric = stakes[0].metricAmount;
       expect(BN(200).div(10)).to.equal(principalMetric);
 
-      //withdraw Metric
+      // withdraw Metric
       await stakingChef.withdrawPrincipal(0);
       stakes = await stakingChef.getStakes();
       principalMetric = stakes[0].metricAmount;
 
-      //check Metric principal has been withdrawn
+      // check Metric principal has been withdrawn
       expect(0).to.equal(principalMetric);
     });
   });
