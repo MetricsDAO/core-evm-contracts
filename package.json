@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "setup": "npm i && forge install && forge build && forge test",
-    "test:contracts": "forge test"
+    "setup": "npm i && forge install && forge build && forge test -vv",
+    "test:contracts": "forge test -vv"
   },
   "repository": {
     "type": "git",
@@ -45,6 +45,7 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.6.1",
     "hardhat": "^2.9.1",
+    "hardhat-api-builder": "0.0.5",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.6.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19",

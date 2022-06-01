@@ -5,11 +5,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IClaimController.sol";
 
 contract ClaimController is Ownable, IClaimController {
-    mapping(uint256 => uint256) private _claimLimit;
+    mapping(uint256 => uint256) public claimLimits;
     mapping(uint256 => Claim[]) private _claims;
 
     function initializeQuestion(uint256 questionId, uint256 claimLimit) public onlyOwner {
-        _claimLimit[questionId] = claimLimit;
+        claimLimits[questionId] = claimLimit;
+    }
+
+    //------------------------------------------------------ View Functions
+
+    function getClaims(uint256 questionId) public view returns (Claim[] memory claims) {
+        return _claims[questionId];
     }
 
     //------------------------------------------------------ Structs

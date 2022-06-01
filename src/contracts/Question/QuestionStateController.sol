@@ -1,15 +1,21 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.11;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
 
 contract QuestionStateController is IQuestionStateController, Ownable {
     mapping(uint256 => Vote[]) private _votes;
-    mapping(uint256 => STATE) private _state;
+    mapping(uint256 => STATE) public state;
 
     function initializeQuestion(uint256 questionId) public onlyOwner {
-        _state[questionId] = STATE.DRAFT;
+        state[questionId] = STATE.DRAFT;
+    }
+
+    //------------------------------------------------------ View Functions
+
+    function getVotes(uint256 questionId) public view returns (Vote[] memory votes) {
+        return _votes[questionId];
     }
 
     //------------------------------------------------------ Structs
@@ -20,7 +26,7 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         uint256 _weightedVote;
     }
 
-    //UNINIT is the default state, and must be first in the enum set.
+    //UNINIT is the default state, and must be first in the enum set
     enum STATE {
         UNINIT,
         DRAFT,
