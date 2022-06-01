@@ -21,15 +21,15 @@ contract QuestionFactory is Ownable {
         _claimController = IClaimController(claimController);
     }
 
-    function createQuestion(string memory uri, uint256 claimLimit) public payable {
+    function createQuestion(string memory uri, uint256 claimLimit) public {
         uint256 newTokenId = _question.safeMint(_msgSender(), uri);
         _questionStateController.initializeQuestion(newTokenId);
         _claimController.initializeQuestion(newTokenId, claimLimit);
     }
 
-    function upvoteQuestion() public payable {}
+    function upvoteQuestion() public {}
 
-    function claimQuestion() public payable {}
+    function claimQuestion() public {}
 
     function setQuestionProxy(address newQuestion) public onlyOwner {
         _question = BountyQuestion(newQuestion);
