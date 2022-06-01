@@ -52,7 +52,7 @@ contract StakingChef is Chef {
     }
 
     function removeStaker(uint256 stakeIndex) external {
-        require(stakeIndex < _stakes.length);
+        require(stakeIndex < _stakes.length, "Index more than stakes length");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
@@ -90,7 +90,7 @@ contract StakingChef is Chef {
         if (block.number <= getLastRewardBlock()) {
             return;
         }
-        
+
         setLifetimeShareValue();
         setLastRewardBlock(block.number);
     }
