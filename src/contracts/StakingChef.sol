@@ -9,80 +9,62 @@ contract StakingChef is Chef {
     using SafeMath for uint256;
     Staker[] private _stakes;
 
-    //mapping(address => mapping(address => userStakes)) public userStakes;
+    mapping(address => Staker) public staker;
 
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
         toggleRewards(false);
     }
-// --------------------------------------------------------------------- staking functions
-    function stakeMetric(
-        address newAddress,
-        uint256 metricAmount,
-        uint256 newStartDate
-    ) external nonDuplicated(newAddress) {
-    if (areRewardsActive() && getTotalAllocationShares() > 0) {
+
+    // --------------------------------------------------------------------- staking functions
+    function stakeMetric(uint256 metricAmount, uint256 newStartDate) external nonDuplicated(msg.sender) {
+        if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        Staker memory stake = Staker({
-            stakeAddress: newAddress,
-            metricAmount: metricAmount, 
+        staker[msg.sender] = Staker({
+            stakeAddress: msg.sender,
+            metricAmount: metricAmount,
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
 
-        _stakes.push(stake);
-        addTotalAllocShares(stake.metricAmount);
-        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.metricAmount); 
+        addTotalAllocShares(staker[msg.sender].metricAmount);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].metricAmount);
     }
 
-    function updateStaker(
-        address stakeAddress,
-        uint256 stakeIndex,
-        uint256 metricAmount 
-    ) public {
+    function updateStaker(uint256 metricAmount) public {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        addTotalAllocShares(_stakes[stakeIndex].metricAmount, metricAmount);
-        _stakes[stakeIndex].stakeAddress = stakeAddress;
-        _stakes[stakeIndex].metricAmount = metricAmount;
+        addTotalAllocShares(staker[msg.sender].metricAmount, metricAmount);
+        staker[msg.sender].metricAmount = metricAmount;
     }
 
-    function removeStaker(uint256 stakeIndex) external {
-        require(stakeIndex < _stakes.length, "Index more than stakes length");
+    function removeStaker() external {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        removeAllocShares(_stakes[stakeIndex].metricAmount);
-
-        _stakes[stakeIndex] = _stakes[_stakes.length - 1];
-        _stakes.pop();
+        removeAllocShares(staker[msg.sender].metricAmount);
+        //Do we need to do anything else here to prevent removed staker from getting rewards?
     }
 
-    function stakeAdditionalMetric(
-        address stakeAddress,
-        uint256 stakeIndex,
-        uint256 metricAmount,
-        uint256 newStartDate
-    ) public {
-        harvest(stakeIndex);
-        uint256 principalMetric = _stakes[stakeIndex].metricAmount;
+    function stakeAdditionalMetric(uint256 metricAmount, uint256 newStartDate) public {
+        harvest();
+        uint256 principalMetric = staker[msg.sender].metricAmount;
         uint256 totalMetricStaked = metricAmount + principalMetric;
 
         Staker memory stake = Staker({
-            stakeAddress: stakeAddress,
+            stakeAddress: msg.sender,
             metricAmount: totalMetricStaked,
             startDate: newStartDate,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
-            });
+        });
 
-            _stakes[stakeIndex] = stake;
-            addTotalAllocShares(stake.metricAmount);
-            SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.metricAmount);
+        addTotalAllocShares(stake.metricAmount);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].metricAmount);
     }
 
     function updateAccumulatedStakingRewards() public {
@@ -95,66 +77,59 @@ contract StakingChef is Chef {
         setLastRewardBlock(block.number);
     }
 
-// --------------------------------------------------------------------- Manage rewards and Principal
+    // --------------------------------------------------------------------- Manage rewards and Principal
 
-    function claim(uint256 stakeIndex) public {
-        Staker storage stake = _stakes[stakeIndex];
-        harvest(stakeIndex);
+    function claim() public {
+        harvest();
 
-        require(stake.claimable != 0, "No claimable rewards to withdraw");
-        require(stake.stakeAddress == _msgSender(), "Sender can not claim");
+        require(staker[msg.sender].claimable != 0, "No claimable rewards to withdraw");
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
-        stake.claimable = 0;
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, staker[msg.sender].claimable);
+        staker[msg.sender].claimable = 0;
 
-        emit Withdraw(msg.sender, stakeIndex, stake.claimable);
+        emit Withdraw(msg.sender, staker[msg.sender], staker[msg.sender].claimable);
     }
 
-    function withdrawPrincipal(uint256 stakeIndex) public {
-        Staker storage stake = _stakes[stakeIndex];
+    function withdrawPrincipal() public {
+        require(staker[msg.sender].metricAmount != 0, "No Metric to withdraw");
 
-        require(stake.metricAmount != 0, "No Metric to withdraw");
-        require(stake.stakeAddress == _msgSender(), "Sender can not withdraw");
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, staker[msg.sender].metricAmount);
+        staker[msg.sender].metricAmount = 0;
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.metricAmount);
-        stake.metricAmount = 0;
-
-        emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
+        emit Withdraw(msg.sender, staker[msg.sender], staker[msg.sender].metricAmount);
     }
 
-    function harvest(uint256 stakeIndex) internal {
-        Staker storage stake = _stakes[stakeIndex];
-
+    function harvest() internal {
         updateAccumulatedStakingRewards();
 
-        uint256 claimable = stake.metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
+        uint256 claimable = staker[msg.sender].metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(staker[msg.sender].rewardDebt);
 
-        stake.rewardDebt = claimable;
-        stake.claimable = stake.claimable.add(claimable);
-        emit Harvest(msg.sender, stakeIndex, claimable);
+        staker[msg.sender].rewardDebt = claimable;
+        staker[msg.sender].claimable = staker[msg.sender].claimable.add(claimable);
+        emit Harvest(msg.sender, staker[msg.sender], claimable);
     }
 
-//------------------------------------------------------Getters
+    //------------------------------------------------------Getters
 
     function getStakes() public view returns (Staker[] memory) {
         return _stakes;
     }
 
-//------------------------------------------------------Distribution
+    //------------------------------------------------------Distribution
 
-    function viewPendingHarvest(uint256 stakeIndex) public view returns (uint256) {
-        Staker storage stake = _stakes[stakeIndex];
+    function viewPendingHarvest() public view returns (uint256) {
+        Staker storage stake = staker[msg.sender];
 
         return stake.metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
     }
 
-    function viewPendingClaims(uint256 stakeIndex) public view returns (uint256) {
-        Staker storage stake = _stakes[stakeIndex];
+    function viewPendingClaims() public view returns (uint256) {
+        Staker storage stake = staker[msg.sender];
 
         return stake.claimable;
     }
 
-// --------------------------------------------------------------------- Structs
+    // --------------------------------------------------------------------- Structs
     struct Staker {
         address stakeAddress;
         uint256 metricAmount;
@@ -163,5 +138,3 @@ contract StakingChef is Chef {
         uint256 startDate;
     }
 }
-
-
