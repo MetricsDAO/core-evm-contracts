@@ -8,18 +8,13 @@ import "./Chef.sol";
 contract StakingChef is Chef {
     using SafeMath for uint256;
     Staker[] private _stakes;
-    uint256 private _totalAllocPoint;
-    uint256 private _lifetimeShareValue;
-    uint256 public UserStake;
-    MetricToken public metric;
 
     //mapping(address => mapping(address => userStakes)) public userStakes;
 
     constructor(address metricTokenAddress) {
-        metric = setMetricToken(metricTokenAddress);
+        setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
         toggleRewards(false);
-
     }
 // --------------------------------------------------------------------- staking functions
     function stakeMetric(
@@ -27,20 +22,20 @@ contract StakingChef is Chef {
         uint256 metricAmount,
         uint256 newStartDate
     ) external nonDuplicated(newAddress) {
-    if (areRewardsActive() && _totalAllocPoint > 0) {
+    if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
         Staker memory stake = Staker({
             stakeAddress: newAddress,
             metricAmount: metricAmount, 
             startDate: newStartDate,
-            rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
+            rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
 
         _stakes.push(stake);
-        _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
-        SafeERC20.safeTransferFrom(IERC20(metric), msg.sender, address(this), stake.metricAmount); 
+        addTotalAllocShares(stake.metricAmount);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.metricAmount); 
     }
 
     function updateStaker(
@@ -48,20 +43,20 @@ contract StakingChef is Chef {
         uint256 stakeIndex,
         uint256 metricAmount 
     ) public {
-        if (areRewardsActive() && _totalAllocPoint > 0) {
+        if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].metricAmount).add(metricAmount);
+        addTotalAllocShares(_stakes[stakeIndex].metricAmount, metricAmount);
         _stakes[stakeIndex].stakeAddress = stakeAddress;
         _stakes[stakeIndex].metricAmount = metricAmount;
     }
 
     function removeStaker(uint256 stakeIndex) external {
-        require(stakeIndex < _stakes.length);
-        if (areRewardsActive() && _totalAllocPoint > 0) {
+        require(stakeIndex < _stakes.length, "Index more than stakes length");
+        if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        _totalAllocPoint = _totalAllocPoint.sub(_stakes[stakeIndex].metricAmount);
+        removeAllocShares(_stakes[stakeIndex].metricAmount);
 
         _stakes[stakeIndex] = _stakes[_stakes.length - 1];
         _stakes.pop();
@@ -81,13 +76,13 @@ contract StakingChef is Chef {
             stakeAddress: stakeAddress,
             metricAmount: totalMetricStaked,
             startDate: newStartDate,
-            rewardDebt: metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION),
+            rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
             });
 
             _stakes[stakeIndex] = stake;
-            _totalAllocPoint = _totalAllocPoint.add(stake.metricAmount);
-             SafeERC20.safeTransferFrom(IERC20(metric), msg.sender, address(this), stake.metricAmount);
+            addTotalAllocShares(stake.metricAmount);
+            SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.metricAmount);
     }
 
     function updateAccumulatedStakingRewards() public {
@@ -96,11 +91,7 @@ contract StakingChef is Chef {
             return;
         }
 
-        uint256 blocks = block.number.sub(getLastRewardBlock());
-
-        uint256 accumulated = blocks.mul(getMetricPerBlock());
-
-        _lifetimeShareValue = _lifetimeShareValue.add(accumulated.mul(ACC_METRIC_PRECISION).div(_totalAllocPoint));
+        setLifetimeShareValue();
         setLastRewardBlock(block.number);
     }
 
@@ -113,7 +104,7 @@ contract StakingChef is Chef {
         require(stake.claimable != 0, "No claimable rewards to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not claim");
 
-        SafeERC20.safeTransfer(IERC20(metric), msg.sender, stake.claimable);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
         stake.claimable = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.claimable);
@@ -125,7 +116,7 @@ contract StakingChef is Chef {
         require(stake.metricAmount != 0, "No Metric to withdraw");
         require(stake.stakeAddress == _msgSender(), "Sender can not withdraw");
 
-         SafeERC20.safeTransfer(IERC20(metric), msg.sender, stake.metricAmount);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.metricAmount);
         stake.metricAmount = 0;
 
         emit Withdraw(msg.sender, stakeIndex, stake.metricAmount);
@@ -136,7 +127,7 @@ contract StakingChef is Chef {
 
         updateAccumulatedStakingRewards();
 
-        uint256 claimable = stake.metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
+        uint256 claimable = stake.metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
 
         stake.rewardDebt = claimable;
         stake.claimable = stake.claimable.add(claimable);
@@ -149,20 +140,12 @@ contract StakingChef is Chef {
         return _stakes;
     }
 
-    function getTotalAllocationPoints() public view returns (uint256) {
-        return _totalAllocPoint;
-    }
-
-    function getLifetimeShareValue () public view returns (uint256) {
-        return _lifetimeShareValue;
-    }
-
 //------------------------------------------------------Distribution
 
     function viewPendingHarvest(uint256 stakeIndex) public view returns (uint256) {
         Staker storage stake = _stakes[stakeIndex];
 
-        return stake.metricAmount.mul(_lifetimeShareValue).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
+        return stake.metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
     }
 
     function viewPendingClaims(uint256 stakeIndex) public view returns (uint256) {

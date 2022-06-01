@@ -41,7 +41,7 @@ describe("Allocator Contract", function () {
       // Everything should start empty
       let groups = await topChef.getAllocationGroups();
       expect(0).to.equal(groups.length);
-      let alloc = await topChef.getTotalAllocationPoints();
+      let alloc = await topChef.getTotalAllocationShares();
       expect(0).to.equal(alloc);
 
       // add our first allocation group
@@ -50,7 +50,7 @@ describe("Allocator Contract", function () {
       // check that it was added
       groups = await topChef.getAllocationGroups();
       expect(1).to.equal(groups.length);
-      alloc = await topChef.getTotalAllocationPoints();
+      alloc = await topChef.getTotalAllocationShares();
       expect(20).to.equal(alloc);
 
       // add our second allocation group
@@ -59,7 +59,7 @@ describe("Allocator Contract", function () {
       // check that it was added
       groups = await topChef.getAllocationGroups();
       expect(2).to.equal(groups.length);
-      alloc = await topChef.getTotalAllocationPoints();
+      alloc = await topChef.getTotalAllocationShares();
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
@@ -73,12 +73,12 @@ describe("Allocator Contract", function () {
       await topChef.addAllocationGroup(allocationGroup2.address, 30, true);
 
       // check that they were added
-      let alloc = await topChef.getTotalAllocationPoints();
+      let alloc = await topChef.getTotalAllocationShares();
       expect(50).to.equal(alloc);
 
       // edit the first one
       await topChef.updateAllocationGroup(allocationGroup1.address, 0, 30, true);
-      alloc = await topChef.getTotalAllocationPoints();
+      alloc = await topChef.getTotalAllocationShares();
       expect(60).to.equal(alloc);
     });
 
@@ -90,7 +90,7 @@ describe("Allocator Contract", function () {
 
       // remove the first one
       await topChef.removeAllocationGroup(0);
-      const alloc = await topChef.getTotalAllocationPoints();
+      const alloc = await topChef.getTotalAllocationShares();
       expect(30).to.equal(alloc);
 
       // ensure the second added one is now the first one in the array
@@ -236,6 +236,18 @@ describe("Allocator Contract", function () {
       const claimable = await topChef.viewPendingClaims(0);
 
       expect(BN(claimable)).to.equal(0);
+    });
+
+    it("will over time update single allocation group with lots of metric", async function () {
+      await topChef.toggleRewards(true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 40, true);
+      await mineBlocks(1000);
+
+      await topChef.harvest(0);
+
+      const balance1 = await metric.balanceOf(allocationGroup1.address);
+
+      expect(balance1).to.equal(utils.parseEther("4008"));
     });
   });
   describe("Maintain AGs over time ", function () {
