@@ -5,9 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @custom:security-contact contracts@metricsdao.com
 contract MetricToken is ERC20 {
-
     constructor(address _vestingContractAddress) ERC20("METRIC", "METRIC") {
         _mint(_vestingContractAddress, 1000000000 * 10**decimals());
-        //TODO don't mint to _msgSender, mint to vesting contract
     }
 }
