@@ -55,7 +55,7 @@ contract StakingChef is Chef {
         uint256 principalMetric = staker[msg.sender].metricAmount;
         uint256 totalMetricStaked = metricAmount + principalMetric;
 
-        Staker memory stake = Staker({
+        staker[msg.sender] = Staker({
             stakeAddress: msg.sender,
             metricAmount: totalMetricStaked,
             startDate: newStartDate,
@@ -63,7 +63,7 @@ contract StakingChef is Chef {
             claimable: 0
         });
 
-        addTotalAllocShares(stake.metricAmount);
+        addTotalAllocShares(staker[msg.sender].metricAmount);
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].metricAmount);
     }
 
@@ -111,9 +111,10 @@ contract StakingChef is Chef {
 
     //------------------------------------------------------Getters
 
-    function getStakes() public view returns (Staker[] memory) {
-        return _stakes;
-    }
+    // TODO figure out how to view stakes now that the stake array has been removed
+    // function getStakes() public view returns (Staker[] memory) {
+    //     return _stakes;
+    // }
 
     //------------------------------------------------------Distribution
 
