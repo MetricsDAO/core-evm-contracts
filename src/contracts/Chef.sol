@@ -14,8 +14,8 @@ import "./MetricToken.sol";
 
 // TODO WE ADD THESE TO MAIN CHEF or should each contract have it's own
 // TODO we make below more loosely coupled
-// TODO viewPendingHarvest  
-// TODO viewPendingClaims 
+// TODO viewPendingHarvest
+// TODO viewPendingClaims
 
 abstract contract Chef is Ownable {
     using SafeMath for uint256;
@@ -27,15 +27,18 @@ abstract contract Chef is Ownable {
     uint256 private _lifetimeShareValue;
     uint256 private _totalAllocShares;
 
-    MetricToken private metric; 
+    MetricToken private metric;
+
+    mapping(address => RewardsEarner) public rewardsEarner;
+
     //------------------------------------------------------Setters
 
-    function toggleRewards(bool isOn) public onlyOwner() {
+    function toggleRewards(bool isOn) public onlyOwner {
         _rewardsActive = isOn;
         setLastRewardBlock(block.number);
     }
 
-    function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner() {
+    function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
         _metricPerBlock = metricAmount * 10**18;
     }
 
@@ -43,7 +46,7 @@ abstract contract Chef is Ownable {
         _lastRewardBlock = blockNumber;
     }
 
-    function setMetricToken(address metricTokenAddress) public virtual onlyOwner() {
+    function setMetricToken(address metricTokenAddress) public virtual onlyOwner {
         metric = MetricToken(metricTokenAddress);
     }
 
@@ -67,11 +70,11 @@ abstract contract Chef is Ownable {
 
     //------------------------------------------------------Getters
 
-    function getMetricPerBlock() public view virtual returns(uint256) {
+    function getMetricPerBlock() public view virtual returns (uint256) {
         return _metricPerBlock;
     }
 
-    function getLastRewardBlock() public view virtual returns(uint256) {
+    function getLastRewardBlock() public view virtual returns (uint256) {
         return _lastRewardBlock;
     }
 
@@ -84,7 +87,7 @@ abstract contract Chef is Ownable {
         return blocksSince.mul(getMetricPerBlock());
     }
 
-    function getAcculatedWithmetricPrecision(uint accumulated) internal view virtual returns (uint) {
+    function getAcculatedWithmetricPrecision(uint256 accumulated) internal view virtual returns (uint256) {
         return accumulated.mul(ACC_METRIC_PRECISION);
     }
 
@@ -116,4 +119,14 @@ abstract contract Chef is Ownable {
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
 
+    //------------------------------------------------------Structs
+
+    struct RewardsEarner {
+        address userAddress;
+        uint256 shares;
+        uint256 rewardDebt;
+        uint256 claimable;
+        uint256 startDate;
+        bool autodistribute;
+    }
 }
