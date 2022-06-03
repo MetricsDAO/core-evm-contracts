@@ -7,7 +7,6 @@ import "./Chef.sol";
 
 contract StakingChef is Chef {
     using SafeMath for uint256;
-    Staker[] private _stakes;
 
     mapping(address => Staker) public staker;
 
@@ -51,8 +50,9 @@ contract StakingChef is Chef {
     }
 
     function stakeAdditionalMetric(uint256 metricAmount, uint256 newStartDate) public {
+        Staker storage stake = staker[msg.sender];
         harvest();
-        uint256 principalMetric = staker[msg.sender].metricAmount;
+        uint256 principalMetric = stake.metricAmount;
         uint256 totalMetricStaked = metricAmount + principalMetric;
 
         staker[msg.sender] = Staker({
@@ -63,8 +63,8 @@ contract StakingChef is Chef {
             claimable: 0
         });
 
-        addTotalAllocShares(staker[msg.sender].metricAmount);
-        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].metricAmount);
+        addTotalAllocShares(stake.metricAmount);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.metricAmount);
     }
 
     function updateAccumulatedStakingRewards() public {
@@ -80,33 +80,36 @@ contract StakingChef is Chef {
     // --------------------------------------------------------------------- Manage rewards and Principal
 
     function claim() public {
+        Staker storage stake = staker[msg.sender];
         harvest();
 
-        require(staker[msg.sender].claimable != 0, "No claimable rewards to withdraw");
+        require(stake.claimable != 0, "No claimable rewards to withdraw");
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, staker[msg.sender].claimable);
-        staker[msg.sender].claimable = 0;
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
+        stake.claimable = 0;
 
-        emit Withdraw(msg.sender, staker[msg.sender], staker[msg.sender].claimable);
+        emit TransferPrincipal(msg.sender, stake, stake.claimable);
     }
 
     function withdrawPrincipal() public {
-        require(staker[msg.sender].metricAmount != 0, "No Metric to withdraw");
+        Staker storage stake = staker[msg.sender];
+        require(stake.metricAmount != 0, "No Metric to withdraw");
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, staker[msg.sender].metricAmount);
-        staker[msg.sender].metricAmount = 0;
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.metricAmount);
+        stake.metricAmount = 0;
 
-        emit Withdraw(msg.sender, staker[msg.sender], staker[msg.sender].metricAmount);
+        emit TransferPrincipal(msg.sender, stake, stake.metricAmount);
     }
 
     function harvest() internal {
+        Staker storage stake = staker[msg.sender];
         updateAccumulatedStakingRewards();
 
-        uint256 claimable = staker[msg.sender].metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(staker[msg.sender].rewardDebt);
+        uint256 claimable = stake.metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
 
-        staker[msg.sender].rewardDebt = claimable;
-        staker[msg.sender].claimable = staker[msg.sender].claimable.add(claimable);
-        emit Harvest(msg.sender, staker[msg.sender], claimable);
+        stake.rewardDebt = claimable;
+        stake.claimable = stake.claimable.add(claimable);
+        emit HarvestRewards(msg.sender, stake, claimable);
     }
 
     //------------------------------------------------------Getters
@@ -140,6 +143,6 @@ contract StakingChef is Chef {
     }
 
     // --------------------------------------------------------------------- Overloads
-    event Harvest(address harvester, StakingChef.Staker, uint256 amount);
-    event Withdraw(address withdrawer, StakingChef.Staker, uint256 amount);
+    event HarvestRewards(address harvester, StakingChef.Staker, uint256 amount);
+    event TransferPrincipal(address withdrawer, StakingChef.Staker, uint256 amount);
 }

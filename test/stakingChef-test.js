@@ -48,7 +48,7 @@ describe("Staking Contract", function () {
   });
 
   describe("Staking", function () {
-    xit("Should add and track added Stakes", async function () {
+    it("Should add and track added Stakes", async function () {
       await stakingChef.toggleRewards(true);
       // Everything should start empty
       let alloc = await stakingChef.getTotalAllocationShares();
@@ -58,15 +58,15 @@ describe("Staking Contract", function () {
       await stakingChef.connect(staker1).stakeMetric(BN(200).div(10), 1);
 
       // check that it was added
-      alloc = await stakingChef.getTotalAllocationShares();
+      alloc = await stakingChef.connect(staker1).getTotalAllocationShares();
       expect(20).to.equal(alloc);
 
       // add our second stake
       await stakingChef.connect(staker2).stakeMetric(BN(200).div(10), 1);
 
       // check that it was added
-      alloc = await stakingChef.getTotalAllocationShares();
-      expect(50).to.equal(alloc);
+      alloc = await stakingChef.connect(staker2).getTotalAllocationShares();
+      expect(40).to.equal(alloc);
 
       // re-adding the first one should fail
       await expect(stakingChef.stakeMetric(BN(200).div(10), 1)).to.be.revertedWith("nonDuplicated: duplicated");
