@@ -1,40 +1,43 @@
-// deploy/00_deploy_my_contract.js
-const hre = require("hardhat");
-
-module.exports = async ({ getNamedAccounts, deployments }) => {
+module.exports = async (hre) => {
+  const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-  console.log("deployer:", deployer);
+  const chainId = await getChainId();
+
+  console.log("HRE", hre.network.name);
+
   const metricToken = await deploy("MetricToken", {
     from: deployer,
     args: [deployer],
     log: true,
   });
 
-  const chef = await deploy("Chef", {
+  const topChef = await deploy("TopChef", {
     from: deployer,
     args: [metricToken.address],
     log: true,
   });
 
-  try {
-    await hre.run("verify:verify", {
-      address: metricToken.address,
-      constructorArguments: [deployer],
-      contract: "src/contracts/MetricToken.sol:MetricToken",
-    });
-  } catch (error) {
-    console.log("error:", error.message);
-  }
+  if (chainId !== 31337 && hre.network.name !== "localhost") {
+    try {
+      await hre.run("verify:verify", {
+        address: metricToken.address,
+        constructorArguments: [deployer],
+        contract: "src/contracts/MetricToken.sol:MetricToken",
+      });
+    } catch (error) {
+      console.log("error:", error.message);
+    }
 
-  try {
-    await hre.run("verify:verify", {
-      address: chef.address,
-      constructorArguments: [metricToken.address],
-      contract: "src/contracts/Chef.sol:Chef",
-    });
-  } catch (error) {
-    console.log("error:", error.message);
+    try {
+      await hre.run("verify:verify", {
+        address: topChef.address,
+        constructorArguments: [metricToken.address],
+        contract: "src/contracts/TopChef.sol:TopChef",
+      });
+    } catch (error) {
+      console.log("error:", error.message);
+    }
   }
 };
-module.exports.tags = ["MetricToken"];
+module.exports.tags = ["MetricToken", "TopChef"];
