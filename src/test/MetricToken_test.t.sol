@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity ^0.8.0;
 
 import "ds-test/test.sol";
 import "@contracts/MetricToken.sol";
+import "hardhat/console.sol";
 
 contract VestingContract {
     constructor() public payable {}
@@ -14,6 +15,7 @@ contract MetricTokenTest is DSTest {
 
     function setUp() public {
         _vestingContract = new VestingContract();
+        console.log("_vestingContract.address: %s ", address(_vestingContract));
         _metricToken = new MetricToken(address(_vestingContract));
     }
 

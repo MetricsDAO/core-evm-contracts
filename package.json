@@ -4,8 +4,8 @@
   "description": "Core EVM contracts for MetricsDao",
   "scripts": {
     "test": "mocha",
-    "setup": "npm i && forge install && forge build && forge test",
-    "test:contracts": "forge test"
+    "setup": "npm i && forge install && forge build && forge test -vv",
+    "test:contracts": "forge test -vv"
   },
   "files": [
     "deployments"
@@ -48,6 +48,7 @@
     "ethers": "^5.6.1",
     "hardhat": "^2.9.1",
     "hardhat-deploy": "^0.11.4",
+    "hardhat-api-builder": "0.0.5",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.6.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
