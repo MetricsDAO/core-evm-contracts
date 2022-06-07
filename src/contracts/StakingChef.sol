@@ -52,7 +52,7 @@ contract StakingChef is Chef {
         RewardsEarner storage stake = rewardsEarner[msg.sender];
         harvest();
         uint256 principalMetric = stake.shares;
-        uint256 totalMetricStaked = metricAmount + principalMetric;
+        uint256 totalMetricStaked = SafeMath.add(metricAmount, principalMetric);
 
         rewardsEarner[msg.sender] = RewardsEarner({
             userAddress: msg.sender,
@@ -133,7 +133,7 @@ contract StakingChef is Chef {
         return stake.claimable;
     }
 
-    // --------------------------------------------------------------------- Overloads
+    // --------------------------------------------------------------------- Events
     event HarvestRewards(address harvester, StakingChef.RewardsEarner, uint256 amount);
     event TransferPrincipal(address withdrawer, StakingChef.RewardsEarner, uint256 amount);
 }
