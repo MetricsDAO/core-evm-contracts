@@ -29,8 +29,6 @@ abstract contract Chef is Ownable {
 
     MetricToken private metric;
 
-    mapping(address => RewardsEarner) public rewardsEarner;
-
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner {
@@ -118,15 +116,4 @@ abstract contract Chef is Ownable {
 
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
-
-    //------------------------------------------------------Structs
-
-    struct RewardsEarner {
-        address userAddress;
-        uint256 shares;
-        uint256 rewardDebt;
-        uint256 claimable;
-        uint256 startDate;
-        bool autodistribute;
-    }
 }

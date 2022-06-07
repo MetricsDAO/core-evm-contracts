@@ -8,6 +8,8 @@ import "./Chef.sol";
 contract StakingChef is Chef {
     using SafeMath for uint256;
 
+    mapping(address => Staker) public staker;
+
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
@@ -19,38 +21,36 @@ contract StakingChef is Chef {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        rewardsEarner[msg.sender] = RewardsEarner({
+        staker[msg.sender] = Staker({
             userAddress: msg.sender,
             shares: metricAmount,
             startDate: block.timestamp,
-            autodistribute: false,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
 
-        addTotalAllocShares(rewardsEarner[msg.sender].shares);
-        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), rewardsEarner[msg.sender].shares);
+        addTotalAllocShares(staker[msg.sender].shares);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].shares);
     }
 
     function updateStaker(uint256 metricAmount) public {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        addTotalAllocShares(rewardsEarner[msg.sender].shares, metricAmount);
-        rewardsEarner[msg.sender].shares = metricAmount;
+        addTotalAllocShares(staker[msg.sender].shares, metricAmount);
+        staker[msg.sender].shares = metricAmount;
     }
 
     function stakeAdditionalMetric(uint256 metricAmount) public {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
         harvest();
         uint256 principalMetric = stake.shares;
         uint256 totalMetricStaked = SafeMath.add(metricAmount, principalMetric);
 
-        rewardsEarner[msg.sender] = RewardsEarner({
+        staker[msg.sender] = Staker({
             userAddress: msg.sender,
             shares: totalMetricStaked,
             startDate: block.timestamp,
-            autodistribute: false,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
         });
@@ -72,7 +72,7 @@ contract StakingChef is Chef {
     // --------------------------------------------------------------------- Manage rewards and Principal
 
     function claim() public {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
         harvest();
 
         require(stake.claimable != 0, "No claimable rewards to withdraw");
@@ -84,14 +84,14 @@ contract StakingChef is Chef {
     }
 
     function unStakeMetric() public {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
         require(stake.shares != 0, "No Metric to withdraw");
 
         if (areRewardsActive()) {
             updateAccumulatedStakingRewards();
         }
 
-        removeAllocShares(rewardsEarner[msg.sender].shares);
+        removeAllocShares(staker[msg.sender].shares);
 
         SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.shares);
         stake.shares = 0;
@@ -100,7 +100,7 @@ contract StakingChef is Chef {
     }
 
     function harvest() internal {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
         updateAccumulatedStakingRewards();
 
         uint256 claimable = stake.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
@@ -120,18 +120,27 @@ contract StakingChef is Chef {
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest() public view returns (uint256) {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
 
         return stake.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
     }
 
     function viewPendingClaims() public view returns (uint256) {
-        RewardsEarner storage stake = rewardsEarner[msg.sender];
+        Staker storage stake = staker[msg.sender];
 
         return stake.claimable;
     }
 
+    // --------------------------------------------------------------------- Structs
+    struct Staker {
+        address userAddress;
+        uint256 shares;
+        uint256 rewardDebt;
+        uint256 claimable;
+        uint256 startDate;
+    }
+
     // --------------------------------------------------------------------- Events
-    event HarvestRewards(address harvester, StakingChef.RewardsEarner, uint256 amount);
-    event TransferPrincipal(address withdrawer, StakingChef.RewardsEarner, uint256 amount);
+    event HarvestRewards(address harvester, StakingChef.Staker, uint256 amount);
+    event TransferPrincipal(address withdrawer, StakingChef.Staker, uint256 amount);
 }
