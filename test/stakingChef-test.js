@@ -85,19 +85,6 @@ describe("Staking Contract", function () {
       alloc = await stakingChef.getTotalAllocationShares();
       expect(60).to.equal(alloc);
     });
-
-    it("Should support deleting Stakes", async function () {
-      await stakingChef.toggleRewards(true);
-
-      // add two stakes
-      await stakingChef.connect(staker1).stakeMetric(BN(600).div(10));
-      await stakingChef.connect(staker2).stakeMetric(BN(300).div(10));
-
-      // remove the first one
-      await stakingChef.connect(staker1).removeStaker();
-      const alloc = await stakingChef.connect(staker1).getTotalAllocationShares();
-      expect(30).to.equal(alloc);
-    });
   });
 
   describe("Pending Rewards", function () {
@@ -234,7 +221,7 @@ describe("Staking Contract", function () {
     });
   });
 
-  describe("Withdraw Principal Metric", function () {
+  describe("Unstake Metric", function () {
     it("Should withdraw initial Metric", async function () {
       await stakingChef.toggleRewards(true);
 
@@ -246,7 +233,7 @@ describe("Staking Contract", function () {
       expect(BN(200).div(10)).to.equal(principalMetric[1]);
 
       // withdraw Metric
-      await stakingChef.withdrawPrincipal();
+      await stakingChef.unStakeMetric();
       principalMetric = await stakingChef.rewardsEarner(staker1.address);
       // check Metric principal has been withdrawn
       expect(0).to.equal(principalMetric[1]);

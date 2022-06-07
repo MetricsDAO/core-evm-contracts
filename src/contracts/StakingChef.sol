@@ -40,14 +40,6 @@ contract StakingChef is Chef {
         rewardsEarner[msg.sender].shares = metricAmount;
     }
 
-    function removeStaker() external {
-        if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            updateAccumulatedStakingRewards();
-        }
-        removeAllocShares(rewardsEarner[msg.sender].shares);
-        //Do we need to do anything else here to prevent removed staker from getting rewards?
-    }
-
     function stakeAdditionalMetric(uint256 metricAmount) public {
         RewardsEarner storage stake = rewardsEarner[msg.sender];
         harvest();
@@ -91,9 +83,15 @@ contract StakingChef is Chef {
         emit TransferPrincipal(msg.sender, stake, stake.claimable);
     }
 
-    function withdrawPrincipal() public {
+    function unStakeMetric() public {
         RewardsEarner storage stake = rewardsEarner[msg.sender];
         require(stake.shares != 0, "No Metric to withdraw");
+
+        if (areRewardsActive()) {
+            updateAccumulatedStakingRewards();
+        }
+
+        removeAllocShares(rewardsEarner[msg.sender].shares);
 
         SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.shares);
         stake.shares = 0;
