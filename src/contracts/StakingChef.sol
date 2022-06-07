@@ -120,13 +120,13 @@ contract StakingChef is Chef {
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest() public view returns (uint256) {
-        Staker storage stake = staker[msg.sender];
+        Staker memory stake = staker[msg.sender];
 
         return stake.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
     }
 
     function viewPendingClaims() public view returns (uint256) {
-        Staker storage stake = staker[msg.sender];
+        Staker memory stake = staker[msg.sender];
 
         return stake.claimable;
     }
