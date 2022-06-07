@@ -15,14 +15,14 @@ contract StakingChef is Chef {
     }
 
     // --------------------------------------------------------------------- staking functions
-    function stakeMetric(uint256 metricAmount, uint256 newStartDate) external nonDuplicated(msg.sender) {
+    function stakeMetric(uint256 metricAmount) external nonDuplicated(msg.sender) {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
         rewardsEarner[msg.sender] = RewardsEarner({
             userAddress: msg.sender,
             shares: metricAmount,
-            startDate: newStartDate,
+            startDate: block.timestamp,
             autodistribute: false,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
@@ -48,7 +48,7 @@ contract StakingChef is Chef {
         //Do we need to do anything else here to prevent removed staker from getting rewards?
     }
 
-    function stakeAdditionalMetric(uint256 metricAmount, uint256 newStartDate) public {
+    function stakeAdditionalMetric(uint256 metricAmount) public {
         RewardsEarner storage stake = rewardsEarner[msg.sender];
         harvest();
         uint256 principalMetric = stake.shares;
@@ -57,7 +57,7 @@ contract StakingChef is Chef {
         rewardsEarner[msg.sender] = RewardsEarner({
             userAddress: msg.sender,
             shares: totalMetricStaked,
-            startDate: newStartDate,
+            startDate: block.timestamp,
             autodistribute: false,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
             claimable: 0
