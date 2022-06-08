@@ -78,7 +78,7 @@ contract StakingChef is Chef {
         SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
         stake.claimable = 0;
 
-        emit TransferPrincipal(msg.sender, stake, stake.claimable);
+        emit Claim(msg.sender, stake, stake.claimable);
     }
 
     function unStakeMetric() public {
@@ -94,7 +94,7 @@ contract StakingChef is Chef {
         SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.shares);
         stake.shares = 0;
 
-        emit TransferPrincipal(msg.sender, stake, stake.shares);
+        emit UnStake(msg.sender, stake, stake.shares);
     }
 
     function harvest() internal {
@@ -105,26 +105,26 @@ contract StakingChef is Chef {
 
         stake.rewardDebt = claimable;
         stake.claimable = stake.claimable.add(claimable);
-        emit HarvestRewards(msg.sender, stake, claimable);
+        emit Claim(msg.sender, stake, claimable);
     }
 
     //------------------------------------------------------Getters
 
     function getStake() public view returns (Staker memory) {
-        Staker memory stake = staker[msg.sender];
+        Staker storage stake = staker[msg.sender];
         return stake;
     }
 
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest() public view returns (uint256) {
-        Staker memory stake = staker[msg.sender];
+        Staker storage stake = staker[msg.sender];
 
         return stake.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
     }
 
     function viewPendingClaims() public view returns (uint256) {
-        Staker memory stake = staker[msg.sender];
+        Staker storage stake = staker[msg.sender];
 
         return stake.claimable;
     }
@@ -138,6 +138,6 @@ contract StakingChef is Chef {
     }
 
     // --------------------------------------------------------------------- Events
-    event HarvestRewards(address harvester, StakingChef.Staker, uint256 amount);
-    event TransferPrincipal(address withdrawer, StakingChef.Staker, uint256 amount);
+    event Claim(address harvester, StakingChef.Staker, uint256 amount);
+    event UnStake(address withdrawer, StakingChef.Staker, uint256 amount);
 }
