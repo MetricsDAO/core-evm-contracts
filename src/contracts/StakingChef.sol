@@ -22,7 +22,6 @@ contract StakingChef is Chef {
             updateAccumulatedStakingRewards();
         }
         staker[msg.sender] = Staker({
-            userAddress: msg.sender,
             shares: metricAmount,
             startDate: block.timestamp,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
@@ -48,7 +47,6 @@ contract StakingChef is Chef {
         uint256 totalMetricStaked = SafeMath.add(metricAmount, principalMetric);
 
         staker[msg.sender] = Staker({
-            userAddress: msg.sender,
             shares: totalMetricStaked,
             startDate: block.timestamp,
             rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
@@ -133,7 +131,6 @@ contract StakingChef is Chef {
 
     // --------------------------------------------------------------------- Structs
     struct Staker {
-        address userAddress;
         uint256 shares;
         uint256 rewardDebt;
         uint256 claimable;

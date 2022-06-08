@@ -217,7 +217,7 @@ describe("Staking Contract", function () {
 
       const metricStaked = await stakingChef.staker(staker1.address);
       const userMetricStaked = BN(400).div(10);
-      expect(userMetricStaked).to.equal(metricStaked[1]);
+      expect(userMetricStaked).to.equal(metricStaked[0]);
     });
   });
 
@@ -230,13 +230,13 @@ describe("Staking Contract", function () {
 
       // check Metric Principal before withdraw
       let principalMetric = await stakingChef.staker(staker1.address);
-      expect(BN(200).div(10)).to.equal(principalMetric[1]);
+      expect(BN(200).div(10)).to.equal(principalMetric[0]);
 
       // withdraw Metric
       await stakingChef.unStakeMetric();
       principalMetric = await stakingChef.staker(staker1.address);
       // check Metric principal has been withdrawn
-      expect(0).to.equal(principalMetric[1]);
+      expect(0).to.equal(principalMetric[0]);
     });
   });
 });
