@@ -110,10 +110,10 @@ contract StakingChef is Chef {
 
     //------------------------------------------------------Getters
 
-    // TODO figure out how to view stakes now that the stake array has been removed
-    // function getStakes() public view returns (Staker[] memory) {
-    //     return _stakes;
-    // }
+    function getStake() public view returns (Staker memory) {
+        Staker memory stake = staker[msg.sender];
+        return stake;
+    }
 
     //------------------------------------------------------Distribution
 
