@@ -2,12 +2,14 @@
   "name": "core-evm-contracts",
   "version": "1.0.0",
   "description": "Core EVM contracts for MetricsDao",
-  "main": "index.js",
   "scripts": {
     "test": "mocha",
     "setup": "npm i && forge install && forge build && forge test -vv",
     "test:contracts": "forge test -vv"
   },
+  "files": [
+    "deployments"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MetricsDAO/core-evm-contracts.git"
@@ -45,6 +47,7 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.6.1",
     "hardhat": "^2.9.1",
+    "hardhat-deploy": "^0.11.4",
     "hardhat-api-builder": "0.0.5",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.6.0",
@@ -54,5 +57,8 @@
     "ts-node": "^10.7.0",
     "typechain": "^5.2.0",
     "typescript": "^4.6.2"
+  },
+  "engines": {
+    "node": ">=14"
   }
 }
