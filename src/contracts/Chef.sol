@@ -21,6 +21,7 @@ abstract contract Chef is Ownable {
     using SafeMath for uint256;
     uint256 private _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
+    AllocationGroup[] internal _allocations;
 
     bool private _rewardsActive;
     uint256 private _lastRewardBlock;
@@ -116,4 +117,14 @@ abstract contract Chef is Ownable {
 
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
+
+    //------------------------------------------------------Support Functions
+
+    struct AllocationGroup {
+        address groupAddress;
+        uint256 shares;
+        bool autodistribute;
+        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
+        uint256 claimable;
+    }
 }

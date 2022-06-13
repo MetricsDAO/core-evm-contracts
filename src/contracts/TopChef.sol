@@ -1,4 +1,3 @@
-
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
@@ -8,7 +7,6 @@ import "./Chef.sol";
 
 contract TopChef is Chef {
     using SafeMath for uint256;
-    AllocationGroup[] private _allocations;
 
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
@@ -22,7 +20,7 @@ contract TopChef is Chef {
         address newAddress,
         uint256 newShares,
         bool newAutoDistribute
-    ) external onlyOwner() nonDuplicated(newAddress) {
+    ) external onlyOwner nonDuplicated(newAddress) {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -38,13 +36,13 @@ contract TopChef is Chef {
         _allocations.push(group);
         addTotalAllocShares(group.shares);
     }
-    
+
     function updateAllocationGroup(
         address groupAddress,
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyOwner() {
+    ) public onlyOwner {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -54,7 +52,7 @@ contract TopChef is Chef {
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyOwner() {
+    function removeAllocationGroup(uint256 agIndex) external onlyOwner {
         require(agIndex < _allocations.length, "Index does not match allocation");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
@@ -102,7 +100,7 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() external onlyOwner() {
+    function harvestAll() external onlyOwner {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
@@ -137,18 +135,8 @@ contract TopChef is Chef {
         require(group.claimable != 0, "No claimable rewards to withdraw");
         // TODO do we want a backup in case a group looses access to their wallet
         require(group.groupAddress == _msgSender(), "Sender does not represent group");
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable); 
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable);
         group.claimable = 0;
         emit Withdraw(msg.sender, agIndex, group.claimable);
-    }
-
-    //------------------------------------------------------Structs
-
-    struct AllocationGroup {
-        address groupAddress;
-        uint256 shares;
-        bool autodistribute;
-        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
-        uint256 claimable;
     }
 }

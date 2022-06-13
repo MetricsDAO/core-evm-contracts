@@ -7,7 +7,6 @@ import "./Chef.sol";
 
 contract InvestorChef is Chef {
     using SafeMath for uint256;
-    AllocationGroup[] private _allocations;
 
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
@@ -139,15 +138,5 @@ contract InvestorChef is Chef {
         SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable);
         group.claimable = 0;
         emit Withdraw(msg.sender, agIndex, group.claimable);
-    }
-
-    //------------------------------------------------------Structs
-
-    struct AllocationGroup {
-        address groupAddress;
-        uint256 shares;
-        bool autodistribute;
-        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
-        uint256 claimable;
     }
 }
