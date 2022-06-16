@@ -20,7 +20,7 @@ contract TopChef is Chef {
         address newAddress,
         uint256 newShares,
         bool newAutoDistribute
-    ) external onlyOwner nonDuplicated(newAddress) {
+    ) external virtual onlyOwner nonDuplicated(newAddress) {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -42,7 +42,7 @@ contract TopChef is Chef {
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyOwner {
+    ) public virtual onlyOwner {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -52,7 +52,7 @@ contract TopChef is Chef {
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyOwner {
+    function removeAllocationGroup(uint256 agIndex) external virtual onlyOwner {
         require(agIndex < _allocations.length, "Index does not match allocation");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
@@ -65,25 +65,25 @@ contract TopChef is Chef {
 
     //------------------------------------------------------Getters
 
-    function getAllocationGroups() public view returns (AllocationGroup[] memory) {
+    function getAllocationGroups() public view virtual returns (AllocationGroup[] memory) {
         return _allocations;
     }
 
     //------------------------------------------------------Distribution
 
-    function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
+    function viewPendingHarvest(uint256 agIndex) public view virtual returns (uint256) {
         AllocationGroup storage group = _allocations[agIndex];
 
         return group.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
 
-    function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
+    function viewPendingClaims(uint256 agIndex) public view virtual returns (uint256) {
         AllocationGroup storage group = _allocations[agIndex];
 
         return group.claimable;
     }
 
-    function updateAccumulatedAllocations() public {
+    function updateAccumulatedAllocations() public virtual {
         require(areRewardsActive(), "Rewards are not active");
         if (block.number <= getLastRewardBlock()) {
             return;
@@ -100,13 +100,13 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() external onlyOwner {
+    function harvestAll() external virtual onlyOwner {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
     }
 
-    function harvest(uint256 agIndex) public {
+    function harvest(uint256 agIndex) public virtual {
         require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
         // TODO do we want a backup in case a group looses access to their wallet
@@ -128,7 +128,7 @@ contract TopChef is Chef {
         emit Harvest(msg.sender, agIndex, claimable);
     }
 
-    function claim(uint256 agIndex) external {
+    function claim(uint256 agIndex) external virtual {
         require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
 
