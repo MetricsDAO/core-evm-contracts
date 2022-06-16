@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./TopChef.sol";
 
-abstract contract InvestorChef is TopChef {
+contract InvestorChef is TopChef {
     using SafeMath for uint256;
 
-    constructor(address metricTokenAddress) {
+    constructor(address metricTokenAddress) TopChef(metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
         toggleRewards(false); // locking contract initially
