@@ -4,7 +4,7 @@ const { utils } = require("ethers");
 const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
 
-describe.only("Question Factory Contract", function () {
+describe("Question Factory Contract", function () {
   let questionFactory;
   let bountyQuestion;
   let claimController;
