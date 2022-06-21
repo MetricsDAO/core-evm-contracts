@@ -100,7 +100,7 @@ abstract contract Chef is Ownable {
         return _totalAllocShares;
     }
 
-    function getLifetimeShareValue() public view returns (uint256) {
+    function getLifetimeShareValue() internal view returns (uint256) {
         return _lifetimeShareValue;
     }
 
