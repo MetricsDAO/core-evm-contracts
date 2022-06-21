@@ -56,10 +56,10 @@ contract TopChef is Chef {
 
     function removeAllocationGroup(uint256 agIndex) external onlyOwner {
         require(agIndex < _allocations.length, "Index does not match allocation");
-        if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            _allocations[agIndex].autodistribute = true;
-            harvest(agIndex);
-        }
+        require(areRewardsActive(), "Rewards are not active");
+        _allocations[agIndex].autodistribute = true;
+        harvest(agIndex);
+
         removeAllocShares(_allocations[agIndex].shares);
 
         _allocations[agIndex] = _allocations[_allocations.length - 1];
