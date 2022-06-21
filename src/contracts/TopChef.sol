@@ -38,6 +38,7 @@ contract TopChef is Chef {
         addTotalAllocShares(group.shares);
     }
 
+    // TODO do we actually need to do this?
     function updateAllocationGroup(
         address groupAddress,
         uint256 agIndex,
@@ -45,7 +46,7 @@ contract TopChef is Chef {
         bool newAutoDistribute
     ) public onlyOwner {
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            updateAccumulatedAllocations();
+            harvest(agIndex);
         }
         addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
@@ -57,7 +58,8 @@ contract TopChef is Chef {
     function removeAllocationGroup(uint256 agIndex) external onlyOwner {
         require(agIndex < _allocations.length, "Index does not match allocation");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            updateAccumulatedAllocations();
+            _allocations[agIndex].autodistribute = true;
+            harvest(agIndex);
         }
         removeAllocShares(_allocations[agIndex].shares);
 

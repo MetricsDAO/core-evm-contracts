@@ -44,13 +44,13 @@ contract StakingChef is Chef {
         Staker storage stake = staker[msg.sender];
         harvest();
         uint256 principalMetric = stake.shares;
-        uint256 totalMetricStaked = SafeMath.add(metricAmount, principalMetric);
+        uint256 totalMetricStaked = metricAmount.add(principalMetric);
 
         staker[msg.sender] = Staker({
             shares: totalMetricStaked,
             startDate: block.timestamp,
-            rewardDebt: metricAmount.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION),
-            claimable: 0
+            rewardDebt: staker[msg.sender].rewardDebt,
+            claimable: staker[msg.sender].claimable
         });
 
         addTotalAllocShares(stake.shares);
@@ -103,7 +103,7 @@ contract StakingChef is Chef {
 
         uint256 claimable = stake.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(stake.rewardDebt);
 
-        stake.rewardDebt = claimable;
+        stake.rewardDebt = stake.rewardDebt.add(claimable);
         stake.claimable = stake.claimable.add(claimable);
         emit Claim(msg.sender, stake, claimable);
     }
