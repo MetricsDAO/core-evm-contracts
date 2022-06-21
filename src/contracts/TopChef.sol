@@ -22,6 +22,7 @@ contract TopChef is Chef {
         uint256 newShares,
         bool newAutoDistribute
     ) external onlyOwner nonDuplicated(newAddress) {
+        require(newShares > 0, "shares should be greater than 0");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -45,14 +46,12 @@ contract TopChef is Chef {
         uint256 shares,
         bool newAutoDistribute
     ) public onlyOwner {
-        if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            harvest(agIndex);
-        }
+        require(areRewardsActive(), "Rewards are not active");
+        harvest(agIndex);
         addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
         _allocations[agIndex].autodistribute = newAutoDistribute;
-        _allocations[agIndex].rewardDebt = shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(_allocations[agIndex].rewardDebt);
     }
 
     function removeAllocationGroup(uint256 agIndex) external onlyOwner {
