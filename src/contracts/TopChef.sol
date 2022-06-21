@@ -118,7 +118,7 @@ contract TopChef is Chef {
 
         uint256 claimable = group.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
 
-        group.rewardDebt = claimable;
+        group.rewardDebt = group.rewardDebt.add(claimable);
         if (claimable != 0) {
             if (group.autodistribute) {
                 SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
