@@ -3,6 +3,7 @@ src = 'src/contracts'
 test = 'src/test'
 out = 'out'
 libs = ['lib']
+gas_report = ['xMETRIC']
 remappings = [
     'ds-test/=lib/ds-test/src/',
     '@openzeppelin/=node_modules/@openzeppelin/',
@@ -10,5 +11,3 @@ remappings = [
     '@contracts/=src/contracts/',
     'hardhat/=node_modules/hardhat/',
 ]
-
-# See more config options https://github.com/gakonst/foundry/tree/master/config
