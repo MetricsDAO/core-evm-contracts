@@ -4,8 +4,6 @@ module.exports = async (hre) => {
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  console.log("HRE", hre.network.name);
-
   const metricToken = await deploy("MetricToken", {
     from: deployer,
     args: [deployer],
@@ -24,7 +22,7 @@ module.exports = async (hre) => {
     log: true,
   });
 
-  if (chainId !== 31337 && hre.network.name !== "localhost") {
+  if (chainId !== "31337" && hre.network.name !== "localhost" && hre.network.name !== "hardhat") {
     try {
       await hre.run("verify:verify", {
         address: metricToken.address,
