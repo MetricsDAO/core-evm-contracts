@@ -1,4 +1,3 @@
-
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
@@ -22,7 +21,8 @@ contract TopChef is Chef {
         address newAddress,
         uint256 newShares,
         bool newAutoDistribute
-    ) external onlyOwner() nonDuplicated(newAddress) {
+    ) external onlyOwner nonDuplicated(newAddress) {
+        require(newShares > 0, "shares should be greater than 0");
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -38,27 +38,28 @@ contract TopChef is Chef {
         _allocations.push(group);
         addTotalAllocShares(group.shares);
     }
-    
+
+    // TODO do we actually need to do this?
     function updateAllocationGroup(
         address groupAddress,
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyOwner() {
-        if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            updateAccumulatedAllocations();
-        }
+    ) public onlyOwner {
+        require(areRewardsActive(), "Rewards are not active");
+        harvest(agIndex);
         addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyOwner() {
+    function removeAllocationGroup(uint256 agIndex) external onlyOwner {
         require(agIndex < _allocations.length, "Index does not match allocation");
-        if (areRewardsActive() && getTotalAllocationShares() > 0) {
-            updateAccumulatedAllocations();
-        }
+        require(areRewardsActive(), "Rewards are not active");
+        _allocations[agIndex].autodistribute = true;
+        harvest(agIndex);
+
         removeAllocShares(_allocations[agIndex].shares);
 
         _allocations[agIndex] = _allocations[_allocations.length - 1];
@@ -74,13 +75,13 @@ contract TopChef is Chef {
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
-        AllocationGroup storage group = _allocations[agIndex];
+        AllocationGroup memory group = _allocations[agIndex];
 
-        return group.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+        return group.shares.mul(getLifeTimeShareValueEstimate()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
 
     function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
-        AllocationGroup storage group = _allocations[agIndex];
+        AllocationGroup memory group = _allocations[agIndex];
 
         return group.claimable;
     }
@@ -102,7 +103,7 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() external onlyOwner() {
+    function harvestAll() external onlyOwner {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
@@ -118,7 +119,7 @@ contract TopChef is Chef {
 
         uint256 claimable = group.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
 
-        group.rewardDebt = claimable;
+        group.rewardDebt = group.rewardDebt.add(claimable);
         if (claimable != 0) {
             if (group.autodistribute) {
                 SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
@@ -137,7 +138,7 @@ contract TopChef is Chef {
         require(group.claimable != 0, "No claimable rewards to withdraw");
         // TODO do we want a backup in case a group looses access to their wallet
         require(group.groupAddress == _msgSender(), "Sender does not represent group");
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable); 
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, group.claimable);
         group.claimable = 0;
         emit Withdraw(msg.sender, agIndex, group.claimable);
     }
