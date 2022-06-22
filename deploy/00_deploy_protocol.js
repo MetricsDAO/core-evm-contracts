@@ -16,6 +16,12 @@ module.exports = async (hre) => {
     log: true,
   });
 
+  const stakingChef = await deploy("StakingChef", {
+    from: deployer,
+    args: [metricToken.address],
+    log: true,
+  });
+
   if (chainId !== "31337" && hre.network.name !== "localhost" && hre.network.name !== "hardhat") {
     try {
       await hre.run("verify:verify", {
@@ -36,6 +42,16 @@ module.exports = async (hre) => {
     } catch (error) {
       console.log("error:", error.message);
     }
+
+    try {
+      await hre.run("verify:verify", {
+        address: stakingChef.address,
+        constructorArguments: [metricToken.address],
+        contract: "src/contracts/StakingChef.sol:StakingChef",
+      });
+    } catch (error) {
+      console.log("error:", error.message);
+    }
   }
 };
-module.exports.tags = ["MetricToken", "TopChef"];
+module.exports.tags = ["MetricToken", "TopChef", "StakingChef"];
