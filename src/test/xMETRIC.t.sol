@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "../src/xMETRIC.sol";
+import "../contracts/xMETRIC.sol";
 
 /// @notice Throughout the contract we assume that Bob is the owner, Alice is any user
 contract xMetricTest is Test {
@@ -17,7 +17,7 @@ contract xMetricTest is Test {
         vm.label(bob, "Bob");
 
         vm.startPrank(bob);
-        metricToken = new xMETRIC(bob, 1000000000 * 10**18);
+        metricToken = new xMETRIC(1000000000 * 10**18);
         vm.stopPrank();
     }
 
@@ -44,25 +44,25 @@ contract xMetricTest is Test {
 
     function test_BobIsOwnerAndAliceIsNot() public {
         vm.startPrank(bob);
-        assertEq(metricToken.getOwner(), bob);
+        assertEq(metricToken.owner(), bob);
         vm.stopPrank();
     }
 
     function test_BobChangeOwner() public {
         vm.startPrank(bob);
-        assertEq(metricToken.getOwner(), bob);
+        assertEq(metricToken.owner(), bob);
 
-        metricToken.setOwner(alice);
-        assertEq(metricToken.getOwner(), alice);
+        metricToken.transferOwnership(alice);
+        assertEq(metricToken.owner(), alice);
         vm.stopPrank();
     }
 
     function test_AliceChangeOwner() public {
         vm.startPrank(alice);
-        assertEq(metricToken.getOwner(), bob);
+        assertEq(metricToken.owner(), bob);
 
-        vm.expectRevert("UNAUTHORIZED");
-        metricToken.setOwner(alice);
+        vm.expectRevert("Ownable: caller is not the owner");
+        metricToken.transferOwnership(alice);
         vm.stopPrank();
     }
 
@@ -79,7 +79,7 @@ contract xMetricTest is Test {
         // Alice should not have permission to add a transactor
         vm.startPrank(alice);
         assertEq(metricToken.isTransactor(address(0x777)), false);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("Ownable: caller is not the owner");
         metricToken.addTransactor(address(0x777));
         assertEq(metricToken.isTransactor(address(0x777)), false);
         vm.stopPrank();
