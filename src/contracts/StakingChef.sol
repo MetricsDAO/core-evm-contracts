@@ -15,13 +15,15 @@ contract StakingChef is Chef {
     }
 
     // --------------------------------------------------------------------- staking functions
-    function stakeMetric(uint256 metricAmount) external nonDuplicated(msg.sender) {
+    function stakeMetric(uint256 metricAmount) external {
         // Effects
+        Staker storage stake = staker[msg.sender];
+
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
         staker[msg.sender] = Staker({
-            shares: metricAmount,
+            shares: stake.shares + metricAmount,
             startDate: block.timestamp,
             rewardDebt: (metricAmount * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
@@ -31,24 +33,6 @@ contract StakingChef is Chef {
 
         // Interactions
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].shares);
-    }
-
-    function stakeAdditionalMetric(uint256 metricAmount) public {
-        Staker storage stake = staker[msg.sender];
-        harvest();
-
-        // Effects
-        staker[msg.sender] = Staker({
-            shares: stake.shares + metricAmount,
-            startDate: block.timestamp,
-            rewardDebt: staker[msg.sender].rewardDebt,
-            claimable: staker[msg.sender].claimable
-        });
-
-        addTotalAllocShares(stake.shares);
-
-        // Interactions
-        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.shares);
     }
 
     function updateAccumulatedStakingRewards() public {
