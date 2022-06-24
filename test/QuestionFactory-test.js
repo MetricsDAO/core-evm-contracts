@@ -17,6 +17,8 @@ describe("Question Factory Contract", function () {
   beforeEach(async function () {
     [owner, addr1, ...addrs] = await ethers.getSigners();
 
+    // deploy Metric
+
     // deploy Bounty Question
     const questionContract = await ethers.getContractFactory("BountyQuestion");
     bountyQuestion = await questionContract.deploy();

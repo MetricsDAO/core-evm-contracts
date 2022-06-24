@@ -5,25 +5,30 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
 
 contract QuestionStateController is IQuestionStateController, Ownable {
-    mapping(uint256 => Vote[]) private _votes;
+    mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
 
     function initializeQuestion(uint256 questionId) public onlyOwner {
         state[questionId] = STATE.DRAFT;
     }
 
-    //------------------------------------------------------ View Functions
-
-    function getVotes(uint256 questionId) public view returns (Vote[] memory votes) {
-        return _votes[questionId];
+    function voteFor(uint256 questionId, uint256 amount) public onlyOwner {
+        Vote memory _vote = Vote({voter: _msgSender(), amount: amount, weightedVote: amount});
+        votes[questionId].votes.push(_vote);
+        votes[questionId].totalVoteCount = votes[questionId].totalVoteCount + amount;
     }
 
     //------------------------------------------------------ Structs
 
+    struct QuestionVote {
+        Vote[] votes;
+        uint256 totalVoteCount;
+    }
+
     struct Vote {
-        address _voter;
-        uint256 _amount;
-        uint256 _weightedVote;
+        address voter;
+        uint256 amount;
+        uint256 weightedVote;
     }
 
     //UNINIT is the default state, and must be first in the enum set
