@@ -100,7 +100,7 @@ contract TopChef is Chef {
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate
     // if we don't, then a user's rewards pre-emission change will incorrectly reflect the new rate
-    function harvestAll() external virtual onlyOwner {
+    function harvestAll() public virtual onlyOwner {
         for (uint8 i = 0; i < _allocations.length; i++) {
             harvest(i);
         }
@@ -128,7 +128,7 @@ contract TopChef is Chef {
         emit Harvest(msg.sender, agIndex, claimable);
     }
 
-    function claim(uint256 agIndex) external virtual {
+    function claim(uint256 agIndex) public virtual {
         require(areRewardsActive(), "Rewards are not active");
         AllocationGroup storage group = _allocations[agIndex];
 
