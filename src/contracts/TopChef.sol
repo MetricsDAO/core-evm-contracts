@@ -76,8 +76,10 @@ contract TopChef is Chef {
 
     function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
-
-        return group.shares.mul(getLifeTimeShareValueEstimate()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+        if (areRewardsActive()) {
+            return group.shares.mul(getLifeTimeShareValueEstimate()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
+        }
+        return group.shares.mul(getLifetimeShareValue()).div(ACC_METRIC_PRECISION).sub(group.rewardDebt);
     }
 
     function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
