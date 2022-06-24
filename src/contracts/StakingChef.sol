@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -16,6 +16,7 @@ contract StakingChef is Chef {
 
     // --------------------------------------------------------------------- staking functions
     function stakeMetric(uint256 metricAmount) external nonDuplicated(msg.sender) {
+        // Effects
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
@@ -27,23 +28,26 @@ contract StakingChef is Chef {
         });
 
         addTotalAllocShares(staker[msg.sender].shares);
+
+        // Interactions
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), staker[msg.sender].shares);
     }
 
     function stakeAdditionalMetric(uint256 metricAmount) public {
         Staker storage stake = staker[msg.sender];
         harvest();
-        uint256 principalMetric = stake.shares;
-        uint256 totalMetricStaked = metricAmount + principalMetric;
 
+        // Effects
         staker[msg.sender] = Staker({
-            shares: totalMetricStaked,
+            shares: stake.shares + metricAmount,
             startDate: block.timestamp,
             rewardDebt: staker[msg.sender].rewardDebt,
             claimable: staker[msg.sender].claimable
         });
 
         addTotalAllocShares(stake.shares);
+
+        // Interactions
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), stake.shares);
     }
 
@@ -60,29 +64,37 @@ contract StakingChef is Chef {
     // --------------------------------------------------------------------- Manage rewards and Principal
 
     function claim() public {
+        // Checks
         Staker storage stake = staker[msg.sender];
         harvest();
 
         if (stake.claimable == 0) revert NoClaimableRewardsToWithdraw();
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
+        // Effects
         stake.claimable = 0;
+
+        // Interactions
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.claimable);
 
         emit Claim(msg.sender, stake, stake.claimable);
     }
 
     function unStakeMetric() public {
+        // Checks
         Staker storage stake = staker[msg.sender];
         if (stake.shares == 0) revert NoMetricToWithdraw();
 
+        // Effects
         if (areRewardsActive()) {
             updateAccumulatedStakingRewards();
         }
 
         removeAllocShares(staker[msg.sender].shares);
 
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.shares);
         stake.shares = 0;
+
+        // Interactions
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, stake.shares);
 
         emit UnStake(msg.sender, stake, stake.shares);
     }
