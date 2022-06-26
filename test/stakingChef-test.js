@@ -8,30 +8,30 @@ describe("Staking Contract", function () {
   let stakingChefTotalSupply;
   let metric;
 
+  let origin;
   let staker1;
   let staker2;
   let vestingContract;
 
   beforeEach(async function () {
-    [staker1, staker2, vestingContract] = await ethers.getSigners();
+    [origin, staker1, staker2, vestingContract] = await ethers.getSigners();
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
-    metric = await metricContract.deploy(vestingContract.address);
+    metric = await metricContract.deploy();
 
     // deploy StakingChef, which requires a reference to METRIC
     const stakingChefContract = await ethers.getContractFactory("StakingChef");
     stakingChef = await stakingChefContract.deploy(metric.address);
 
     // send METRIC to the stakingChef
-    const metricTokenConnectedToVestingContract = await metric.connect(vestingContract);
     const totalSupply = await metric.totalSupply();
     stakingChefTotalSupply = BN(totalSupply).div(10);
-    await metricTokenConnectedToVestingContract.transfer(stakingChef.address, BN(totalSupply).div(10));
+    await metric.transfer(stakingChef.address, BN(totalSupply).div(10));
 
     // send METRIC to stakers
-    await metricTokenConnectedToVestingContract.transfer(staker1.address, BN(2000).div(10));
-    await metricTokenConnectedToVestingContract.transfer(staker2.address, BN(2000).div(10));
+    await metric.transfer(staker1.address, BN(2000).div(10));
+    await metric.transfer(staker2.address, BN(2000).div(10));
 
     // approve Metric Transfers
     const staker1Balance = await metric.balanceOf(staker1.address);
@@ -67,9 +67,6 @@ describe("Staking Contract", function () {
       // check that it was added
       alloc = await stakingChef.connect(staker2).getTotalAllocationShares();
       expect(40).to.equal(alloc);
-
-      // re-adding the first one should fail
-      await expect(stakingChef.stakeMetric(BN(200).div(10))).to.be.revertedWith("nonDuplicated: duplicated");
     });
 
     it("Should update edited Stakes", async function () {
@@ -102,7 +99,7 @@ describe("Staking Contract", function () {
       // should have 1 pending stake
       const metricPerBlock = await stakingChef.getMetricPerBlock();
 
-      pending = await stakingChef.viewPendingHarvest();
+      pending = await stakingChef.connect(staker1).viewPendingHarvest();
 
       expect(metricPerBlock).to.equal(pending);
 
@@ -110,7 +107,7 @@ describe("Staking Contract", function () {
       await stakingChef.updateAccumulatedStakingRewards();
       // should have 2 pending allocations
 
-      pending = await stakingChef.viewPendingHarvest();
+      pending = await stakingChef.connect(staker1).viewPendingHarvest();
       expect(BN(metricPerBlock).add(metricPerBlock)).to.equal(pending);
     });
 
@@ -187,7 +184,7 @@ describe("Staking Contract", function () {
       // block 6
       await stakingChef.updateAccumulatedStakingRewards();
 
-      const pending1 = await stakingChef.viewPendingHarvest();
+      const pending1 = await stakingChef.connect(staker1).viewPendingHarvest();
       expect(pending1).to.equal(utils.parseEther("24"));
 
       // block 7
@@ -233,7 +230,7 @@ describe("Staking Contract", function () {
       expect(BN(200).div(10)).to.equal(principalMetric[0]);
 
       // withdraw Metric
-      await stakingChef.unStakeMetric();
+      await stakingChef.connect(staker1).unStakeMetric();
       principalMetric = await stakingChef.staker(staker1.address);
       // check Metric principal has been withdrawn
       expect(0).to.equal(principalMetric[0]);
