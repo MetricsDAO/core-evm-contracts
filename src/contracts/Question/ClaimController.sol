@@ -42,8 +42,11 @@ contract ClaimController is Ownable, IClaimController {
         STATE state;
         address author;
         string url;
-        // TODO grades, but what is a Grade?
+        // uint256 grade; //4 heuristics per question, multiple people review, and then aggregate is calculated
+        // uint256 gradeOutOf;
+        // TODO let's prototype a demo of this
         uint256 finalGrade;
+        string scoringMetaDataURI; // store heuristics and such
     }
 
     enum STATE {

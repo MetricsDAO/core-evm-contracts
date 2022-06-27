@@ -7,6 +7,7 @@ import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "../MetricToken.sol";
 
+// TODO a lot of talk about "admins" -> solve that
 contract QuestionFactory is Ownable {
     BountyQuestion private _question;
     IQuestionStateController private _questionStateController;
@@ -23,10 +24,15 @@ contract QuestionFactory is Ownable {
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
-        // TODO we probably want a Cost Controller or something to ensure user locks enough metric
+        // TODO we probably want a CostController or something to ensure user locks enough metric
+        // ^^ price per action, each one is editable
+        // room for v2 CostController
+        // room for v2 Questions (pre-Challenge)
     }
 
-    // TODO do we want to whitelist a URI?  anyone can submit anything
+    // TODO admin-only quesiton state "BAD" which basically ends the lifecycle
+    // TODO add "unvote"
+
     // TODO lock metric
     function createQuestion(string memory uri, uint256 claimLimit) public {
         uint256 newTokenId = _question.safeMint(_msgSender(), uri);
@@ -39,8 +45,13 @@ contract QuestionFactory is Ownable {
         _questionStateController.voteFor(questionId, amount);
     }
 
+    error ClaimsNotOpen();
+
     // TODO lock metric
     function claimQuestion(uint256 questionId) public {
+        // TODO it sucks to do an int state check here, and I don't want a getter for every state
+        if (_questionStateController.getState(questionId) != 3) revert ClaimsNotOpen();
+
         _claimController.claim(questionId);
     }
 
