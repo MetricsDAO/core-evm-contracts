@@ -28,7 +28,7 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
 
     constructor() ERC721("MetricsDAO Question", "MDQ") {}
 
-    // working standard metadata format:  Title, description, program
+    // working standard metadata format:  Title, Description, Program
     function safeMint(address to, string memory uri) public onlyOwner returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
