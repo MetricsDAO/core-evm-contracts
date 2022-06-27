@@ -6,7 +6,6 @@ module.exports = async (hre) => {
 
   const metricToken = await deploy("MetricToken", {
     from: deployer,
-    args: [deployer],
     log: true,
   });
 
