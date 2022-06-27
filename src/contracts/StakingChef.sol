@@ -25,6 +25,7 @@ contract StakingChef is Chef {
         staker[msg.sender] = Staker({
             shares: stake.shares + metricAmount,
             startDate: block.timestamp,
+            // TODO metricAmount or (stake.sahres + metricAmount)
             rewardDebt: (metricAmount * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
         });

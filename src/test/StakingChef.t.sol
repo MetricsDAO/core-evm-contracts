@@ -35,8 +35,8 @@ contract StakingChefTest is Test {
 
         // Distribute METRIC to users and StakingChef
         vm.startPrank(vesting);
-        metricToken.transfer(bob, 100 * 10**18);
-        metricToken.transfer(alice, 100 * 10**18);
+        metricToken.transfer(bob, 100e18);
+        metricToken.transfer(alice, 100e18);
         metricToken.transfer(address(stakingChef), metricToken.totalSupply() / 10);
         vm.stopPrank();
 
@@ -66,7 +66,7 @@ contract StakingChefTest is Test {
 
         assertEq(balanceChef, totalSupply / 10);
         assertEq(balanceBob, balanceAlice);
-        assertEq(balanceBob, 100 * 10**18);
+        assertEq(balanceBob, 100e18);
         assertEq(balanceVesting, (totalSupply - balanceBob - balanceAlice - balanceChef));
     }
 
@@ -78,19 +78,14 @@ contract StakingChefTest is Test {
 
         // Stake METRIC & check that it was added
         vm.startPrank(bob);
-        stakingChef.stakeMetric(10 * 10**18);
-        assertEq(stakingChef.getTotalAllocationShares(), 10 * 10**18);
+        stakingChef.stakeMetric(10e18);
+        assertEq(stakingChef.getTotalAllocationShares(), 10e18);
         vm.stopPrank();
 
         vm.startPrank(alice);
         stakingChef.stakeMetric(20 * 10**18);
-        assertEq(stakingChef.getTotalAllocationShares(), 30 * 10**18);
+        assertEq(stakingChef.getTotalAllocationShares(), 30e18);
         vm.stopPrank();
-
-        // Re-staking should fail
-        vm.prank(bob);
-        vm.expectRevert("nonDuplicated: duplicated");
-        stakingChef.stakeMetric(10 * 10**18);
     }
 
     function test_PendingRewards() public {
@@ -121,7 +116,7 @@ contract StakingChefTest is Test {
 
         // Add another staker
         vm.startPrank(alice);
-        stakingChef.stakeMetric(15 * 10**18);
+        stakingChef.stakeMetric(15e18);
 
         // New stake should have 0 metric
         assertEq(stakingChef.viewPendingHarvest(), 0);
@@ -141,7 +136,7 @@ contract StakingChefTest is Test {
 
         // Stake
         vm.startPrank(bob);
-        stakingChef.stakeMetric(20 * 10**18);
+        stakingChef.stakeMetric(20e18);
 
         // Mine blocks
         vm.roll(block.number + 2);
@@ -151,7 +146,7 @@ contract StakingChefTest is Test {
         stakingChef.claim();
 
         // TODO Fix this
-        assertApproxEqAbs(metricToken.balanceOf(bob), (stakingChef.getMetricPerBlock() * 3), 100 * 10**18);
+        assertApproxEqAbs(metricToken.balanceOf(bob), (stakingChef.getMetricPerBlock() * 3), 100e18);
 
         console.log("Should track claimable rewards");
 
@@ -164,18 +159,18 @@ contract StakingChefTest is Test {
 
         // Stake
         vm.startPrank(bob);
-        stakingChef.stakeMetric(20 * 10**18);
+        stakingChef.stakeMetric(20e18);
 
         // Mine blocks & update distributions
         vm.roll(block.number + 6);
         stakingChef.updateAccumulatedStakingRewards();
 
-        assertEq(stakingChef.viewPendingHarvest(), 24 * 10**18);
+        assertEq(stakingChef.viewPendingHarvest(), 24e18);
         vm.stopPrank();
 
         // Add another staker
         vm.prank(alice);
-        stakingChef.stakeMetric(20 * 10**18);
+        stakingChef.stakeMetric(20e18);
 
         vm.roll(block.number + 1);
 
@@ -185,8 +180,8 @@ contract StakingChefTest is Test {
         vm.prank(alice);
         stakingChef.claim();
 
-        // TODO fix this calculation
-        assertApproxEqAbs(metricToken.balanceOf(alice), 4 * 10**18, 1000 * 10**18);
+        // TODO fix this
+        assertApproxEqAbs(metricToken.balanceOf(alice), 4e18, 1000e18);
     }
 
     function test_StakeAdditionalMetric() public {
@@ -194,13 +189,13 @@ contract StakingChefTest is Test {
 
         // Stake
         vm.startPrank(bob);
-        stakingChef.stakeMetric(10 * 10**18);
+        stakingChef.stakeMetric(10e18);
 
         // Stake additional
-        stakingChef.stakeAdditionalMetric(10 * 10**18);
+        stakingChef.stakeMetric(10e18);
         (uint256 shares, , , ) = stakingChef.staker(bob);
 
-        assertEq(shares, 20 * 10**18);
+        assertEq(shares, 20e18);
         vm.stopPrank();
     }
 
@@ -209,11 +204,11 @@ contract StakingChefTest is Test {
 
         // Stake
         vm.startPrank(bob);
-        stakingChef.stakeMetric(10 * 10**18);
+        stakingChef.stakeMetric(10e18);
 
         // Get q shares
         (uint256 sharesStake, , , ) = stakingChef.staker(bob);
-        assertEq(sharesStake, 10 * 10**18);
+        assertEq(sharesStake, 10e18);
 
         // Unstake
         stakingChef.unStakeMetric();
@@ -223,14 +218,59 @@ contract StakingChefTest is Test {
         assertEq(sharesUnstake, 0);
     }
 
-    // function test_StakeUnstakeStake() public {
-    //     console.log("Should be able to stake twice.");
+    function test_StakeUnstakeStake() public {
+        console.log("Should be able to stake twice.");
 
-    //     vm.startPrank(bob);
-    //     stakingChef.stakeMetric(10 * 10**18);
-    //     stakingChef.unStakeMetric();
-    //     (uint256 sharesUnstake, , , ) = stakingChef.staker(bob);
-    //     assertEq(sharesUnstake, 0);
-    //     stakingChef.stakeMetric(10 * 10**18);
-    // }
+        // Stake & Unstake
+        vm.startPrank(bob);
+        stakingChef.stakeMetric(10e18);
+        stakingChef.unStakeMetric();
+        (uint256 sharesUnstake, , , ) = stakingChef.staker(bob);
+        assertEq(sharesUnstake, 0);
+
+        // Stake again
+        stakingChef.stakeMetric(10e18);
+        (uint256 sharesStake, , , ) = stakingChef.staker(bob);
+        assertEq(sharesStake, 10e18);
+    }
+
+    function test_StakeMultipleTimes() public {
+        console.log("Should account for multiple deposits correctly.");
+        vm.startPrank(bob);
+        stakingChef.stakeMetric(10e18);
+        stakingChef.stakeMetric(15e18);
+        stakingChef.stakeMetric(33e18);
+        (uint256 staked, , , ) = stakingChef.staker(bob);
+        assertEq(staked, 58e18);
+
+        stakingChef.unStakeMetric();
+        (staked, , , ) = stakingChef.staker(bob);
+        assertEq(staked, 0);
+    }
+
+    function test_RewardsInactive() public {
+        console.log("Should revert if rewards are turned off.");
+        vm.prank(owner);
+        stakingChef.toggleRewards(false);
+
+        vm.prank(bob);
+        vm.expectRevert(StakingChef.RewardsAreNotActive.selector);
+        stakingChef.updateAccumulatedStakingRewards();
+    }
+
+    function test_NothingToWithdraw() public {
+        console.log("Should revert if there is nothing to withdraw.");
+
+        vm.prank(bob);
+        vm.expectRevert(StakingChef.NoMetricToWithdraw.selector);
+        stakingChef.unStakeMetric();
+    }
+
+    function test_NoClaimableRewards() public {
+        console.log("Should revert if there are no claimable rewards to withdraw.");
+
+        vm.prank(bob);
+        vm.expectRevert(StakingChef.NoClaimableRewardsToWithdraw.selector);
+        stakingChef.claim();
+    }
 }
