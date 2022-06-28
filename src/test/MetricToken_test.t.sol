@@ -16,10 +16,10 @@ contract MetricTokenTest is DSTest {
     function setUp() public {
         _vestingContract = new VestingContract();
         console.log("_vestingContract.address: %s ", address(_vestingContract));
-        _metricToken = new MetricToken(address(_vestingContract));
+        _metricToken = new MetricToken();
     }
 
     function testInitialMint() public {
-        assertTrue(_metricToken.balanceOf(address(_vestingContract)) == 1000000000 * 10**18);
+        assertTrue(_metricToken.balanceOf(msg.sender) == 1000000000 * 10**18);
     }
 }

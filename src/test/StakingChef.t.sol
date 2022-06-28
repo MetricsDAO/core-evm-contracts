@@ -11,7 +11,6 @@ contract StakingChefTest is Test {
     address owner = address(0x152314518);
     address alice = address(0xa);
     address bob = address(0xb);
-    address vesting = address(0x22519209147);
 
     MetricToken metricToken;
     StakingChef stakingChef;
@@ -21,11 +20,10 @@ contract StakingChefTest is Test {
         vm.label(owner, "Owner");
         vm.label(bob, "Bob");
         vm.label(alice, "Alice");
-        vm.label(vesting, "Vesting");
 
         // Deploy METRIC & StakingChef
         vm.startPrank(owner);
-        metricToken = new MetricToken(vesting);
+        metricToken = new MetricToken();
         stakingChef = new StakingChef(address(metricToken));
 
         vm.label(address(metricToken), "METRIC");
@@ -34,7 +32,7 @@ contract StakingChefTest is Test {
         vm.stopPrank();
 
         // Distribute METRIC to users and StakingChef
-        vm.startPrank(vesting);
+        vm.startPrank(owner);
         metricToken.transfer(bob, 1000e18);
         metricToken.transfer(alice, 1000e18);
         metricToken.transfer(address(stakingChef), metricToken.totalSupply() / 10);
@@ -62,12 +60,12 @@ contract StakingChefTest is Test {
         uint256 balanceBob = metricToken.balanceOf(bob);
         uint256 balanceAlice = metricToken.balanceOf(alice);
         uint256 balanceChef = metricToken.balanceOf(address(stakingChef));
-        uint256 balanceVesting = metricToken.balanceOf(vesting);
+        uint256 balanceOwner = metricToken.balanceOf(owner);
 
         assertEq(balanceChef, totalSupply / 10);
         assertEq(balanceBob, balanceAlice);
         assertEq(balanceBob, 1000e18);
-        assertEq(balanceVesting, (totalSupply - balanceBob - balanceAlice - balanceChef));
+        assertEq(balanceOwner, (totalSupply - balanceBob - balanceAlice - balanceChef));
     }
 
     function test_StakingMetric() public {
