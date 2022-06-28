@@ -7,29 +7,30 @@ describe("Allocator Contract", function () {
   let topChef;
   let metric;
 
+  let origin;
   let allocationGroup1;
   let allocationGroup2;
-  let vestingContract;
+  let addrs;
 
   beforeEach(async function () {
-    [allocationGroup1, allocationGroup2, vestingContract] = await ethers.getSigners();
+    [origin, allocationGroup1, allocationGroup2, ...addrs] = await ethers.getSigners();
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
-    metric = await metricContract.deploy(vestingContract.address);
+    metric = await metricContract.deploy();
 
     // deploy TopChef, which requires a reference to METRIC
     const topChefContract = await ethers.getContractFactory("TopChef");
     topChef = await topChefContract.deploy(metric.address);
 
     // send all METRIC to the topChef
-    const metricTokenConnectedToVestingContract = await metric.connect(vestingContract);
-    await metricTokenConnectedToVestingContract.transfer(topChef.address, await metric.totalSupply());
+    const totalSupply = await metric.totalSupply();
+    const tx = await metric.transfer(topChef.address, totalSupply);
   });
 
   describe("Deployment", function () {
-    it("Should set the right owner", async function () {
-      // confirm top chef owns all the tokens - this will change with staking chef most likely
+    it("Should set the right balances", async function () {
+      // confirm top chef owns all the tokens
       const ownerBalance = await metric.balanceOf(topChef.address);
       expect(await metric.totalSupply()).to.equal(ownerBalance);
     });
