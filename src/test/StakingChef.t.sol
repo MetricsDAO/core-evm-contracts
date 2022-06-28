@@ -35,8 +35,8 @@ contract StakingChefTest is Test {
 
         // Distribute METRIC to users and StakingChef
         vm.startPrank(vesting);
-        metricToken.transfer(bob, 100e18);
-        metricToken.transfer(alice, 100e18);
+        metricToken.transfer(bob, 1000e18);
+        metricToken.transfer(alice, 1000e18);
         metricToken.transfer(address(stakingChef), metricToken.totalSupply() / 10);
         vm.stopPrank();
 
@@ -66,7 +66,7 @@ contract StakingChefTest is Test {
 
         assertEq(balanceChef, totalSupply / 10);
         assertEq(balanceBob, balanceAlice);
-        assertEq(balanceBob, 100e18);
+        assertEq(balanceBob, 1000e18);
         assertEq(balanceVesting, (totalSupply - balanceBob - balanceAlice - balanceChef));
     }
 
@@ -88,55 +88,15 @@ contract StakingChefTest is Test {
         vm.stopPrank();
     }
 
-    function test_PendingRewards() public {
-        console.log("Should track pending rewards.");
-
-        // Add a staker
-        vm.startPrank(bob);
-        stakingChef.stakeMetric(10 * 10**18);
-
-        // We should have 0 metric
-        assertEq(stakingChef.viewPendingHarvest(), 0);
-
-        // Update distributions
-        vm.roll(block.number + 1);
-        stakingChef.updateAccumulatedStakingRewards();
-
-        // Should have 1 pending stake
-        assertEq(stakingChef.getMetricPerBlock(), stakingChef.viewPendingHarvest());
-
-        // Should have 2 pending  allocations
-        vm.roll(block.number + 1);
-        stakingChef.updateAccumulatedStakingRewards();
-
-        assertEq(stakingChef.getMetricPerBlock() * (block.number - 1), stakingChef.viewPendingHarvest());
-        vm.stopPrank();
-
-        console.log("Should track pending rewards with multiple stakers.");
-
-        // Add another staker
-        vm.startPrank(alice);
-        stakingChef.stakeMetric(15e18);
-
-        // New stake should have 0 metric
-        assertEq(stakingChef.viewPendingHarvest(), 0);
-
-        vm.roll(block.number + 2);
-
-        // Update distributions
-        stakingChef.updateAccumulatedStakingRewards();
-
-        // TODO Fix this
-        assertEq(stakingChef.viewPendingHarvest(), 4800000000000000000);
-        vm.stopPrank();
-    }
-
     function test_ClaimRewards() public {
         console.log("Should transfer earned rewards.");
 
         // Stake
         vm.startPrank(bob);
         stakingChef.stakeMetric(20e18);
+
+        // Bob balance post stake
+        uint256 bobBal = metricToken.balanceOf(bob);
 
         // Mine blocks
         vm.roll(block.number + 2);
@@ -145,8 +105,8 @@ contract StakingChefTest is Test {
         // Claim
         stakingChef.claim();
 
-        // TODO Fix this
-        assertApproxEqAbs(metricToken.balanceOf(bob), (stakingChef.getMetricPerBlock() * 3), 100e18);
+        metricToken.balanceOf(bob);
+        assertEq(metricToken.balanceOf(bob), bobBal + 8e18);
 
         console.log("Should track claimable rewards");
 
@@ -272,5 +232,148 @@ contract StakingChefTest is Test {
         vm.prank(bob);
         vm.expectRevert(StakingChef.NoClaimableRewardsToWithdraw.selector);
         stakingChef.claim();
+    }
+
+    function test_SimpleRewardsSimulation() public {
+        console.log("Should account properly and adequately reflect reward calculations.");
+
+        // Starting balances
+        assertEq(metricToken.balanceOf(bob), 1000e18);
+        assertEq(metricToken.balanceOf(alice), 1000e18);
+
+        // Bob stakes 100e18
+        vm.prank(bob);
+        stakingChef.stakeMetric(100e18);
+
+        // +10 blocks
+        vm.roll(block.number + 10);
+        stakingChef.updateAccumulatedStakingRewards();
+
+        // Bob should have a staking position of 100
+        // Bob accumulated rewards should be 40 --> 0 + ((10*40) * 100/100)
+
+        (uint256 staked, , , ) = stakingChef.staker(bob);
+        assertEq(staked, 100e18);
+        vm.prank(bob);
+        assertEq(stakingChef.viewPendingHarvest(), 40e18);
+
+        // Alice stakes 400e18
+        vm.prank(alice);
+        stakingChef.stakeMetric(400e18);
+
+        // + 5 blocks
+        vm.roll(block.number + 5);
+        stakingChef.updateAccumulatedStakingRewards();
+
+        // Bob should have a staking position of 100e18
+        // Alice should ave a staking position of 400e18
+        // Bob accumulated rewards should be 44e18 --> 40 + ((5*4) * (100/500))
+        // Alice accumulated rewards should be 16e18 --> 0 + ((5*4) * (400/500))
+        (uint256 bobStaked, , , ) = stakingChef.staker(bob);
+        (uint256 aliceStaked, , , ) = stakingChef.staker(alice);
+        assertEq(bobStaked, 100e18);
+        assertEq(aliceStaked, 400e18);
+
+        vm.prank(bob);
+        assertEq(stakingChef.viewPendingHarvest(), 44e18);
+        vm.prank(alice);
+        assertEq(stakingChef.viewPendingHarvest(), 16e18);
+
+        // Bob harvests
+        vm.prank(bob);
+        stakingChef.claim();
+
+        // + 10 blocks
+        vm.roll(block.number + 10);
+        stakingChef.updateAccumulatedStakingRewards();
+
+        // Bob should have a staking position of 100e18
+        // Alice should ave a staking position of 400e18
+        // Bob accumulated rewards should be 8e18 --> 0 + ((10*4) * (100/500))
+        // Alice accumulated rewards should be 48e18 --> 16e18 + ((10*4) * (400/500))
+        (bobStaked, , , ) = stakingChef.staker(bob);
+        (aliceStaked, , , ) = stakingChef.staker(alice);
+        assertEq(bobStaked, 100e18);
+        assertEq(aliceStaked, 400e18);
+
+        vm.prank(bob);
+        assertEq(stakingChef.viewPendingHarvest(), 8e18);
+        vm.prank(alice);
+        assertEq(stakingChef.viewPendingHarvest(), 48e18);
+
+        // Alice harvests
+        vm.prank(alice);
+        stakingChef.claim();
+
+        (bobStaked, , , ) = stakingChef.staker(bob);
+
+        vm.prank(bob);
+        stakingChef.stakeMetric(300e18);
+
+        // +5 blocks
+        vm.roll(block.number + 5);
+        stakingChef.updateAccumulatedStakingRewards();
+
+        // Bob should have a staking position of 400e18
+        // Alice should ave a staking position of 400e18
+        // Bob accumulated rewards should be 18e18 --> 8e18 + ((5*4) * (400/800))
+        // Alice accumulated rewards should be 10e18 --> 0 + ((5*4) * (400/800))
+        (bobStaked, , , ) = stakingChef.staker(bob);
+        (aliceStaked, , , ) = stakingChef.staker(alice);
+        assertEq(bobStaked, 400e18);
+        assertEq(aliceStaked, 400e18);
+
+        vm.prank(bob);
+        assertEq(stakingChef.viewPendingHarvest(), 18e18);
+        vm.prank(alice);
+        assertEq(stakingChef.viewPendingHarvest(), 10e18);
+
+        // Both harvest
+        vm.prank(bob);
+        stakingChef.claim();
+        vm.prank(alice);
+        stakingChef.claim();
+
+        // Bob should have a staking position of 400e18
+        // Alice should ave a staking position of 400e18
+        // Bob accumulated rewards should be 0e18 --> 0 + ((0*4) * (400/800))
+        // Alice accumulated rewards should be 0e18 --> 0 + ((0*4) * (400/800))
+        (bobStaked, , , ) = stakingChef.staker(bob);
+        (aliceStaked, , , ) = stakingChef.staker(alice);
+        assertEq(bobStaked, 400e18);
+        assertEq(aliceStaked, 400e18);
+
+        vm.prank(bob);
+        assertEq(stakingChef.viewPendingHarvest(), 0);
+        vm.prank(alice);
+        assertEq(stakingChef.viewPendingHarvest(), 0);
+
+        // Get rewardDebt and claimable from struct for each staker
+        (, uint256 bobRewardDebt, uint256 bobClaimable, ) = stakingChef.staker(bob);
+        (, uint256 aliceRewardDebt, uint256 aliceClaimable, ) = stakingChef.staker(alice);
+
+        assertEq(bobClaimable, 0);
+        assertEq(aliceClaimable, 0);
+
+        assertEq(bobRewardDebt, 218e18);
+        assertEq(aliceRewardDebt, 218e18);
+
+        // Unstake
+        vm.prank(bob);
+        stakingChef.unStakeMetric();
+        vm.prank(alice);
+        stakingChef.unStakeMetric();
+
+        // Final balances should reflect rewards paid out
+        assertEq(metricToken.balanceOf(bob), 1062e18);
+        assertEq(metricToken.balanceOf(alice), 1058e18);
+    }
+
+    function test_Getters() public {
+        vm.startPrank(bob);
+        stakingChef.stakeMetric(10e18);
+        stakingChef.getStake();
+        stakingChef.viewPendingClaims();
+        vm.stopPrank();
     }
 }
