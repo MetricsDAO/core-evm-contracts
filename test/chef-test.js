@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { ethers } = require("hardhat");
-const { mineBlocks, BN, add } = require("./utils");
+const { mineBlocks, BN } = require("./utils");
 
 describe("Allocator Contract", function () {
   let topChef;
@@ -193,10 +193,8 @@ describe("Allocator Contract", function () {
       expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
 
       await mineBlocks(100);
-      const withdrawlable2 = await topChef.viewPendingClaims(0);
-      const pendingHarvest = await topChef.viewPendingHarvest(0);
 
-      const pendingEstimateHarvestPlusPendingClaims = add(withdrawlable2, pendingHarvest);
+      const pendingEstimateHarvestPlusPendingClaims = await topChef.viewPendingRewards(0);
 
       await topChef.connect(allocationGroup1).claim(0);
 

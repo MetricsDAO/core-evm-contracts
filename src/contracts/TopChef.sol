@@ -96,6 +96,13 @@ contract TopChef is Chef {
         return group.claimable;
     }
 
+    function viewPendingRewards(uint256 agIndex) public view returns (uint256) {
+        AllocationGroup memory group = _allocations[agIndex];
+        uint256 claimable = group.claimable;
+        uint256 harvestable = viewPendingHarvest(agIndex);
+        return claimable + harvestable;
+    }
+
     function updateAccumulatedAllocations() public {
         if (!(areRewardsActive())) revert RewardsInactive();
         if (block.number <= getLastRewardBlock()) {
