@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import "forge-std/Test.sol";
 import "ds-test/test.sol";
 import "@contracts/TopChef.sol";
 import "@contracts/MetricToken.sol";
@@ -58,5 +59,12 @@ contract ContractTest is DSTest {
 
     function testChefInitialState() public {
         allocator.getAllocationGroups();
+    }
+
+    function testsetMetricPerBlock() public {
+        allocator.setMetricPerBlock(4);
+        uint256 metricEmisson = allocator.getMetricPerBlock();
+        assertTrue(metricEmisson == 4000000000000000000);
+        emit log_named_uint("Metric Emission Value", metricEmisson);
     }
 }
