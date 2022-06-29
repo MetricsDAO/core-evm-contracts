@@ -25,7 +25,7 @@ describe("Allocator Contract", function () {
 
     // send all METRIC to the topChef
     const totalSupply = await metric.totalSupply();
-    const tx = await metric.transfer(topChef.address, totalSupply);
+    await metric.transfer(topChef.address, totalSupply);
   });
 
   describe("Deployment", function () {
@@ -165,7 +165,7 @@ describe("Allocator Contract", function () {
       // block 3
       await topChef.updateAccumulatedAllocations();
 
-      await topChef.harvest(0);
+      await topChef.connect(allocationGroup1).claim(0);
 
       const balance = await metric.balanceOf(allocationGroup1.address);
       const metricPerBlock = await topChef.getMetricPerBlock();
@@ -192,10 +192,15 @@ describe("Allocator Contract", function () {
 
       expect(metricPerBlock.mul(3)).to.equal(withdrawlable);
 
+      await mineBlocks(100);
+
+      const pendingEstimateHarvestPlusPendingClaims = await topChef.viewPendingRewards(0);
+
       await topChef.connect(allocationGroup1).claim(0);
 
       balance = await metric.balanceOf(allocationGroup1.address);
-      expect(balance).to.equal(withdrawlable);
+      // so pending harvest + pending claims plus metric per block * 1 as harvest creates another block
+      expect(balance).to.equal(pendingEstimateHarvestPlusPendingClaims.add(metricPerBlock.mul(1)));
     });
 
     it("Should Harvest All for multiple groups", async function () {
@@ -207,36 +212,17 @@ describe("Allocator Contract", function () {
 
       await mineBlocks(2);
 
-      // block 1
-      await topChef.updateAccumulatedAllocations();
-
       // block 2
       await topChef.harvestAll();
+
+      await topChef.connect(allocationGroup1).claim(0);
+      await topChef.connect(allocationGroup2).claim(1);
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);
       expect(balance1).to.equal(utils.parseEther("4"));
 
       const balance2 = await metric.balanceOf(allocationGroup2.address);
-      expect(balance2).to.equal(utils.parseEther("12"));
-    });
-
-    it("Should set claimable back to 0 if we toggle auto distribute and harvest", async () => {
-      await topChef.toggleRewards(true);
-      await topChef.addAllocationGroup(allocationGroup1.address, 10, false);
-
-      await mineBlocks(2);
-
-      await topChef.harvest(0);
-
-      await topChef.updateAllocationGroup(allocationGroup1.address, 0, 15, true);
-
-      await mineBlocks(2);
-
-      await topChef.harvest(0);
-
-      const claimable = await topChef.viewPendingClaims(0);
-
-      expect(BN(claimable)).to.equal(0);
+      expect(balance2).to.equal(utils.parseEther("15"));
     });
 
     it("will over time update single allocation group with lots of metric", async function () {
@@ -244,7 +230,7 @@ describe("Allocator Contract", function () {
       await topChef.addAllocationGroup(allocationGroup1.address, 40, true);
       await mineBlocks(1000);
 
-      await topChef.harvest(0);
+      await topChef.connect(allocationGroup1).claim(0);
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);
 
@@ -264,13 +250,14 @@ describe("Allocator Contract", function () {
       const pending1 = await topChef.viewPendingHarvest(0);
       expect(pending1).to.equal(utils.parseEther("24"));
 
-      // block 7
-      await topChef.addAllocationGroup(allocationGroup2.address, 3, true);
-      // block 8 (block 1 for group 2)
-      await topChef.harvestAll();
+      // one more block 24 + 4
+      await topChef.connect(allocationGroup1).claim(0);
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);
-      expect(balance1).to.equal(utils.parseEther("29"));
+      expect(balance1).to.equal(utils.parseEther("28"));
+
+      await topChef.addAllocationGroup(allocationGroup2.address, 3, true);
+      await topChef.connect(allocationGroup2).claim(1);
 
       const balance2 = await metric.balanceOf(allocationGroup2.address);
       expect(balance2).to.equal(utils.parseEther("3"));

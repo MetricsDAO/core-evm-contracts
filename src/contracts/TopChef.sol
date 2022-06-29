@@ -83,13 +83,24 @@ contract TopChef is Chef {
     function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
 
-        return (group.shares * (getLifeTimeShareValueEstimate())) / ACC_METRIC_PRECISION - group.rewardDebt;
+        if (areRewardsActive()) {
+            return ((group.shares * (getLifeTimeShareValueEstimate())) / ACC_METRIC_PRECISION) - group.rewardDebt;
+        } else {
+            return (group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION - group.rewardDebt;
+        }
     }
 
     function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
 
         return group.claimable;
+    }
+
+    function viewPendingRewards(uint256 agIndex) public view returns (uint256) {
+        AllocationGroup memory group = _allocations[agIndex];
+        uint256 claimable = group.claimable;
+        uint256 harvestable = viewPendingHarvest(agIndex);
+        return claimable + harvestable;
     }
 
     function updateAccumulatedAllocations() public {
@@ -115,47 +126,32 @@ contract TopChef is Chef {
         }
     }
 
-    function harvest(uint256 agIndex) public {
+    function harvest(uint256 agIndex) public returns (uint256) {
         // Checks
         if (!(areRewardsActive())) revert RewardsInactive();
-        if ((viewPendingHarvest(agIndex) == 0)) revert NoRewardsToClaim();
         AllocationGroup storage group = _allocations[agIndex];
         // TODO do we want a backup in case a group looses access to their wallet
-        if (!(group.groupAddress == _msgSender() || _msgSender() == owner())) revert SenderNotGroupOrOwner();
 
         // Effects
         updateAccumulatedAllocations();
-
-        uint256 toClaim = (group.shares * getLifetimeShareValue()) / ACC_METRIC_PRECISION - group.rewardDebt;
+        uint256 toClaim = ((group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION) - group.rewardDebt;
 
         group.rewardDebt = group.rewardDebt + toClaim;
+        uint256 totalClaimable = group.claimable + toClaim;
+        group.claimable = totalClaimable;
 
-        // Interactions
-        if (group.autodistribute) {
-            group.claimable = 0;
-            SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, toClaim);
-        } else {
-            group.claimable = group.claimable + toClaim;
-        }
         emit Harvest(msg.sender, agIndex, toClaim);
+        return totalClaimable;
     }
 
     function claim(uint256 agIndex) external {
-        // Checks
-        if (!(areRewardsActive())) revert RewardsInactive();
         AllocationGroup storage group = _allocations[agIndex];
-
-        if (group.claimable == 0) revert NoClaimableRewardToWithdraw();
-        // TODO do we want a backup in case a group looses access to their wallet
-        if (!(group.groupAddress == _msgSender())) revert SenderDoesNotRepresentGroup();
-
-        // Effects
-        uint256 toClaim = group.claimable;
+        if (!(msg.sender == group.groupAddress)) revert SenderNotOwner();
+        uint256 claimable = harvest(agIndex);
+        if (claimable == 0) revert NoRewardsToClaim();
         group.claimable = 0;
-
-        // Interactions
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, toClaim);
-        emit Withdraw(msg.sender, agIndex, toClaim);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, claimable);
+        emit Withdraw(msg.sender, agIndex, claimable);
     }
 
     //------------------------------------------------------Structs
@@ -172,7 +168,7 @@ contract TopChef is Chef {
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
     error RewardsInactive();
-    error SenderNotGroupOrOwner();
+    error SenderNotOwner();
     error NoClaimableRewardToWithdraw();
     error SenderDoesNotRepresentGroup();
     error NoRewardsToClaim();
