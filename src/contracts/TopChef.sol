@@ -45,9 +45,8 @@ contract TopChef is Chef {
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyOwner {
-        // Checks
-        if (!(areRewardsActive())) revert RewardsInactive();
+    ) public activeRewards onlyOwner {
+        // Checks (modifier)
 
         // Effects
         harvest(agIndex);
@@ -57,10 +56,9 @@ contract TopChef is Chef {
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyOwner {
+    function removeAllocationGroup(uint256 agIndex) external activeRewards onlyOwner {
         // Checks
         if (!(agIndex < _allocations.length)) revert IndexDoesNotMatchAllocation();
-        if (!(areRewardsActive())) revert RewardsInactive();
 
         // Effects
         _allocations[agIndex].autodistribute = true;
@@ -103,8 +101,7 @@ contract TopChef is Chef {
         return claimable + harvestable;
     }
 
-    function updateAccumulatedAllocations() public {
-        if (!(areRewardsActive())) revert RewardsInactive();
+    function updateAccumulatedAllocations() public activeRewards {
         if (block.number <= getLastRewardBlock()) {
             return;
         }
@@ -126,9 +123,8 @@ contract TopChef is Chef {
         }
     }
 
-    function harvest(uint256 agIndex) public returns (uint256) {
+    function harvest(uint256 agIndex) public activeRewards returns (uint256) {
         // Checks
-        if (!(areRewardsActive())) revert RewardsInactive();
         AllocationGroup storage group = _allocations[agIndex];
         // TODO do we want a backup in case a group looses access to their wallet
 
