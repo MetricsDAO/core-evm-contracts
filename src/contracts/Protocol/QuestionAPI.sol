@@ -55,7 +55,7 @@ contract QuestionAPI is Ownable {
     // TODO lock metric
     function claimQuestion(uint256 questionId) public {
         // TODO it sucks to do an int state check here, and I don't want a getter for every state
-        if (_questionStateController.getState(questionId) != 3) revert ClaimsNotOpen();
+        if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
 
         _claimController.claim(questionId);
     }
