@@ -3,6 +3,7 @@ src = 'src/contracts'
 test = 'src/test'
 out = 'out'
 libs = ['lib']
+gas_reports = ["*"]
 remappings = [
     'ds-test/=lib/ds-test/src/',
     '@openzeppelin/=node_modules/@openzeppelin/',

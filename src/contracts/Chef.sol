@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./MetricToken.sol";
 
 // POSSIBLE FUTURE ITERATIONS
@@ -18,7 +17,6 @@ import "./MetricToken.sol";
 // TODO viewPendingClaims
 
 abstract contract Chef is Ownable {
-    using SafeMath for uint256;
     uint256 private _metricPerBlock;
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
@@ -51,26 +49,26 @@ abstract contract Chef is Ownable {
     function setLifetimeShareValue() public virtual {
         uint256 accumulated = getAccumulated();
         uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
-        _lifetimeShareValue = _lifetimeShareValue.add(accumulatedMetricDividedByShares(accumulatedWithMetricPrecision));
+        _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
         uint256 accumulated = getAccumulated();
         uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
         uint256 lifetimesharevalue = getLifetimeShareValue();
-        return lifetimesharevalue.add(accumulatedMetricDividedByShares(accumulatedWithMetricPrecision));
+        return lifetimesharevalue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
     }
 
     function addTotalAllocShares(uint256 shares) internal virtual {
-        _totalAllocShares = _totalAllocShares.add(shares);
+        _totalAllocShares = _totalAllocShares + shares;
     }
 
     function addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
-        _totalAllocShares = _totalAllocShares.sub(oldShares).add(newShares);
+        _totalAllocShares = _totalAllocShares - oldShares + newShares;
     }
 
     function removeAllocShares(uint256 oldShares) internal virtual {
-        _totalAllocShares = _totalAllocShares.sub(oldShares);
+        _totalAllocShares = _totalAllocShares - oldShares;
     }
 
     //------------------------------------------------------Getters
@@ -88,12 +86,12 @@ abstract contract Chef is Ownable {
     }
 
     function getAccumulated() internal view virtual returns (uint256) {
-        uint256 blocksSince = block.number.sub(getLastRewardBlock());
-        return blocksSince.mul(getMetricPerBlock());
+        uint256 blocksSince = block.number - getLastRewardBlock();
+        return blocksSince * getMetricPerBlock();
     }
 
     function getAcculatedWithmetricPrecision(uint256 accumulated) internal view virtual returns (uint256) {
-        return accumulated.mul(ACC_METRIC_PRECISION);
+        return accumulated * ACC_METRIC_PRECISION;
     }
 
     function getTotalAllocationShares() public view returns (uint256) {
@@ -105,7 +103,7 @@ abstract contract Chef is Ownable {
     }
 
     function accumulatedMetricDividedByShares(uint256 accumulatedWithPrecision) public view returns (uint256) {
-        return accumulatedWithPrecision.div(getTotalAllocationShares());
+        return accumulatedWithPrecision / getTotalAllocationShares();
     }
 
     function getMetricToken() public view returns (MetricToken) {
@@ -116,11 +114,15 @@ abstract contract Chef is Ownable {
 
     mapping(address => bool) public addressExistence;
     modifier nonDuplicated(address _address) {
-        require(addressExistence[_address] == false, "nonDuplicated: duplicated");
+        if (addressExistence[_address] == true) revert DuplicateAddress();
         addressExistence[_address] = true;
         _;
     }
 
+    //------------------------------------------------------Errors
+    error DuplicateAddress();
+
+    //------------------------------------------------------Events
     event Harvest(address harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
 }

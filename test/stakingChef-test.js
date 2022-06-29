@@ -68,20 +68,6 @@ describe("Staking Contract", function () {
       alloc = await stakingChef.connect(staker2).getTotalAllocationShares();
       expect(40).to.equal(alloc);
     });
-
-    it("Should update edited Stakes", async function () {
-      await stakingChef.toggleRewards(true);
-      await stakingChef.connect(staker1).stakeMetric(BN(200).div(10));
-
-      // check that they were added
-      let alloc = await stakingChef.getTotalAllocationShares();
-      expect(20).to.equal(alloc);
-
-      // edit the first one
-      await stakingChef.connect(staker1).updateStaker(BN(600).div(10));
-      alloc = await stakingChef.getTotalAllocationShares();
-      expect(60).to.equal(alloc);
-    });
   });
 
   describe("Pending Rewards", function () {
@@ -210,7 +196,7 @@ describe("Staking Contract", function () {
       // stake Metric
       await stakingChef.connect(staker1).stakeMetric(BN(200).div(10));
       // stake Additional Metric
-      await stakingChef.connect(staker1).stakeAdditionalMetric(BN(200).div(10));
+      await stakingChef.connect(staker1).stakeMetric(BN(200).div(10));
 
       const metricStaked = await stakingChef.staker(staker1.address);
       const userMetricStaked = BN(400).div(10);
