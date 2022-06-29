@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { mineBlocks, BN } = require("./utils");
 
-describe("Allocator Contract", function () {
+describe("Allocator Contract", async function () {
   let topChef;
   let metric;
 
@@ -14,6 +14,8 @@ describe("Allocator Contract", function () {
 
   beforeEach(async function () {
     [origin, allocationGroup1, allocationGroup2, ...addrs] = await ethers.getSigners();
+    // Set To TRUE as tests are based on hardhat.config
+    await network.provider.send("evm_setAutomine", [true]);
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
