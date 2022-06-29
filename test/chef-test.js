@@ -64,7 +64,7 @@ describe("Allocator Contract", function () {
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
-      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.reverted;
+      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("DuplicateAddress()");
     });
 
     it("Should update edited AGs", async function () {
