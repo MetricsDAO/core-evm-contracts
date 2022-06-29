@@ -1,15 +1,14 @@
 const { expect } = require("chai");
-const { Certificate } = require("crypto");
-const { utils } = require("ethers");
 const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
 
-describe("Question Factory Contract", function () {
+describe.only("Question API Contract", function () {
   let metric;
   let questionAPI;
   let bountyQuestion;
   let claimController;
   let questionStateController;
+  let costController;
 
   let owner;
   let addr1;
@@ -34,14 +33,25 @@ describe("Question Factory Contract", function () {
     const stateContract = await ethers.getContractFactory("QuestionStateController");
     questionStateController = await stateContract.deploy();
 
+    // deploy Cost Controller
+    const costContract = await ethers.getContractFactory("ActionCostController");
+    costController = await costContract.deploy(metric.address);
+
     // deploy Factory
     const factoryContract = await ethers.getContractFactory("QuestionAPI");
-    questionAPI = await factoryContract.deploy(metric.address, bountyQuestion.address, questionStateController.address, claimController.address);
+    questionAPI = await factoryContract.deploy(
+      metric.address,
+      bountyQuestion.address,
+      questionStateController.address,
+      claimController.address,
+      costController.address
+    );
 
     // set factory to be owner
     await bountyQuestion.transferOwnership(questionAPI.address);
     await claimController.transferOwnership(questionAPI.address);
     await questionStateController.transferOwnership(questionAPI.address);
+    await costController.transferOwnership(questionAPI.address);
   });
 
   describe("Deployment", function () {
@@ -52,6 +62,7 @@ describe("Question Factory Contract", function () {
       expect(await bountyQuestion.owner()).to.equal(questionAPI.address);
       expect(await claimController.owner()).to.equal(questionAPI.address);
       expect(await questionStateController.owner()).to.equal(questionAPI.address);
+      expect(await costController.owner()).to.equal(questionAPI.address);
     });
   });
 

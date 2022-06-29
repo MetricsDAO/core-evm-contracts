@@ -11,29 +11,19 @@ contract QuestionStateController is IQuestionStateController, Ownable {
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
-    error InvalidStateTransition();
-
     function initializeQuestion(uint256 questionId) public onlyOwner {
         state[questionId] = STATE.DRAFT;
     }
 
-    function readyForVotes(uint256 questionId) public onlyOwner {
-        if (state[questionId] != STATE.DRAFT) revert InvalidStateTransition();
-
+    function readyForVotes(uint256 questionId) public onlyOwner onlyState(STATE.DRAFT, questionId) {
         state[questionId] = STATE.VOTING;
     }
 
-    function publish(uint256 questionId) public onlyOwner {
-        if (state[questionId] != STATE.VOTING) revert InvalidStateTransition();
-
+    function publish(uint256 questionId) public onlyOwner onlyState(STATE.VOTING, questionId) {
         state[questionId] = STATE.PUBLISHED;
     }
 
-    error QuestionNotInVoting();
-
-    function voteFor(uint256 questionId, uint256 amount) public onlyOwner {
-        if (state[questionId] != STATE.VOTING) revert QuestionNotInVoting();
-
+    function voteFor(uint256 questionId, uint256 amount) public onlyOwner onlyState(STATE.VOTING, questionId) {
         Vote memory _vote = Vote({voter: _msgSender(), amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
         votes[questionId].totalVoteCount = votes[questionId].totalVoteCount + amount;
@@ -53,6 +43,12 @@ contract QuestionStateController is IQuestionStateController, Ownable {
 
     //------------------------------------------------------ Structs
 
+    error InvalidStateTransition();
+    modifier onlyState(STATE required, uint256 questionId) {
+        if (required != state[questionId]) revert InvalidStateTransition();
+        _;
+    }
+
     struct QuestionVote {
         Vote[] votes;
         uint256 totalVoteCount;
@@ -64,7 +60,6 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         uint256 weightedVote;
     }
 
-    // TODO add modifier function to track required state (onlyState(x))
     //UNINIT is the default state, and must be first in the enum set
     // enum STATE {
     //     UNINIT,

@@ -43,10 +43,9 @@ contract ClaimController is Ownable, IClaimController {
         address author;
         string answerURL;
         // uint256 grade; //4 heuristics per question, multiple people review, and then aggregate is calculated
-        // uint256 gradeOutOf;
         // TODO let's prototype a demo of this
         uint256 finalGrade;
-        string scoringMetaDataURI; // store heuristics and such
+        string scoringMetaDataURI; // store heuristics and such on ipfs
     }
 
     enum STATE {
