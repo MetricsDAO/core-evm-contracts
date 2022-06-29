@@ -47,6 +47,10 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         return uint256(state[quesitonId]);
     }
 
+    function getVotes(uint256 questionId) public view returns (Vote[] memory _votes) {
+        return votes[questionId].votes;
+    }
+
     //------------------------------------------------------ Structs
 
     struct QuestionVote {

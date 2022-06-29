@@ -8,7 +8,7 @@ import "./interfaces/IQuestionStateController.sol";
 import "../MetricToken.sol";
 
 // TODO a lot of talk about "admins" -> solve that
-contract QuestionFactory is Ownable {
+contract QuestionAPI is Ownable {
     BountyQuestion private _question;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
