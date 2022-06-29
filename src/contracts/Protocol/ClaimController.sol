@@ -19,7 +19,7 @@ contract ClaimController is Ownable, IClaimController {
         if (claims[questionId].length >= claimLimits[questionId]) revert ClaimLimitReached();
 
         claims[questionId].push(_msgSender());
-        Answer memory _answer = Answer({state: STATE.CLAIMED, author: _msgSender(), url: "", finalGrade: 0});
+        Answer memory _answer = Answer({state: STATE.CLAIMED, author: _msgSender(), answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
         answers[questionId][_msgSender()] = _answer;
     }
 
@@ -27,7 +27,7 @@ contract ClaimController is Ownable, IClaimController {
 
     function answer(uint256 questionId, string calldata answerURL) public onlyOwner {
         if (answers[questionId][_msgSender()].state != STATE.CLAIMED) revert NeedClaimToAnswer();
-        answers[questionId][_msgSender()].url = answerURL;
+        answers[questionId][_msgSender()].answerURL = answerURL;
     }
 
     //------------------------------------------------------ View Functions
@@ -41,7 +41,7 @@ contract ClaimController is Ownable, IClaimController {
     struct Answer {
         STATE state;
         address author;
-        string url;
+        string answerURL;
         // uint256 grade; //4 heuristics per question, multiple people review, and then aggregate is calculated
         // uint256 gradeOutOf;
         // TODO let's prototype a demo of this

@@ -30,7 +30,7 @@ contract ContractTest is DSTest {
 
     function setUp() public {
         VestingContract _vestingContract;
-        MetricToken metricToken = new MetricToken(address(_vestingContract));
+        MetricToken metricToken = new MetricToken();
         _metricTokenAddress = address(metricToken);
         allocator = new TopChef(address(metricToken));
         userOne = new TokenUser(metricToken, allocator);
