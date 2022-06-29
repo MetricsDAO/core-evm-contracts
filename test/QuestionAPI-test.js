@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
 
-describe.only("Question API Contract", function () {
+describe("Question API Contract", function () {
   let metric;
   let questionAPI;
   let bountyQuestion;
