@@ -1,14 +1,14 @@
 const { expect } = require("chai");
-const { Certificate } = require("crypto");
-const { utils } = require("ethers");
 const { ethers } = require("hardhat");
 const { mineBlocks, add, BN } = require("./utils");
 
-describe("Question Factory Contract", function () {
-  let questionFactory;
+describe("Question API Contract", function () {
+  let metric;
+  let questionAPI;
   let bountyQuestion;
   let claimController;
   let questionStateController;
+  let costController;
 
   let owner;
   let addr1;
@@ -16,6 +16,10 @@ describe("Question Factory Contract", function () {
 
   beforeEach(async function () {
     [owner, addr1, ...addrs] = await ethers.getSigners();
+
+    // deploy Metric
+    const metricContract = await ethers.getContractFactory("MetricToken");
+    metric = await metricContract.deploy();
 
     // deploy Bounty Question
     const questionContract = await ethers.getContractFactory("BountyQuestion");
@@ -29,24 +33,36 @@ describe("Question Factory Contract", function () {
     const stateContract = await ethers.getContractFactory("QuestionStateController");
     questionStateController = await stateContract.deploy();
 
+    // deploy Cost Controller
+    const costContract = await ethers.getContractFactory("ActionCostController");
+    costController = await costContract.deploy(metric.address);
+
     // deploy Factory
-    const factoryContract = await ethers.getContractFactory("QuestionFactory");
-    questionFactory = await factoryContract.deploy(bountyQuestion.address, questionStateController.address, claimController.address);
+    const factoryContract = await ethers.getContractFactory("QuestionAPI");
+    questionAPI = await factoryContract.deploy(
+      metric.address,
+      bountyQuestion.address,
+      questionStateController.address,
+      claimController.address,
+      costController.address
+    );
 
     // set factory to be owner
-    await bountyQuestion.transferOwnership(questionFactory.address);
-    await claimController.transferOwnership(questionFactory.address);
-    await questionStateController.transferOwnership(questionFactory.address);
+    await bountyQuestion.transferOwnership(questionAPI.address);
+    await claimController.transferOwnership(questionAPI.address);
+    await questionStateController.transferOwnership(questionAPI.address);
+    await costController.transferOwnership(questionAPI.address);
   });
 
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
       // sanity check permissions
-      expect(await questionFactory.owner()).to.equal(owner.address);
-      expect(await questionFactory.owner()).to.not.equal(addr1.address);
-      expect(await bountyQuestion.owner()).to.equal(questionFactory.address);
-      expect(await claimController.owner()).to.equal(questionFactory.address);
-      expect(await questionStateController.owner()).to.equal(questionFactory.address);
+      expect(await questionAPI.owner()).to.equal(owner.address);
+      expect(await questionAPI.owner()).to.not.equal(addr1.address);
+      expect(await bountyQuestion.owner()).to.equal(questionAPI.address);
+      expect(await claimController.owner()).to.equal(questionAPI.address);
+      expect(await questionStateController.owner()).to.equal(questionAPI.address);
+      expect(await costController.owner()).to.equal(questionAPI.address);
     });
   });
 
@@ -55,7 +71,7 @@ describe("Question Factory Contract", function () {
       let questionBalance = await bountyQuestion.totalSupply();
       expect(questionBalance).to.equal(new BN(0));
       // create question
-      await questionFactory.createQuestion("metricsdao.xyz", 10);
+      await questionAPI.createQuestion("metricsdao.xyz", 10);
 
       // check that the question is created
       questionBalance = await bountyQuestion.totalSupply();
@@ -74,7 +90,7 @@ describe("Question Factory Contract", function () {
 
       // create question
       const limit = 10;
-      await questionFactory.createQuestion("metricsdao.xyz", limit);
+      await questionAPI.createQuestion("metricsdao.xyz", limit);
 
       // question state should now be draft
       claimLimit = await claimController.claimLimits(0);
@@ -94,7 +110,7 @@ describe("Question Factory Contract", function () {
       expect(votes.length).to.equal(new BN(0));
 
       // create question
-      await questionFactory.createQuestion("metricsdao.xyz", 10);
+      await questionAPI.createQuestion("metricsdao.xyz", 10);
 
       // question state should now be draft
       state = await questionStateController.state(0);
