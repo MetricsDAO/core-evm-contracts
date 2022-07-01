@@ -61,10 +61,16 @@ contract ContractTest is DSTest {
         allocator.getAllocationGroups();
     }
 
-    function testsetMetricPerBlock() public {
+    function testSetMetricPerBlock() public {
         allocator.setMetricPerBlock(4);
         uint256 metricEmisson = allocator.getMetricPerBlock();
-        assertTrue(metricEmisson == 4000000000000000000);
-        emit log_named_uint("Metric Emission Value", metricEmisson);
+        assertEq(metricEmisson, 4000000000000000000);
+    }
+
+    function testAddTotalAllocShares() public {
+        allocator.addTotalAllocShares(2);
+        allocator.addTotalAllocShares(2);
+        uint256 _allocationShares = allocator.getTotalAllocationShares();
+        assertEq(_allocationShares, 4000000000000000000);
     }
 }
