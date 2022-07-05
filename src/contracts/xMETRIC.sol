@@ -4,14 +4,20 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+// TODO also add Burnable
+// TODO multisig signer for scripts - if we can't, we won't, but if we can we will!
 contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
+    // TODO we don't need an initial supply
     constructor(uint256 initialSupply) {
         _mint(msg.sender, initialSupply);
+        addTransactor(msg.sender);
     }
 
     //------------------------------------------------------Overrides
+
     function transfer(address to, uint256 amount) public override transactor returns (bool) {
         address owner = _msgSender();
+        // TODO mint on transfer
         _transfer(owner, to, amount);
         return true;
     }
@@ -23,11 +29,13 @@ contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
     ) public override transactor returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, amount);
+        // TODO mint on transfer
         _transfer(from, to, amount);
         return true;
     }
 
     //------------------------------------------------------Setters
+
     function addTransactor(address _transactor) public onlyOwner {
         canTransact[_transactor] = true;
     }
