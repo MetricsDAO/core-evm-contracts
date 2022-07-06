@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
     constructor() {
-        addTransactor(msg.sender);
+        setTransactor(msg.sender, true);
     }
 
     //------------------------------------------------------Overrides
@@ -37,8 +37,8 @@ contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
 
     //------------------------------------------------------Setters
 
-    function addTransactor(address _transactor) public onlyOwner {
-        canTransact[_transactor] = true;
+    function setTransactor(address _transactor, bool _isAllowed) public onlyOwner {
+        canTransact[_transactor] = _isAllowed;
     }
 
     //------------------------------------------------------Getters

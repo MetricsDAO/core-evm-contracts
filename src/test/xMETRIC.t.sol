@@ -67,21 +67,21 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
-    function test_BobAddTransactor() public {
+    function test_BobSetTransactor() public {
         // Bob should have permission to add a transactor
         vm.startPrank(bob);
         assertEq(metricToken.isTransactor(address(0x777)), false);
-        metricToken.addTransactor(address(0x777));
+        metricToken.setTransactor(address(0x777), true);
         assertEq(metricToken.isTransactor(address(0x777)), true);
         vm.stopPrank();
     }
 
-    function test_AliceCannotAddTransactor() public {
+    function test_AliceCannotSetTransactor() public {
         // Alice should not have permission to add a transactor
         vm.startPrank(alice);
         assertEq(metricToken.isTransactor(address(0x777)), false);
         vm.expectRevert("Ownable: caller is not the owner");
-        metricToken.addTransactor(address(0x777));
+        metricToken.setTransactor(address(0x777), true);
         assertEq(metricToken.isTransactor(address(0x777)), false);
         vm.stopPrank();
     }
@@ -91,7 +91,7 @@ contract xMetricTest is Test {
         vm.startPrank(bob);
         uint256 startBal = metricToken.balanceOf(bob);
         uint256 sendAmount = 10e18;
-        metricToken.addTransactor(bob);
+        metricToken.setTransactor(bob, true);
         metricToken.transfer(alice, sendAmount);
         assertEq(metricToken.balanceOf(alice), sendAmount);
         assertEq((startBal), metricToken.balanceOf(bob));
@@ -102,7 +102,7 @@ contract xMetricTest is Test {
         // Bob sends some money to alice
         vm.startPrank(bob);
         uint256 sendAmount = 10 * 10**18;
-        metricToken.addTransactor(bob);
+        metricToken.setTransactor(bob, true);
         metricToken.transfer(alice, sendAmount);
         vm.stopPrank();
 
@@ -120,6 +120,10 @@ contract xMetricTest is Test {
         vm.prank(address(0xa2));
         vm.expectRevert(xMETRIC.AddressCannotTransact.selector);
         metricToken.transferFrom(alice, bob, sendAmount);
+
+        vm.prank(bob);
+        vm.expectRevert("ERC20: insufficient allowance");
+        metricToken.transferFrom(alice, bob, sendAmount);
     }
 
     function test_ChefCanTransact() public {
@@ -127,8 +131,8 @@ contract xMetricTest is Test {
         // Chef contract is able to withdraw Alice's tokens (and for instance return token Y)
         vm.startPrank(bob);
         uint256 sendAmount = 10 * 10**18;
-        metricToken.addTransactor(bob);
-        metricToken.addTransactor(address(0xC));
+        metricToken.setTransactor(bob, true);
+        metricToken.setTransactor(address(0xC), true);
         metricToken.transfer(alice, sendAmount);
         vm.stopPrank();
 
@@ -181,7 +185,11 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
-    function test_mint() public {
+    function test_ToggleTransactor() public {
         vm.startPrank(bob);
+        metricToken.setTransactor(address(0x777), true);
+        assertEq(metricToken.isTransactor(address(0x777)), true);
+        metricToken.setTransactor(address(0x777), false);
+        assertEq(metricToken.isTransactor(address(0x777)), false);
     }
 }
