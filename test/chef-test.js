@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { mineBlocks, BN } = require("./utils");
 
-describe("Allocator Contract", function () {
+describe("Allocator Contract", async function () {
   let topChef;
   let metric;
 
@@ -14,6 +14,8 @@ describe("Allocator Contract", function () {
 
   beforeEach(async function () {
     [origin, allocationGroup1, allocationGroup2, ...addrs] = await ethers.getSigners();
+    // Set To TRUE as tests are based on hardhat.config
+    await network.provider.send("evm_setAutomine", [true]);
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
@@ -64,7 +66,7 @@ describe("Allocator Contract", function () {
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
-      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("nonDuplicated: duplicated");
+      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("DuplicateAddress()");
     });
 
     it("Should update edited AGs", async function () {

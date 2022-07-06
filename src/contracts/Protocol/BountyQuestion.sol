@@ -8,6 +8,16 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+// TODO remove ERC721 stuff here
+// TODO introduce a Challenge data model
+// Question -> Challenge is many -> one mapping
+// auto-transition from question -> challenge on:
+//   Voting threshold -> do we want manual approval? -> yes
+//   Admin approval (Messari group wants to write their own challenges)
+// TODO ability for author to unlock and "kill" their question -> reimburse voters
+
+// philosphy -> start out gated and the protocol can evolve in the same way the dao does
+
 /// @custom:security-contact contracts@metricsdao.xyz
 contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
@@ -18,8 +28,7 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
 
     constructor() ERC721("MetricsDAO Question", "MDQ") {}
 
-    // TODO people can submit garbage as metadata if they want
-    // TODO standardize metadata format, including question copy
+    // working standard metadata format:  Title, Description, Program
     function safeMint(address to, string memory uri) public onlyOwner returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
