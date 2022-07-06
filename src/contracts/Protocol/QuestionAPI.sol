@@ -65,6 +65,10 @@ contract QuestionAPI is Ownable {
         _claimController.answer(questionId, answerURL);
     }
 
+    function disqualifyQuestion(uint256 questionId) public onlyOwner {
+        _questionStateController.setState(quesitonId, _questionStateController.STATE.BAD);
+    }
+
     //------------------------------------------------------ Proxy
 
     function setQuestionProxy(address newQuestion) public onlyOwner {
