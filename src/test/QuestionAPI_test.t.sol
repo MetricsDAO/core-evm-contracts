@@ -62,10 +62,9 @@ contract QuestionAPITest is Test {
         vm.startPrank(owner);
         _actionCostController.payForCreateQuestion();
         badQuestion = _questionAPI.createQuestion("Bad question", 1);
-        //owner calls disqualifyQuestion
         _questionAPI.disqualifyQuestion(badQuestion);
         questionState = _questionStateController.getState(badQuestion);
-        //assert badQuestion state is BAD
+        //assert badQuestion state is BAD not sure what the value for question state should be yet
         assertEq(questionState, 5);
         vm.stopPrank();
     }
