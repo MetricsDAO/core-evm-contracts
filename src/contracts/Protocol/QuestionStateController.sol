@@ -29,6 +29,10 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         votes[questionId].totalVoteCount = votes[questionId].totalVoteCount + amount;
     }
 
+    function setBadState(uint256 questionId) public onlyOwner {
+        state[questionId] = STATE.BAD;
+    }
+
     // TODO batch voting and batch operations and look into arrays as parameters security risk
 
     //------------------------------------------------------ View Functions

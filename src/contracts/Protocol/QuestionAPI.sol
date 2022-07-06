@@ -66,7 +66,7 @@ contract QuestionAPI is Ownable {
     }
 
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
-        _questionStateController.setBadState(quesitonId);
+        _questionStateController.setBadState(questionId);
     }
 
     //------------------------------------------------------ Proxy
