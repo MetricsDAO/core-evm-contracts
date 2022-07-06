@@ -36,13 +36,15 @@ contract QuestionAPI is Ownable {
     // TODO add "unvote"
 
     // TODO lock metric
-    function createQuestion(string memory uri, uint256 claimLimit) public {
+    function createQuestion(string memory uri, uint256 claimLimit) public returns (uint256 tokenId) {
         _costController.payForCreateQuestion();
 
         uint256 newTokenId = _question.safeMint(_msgSender(), uri);
 
         _questionStateController.initializeQuestion(newTokenId);
         _claimController.initializeQuestion(newTokenId, claimLimit);
+
+        return newTokenId;
     }
 
     // TODO lock metric
