@@ -58,7 +58,7 @@ contract TopChef is Chef {
 
     function removeAllocationGroup(uint256 agIndex) external activeRewards onlyOwner {
         // Checks
-        if (!(agIndex < _allocations.length)) revert IndexDoesNotMatchAllocation();
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
 
         // Effects
         _allocations[agIndex].autodistribute = true;
