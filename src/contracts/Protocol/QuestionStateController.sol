@@ -5,13 +5,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
 
 contract QuestionStateController is IQuestionStateController, Ownable {
+    address public questionApi;
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
 
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
-    function initializeQuestion(uint256 questionId) public onlyOwner {
+    /**
+     * @notice Initializes a question to draft.
+     * @param questionId The id of the question
+     */
+    function initializeQuestion(uint256 questionId) public onlyApi {
         state[questionId] = STATE.DRAFT;
     }
 
@@ -39,6 +44,17 @@ contract QuestionStateController is IQuestionStateController, Ownable {
 
     function getVotes(uint256 questionId) public view returns (Vote[] memory _votes) {
         return votes[questionId].votes;
+    }
+
+    function setQuestionApi(address _questionApi) public onlyOwner {
+        questionApi = _questionApi;
+    }
+
+    // ------------------------------- Modifier
+    error NotTheApi();
+    modifier onlyApi() {
+        if (msg.sender != questionApi) revert NotTheApi();
+        _;
     }
 
     //------------------------------------------------------ Structs

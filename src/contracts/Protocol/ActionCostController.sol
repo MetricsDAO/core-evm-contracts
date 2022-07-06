@@ -13,17 +13,50 @@ import "../MetricToken.sol";
 contract ActionCostController is Ownable, IActionCostController {
     MetricToken private metric;
 
-    uint256 public createCost = 1 * 10**18;
+    address public questionApi;
+    uint256 public createCost;
 
     mapping(address => uint256) lockedPerUser;
 
     constructor(address _metric) {
         metric = MetricToken(_metric);
+        createCost = 1e18;
     }
 
-    function payForCreateQuestion() public onlyOwner {
+    /**
+    * @notice Makes a user pay for creating a question. 
+            We transfer the funds from the user executing the function to 
+            the contract.
+    * @param _user The address of the user who wants to pay for creating a question.
+    */
+    function payForCreateQuestion(address _user) external onlyApi {
         // TODO where do we want to store locked metric?
-        lockedPerUser[_msgSender()] = createCost;
-        SafeERC20.safeTransferFrom(metric, msg.sender, address(this), createCost);
+        lockedPerUser[msg.sender] += createCost;
+        // Why safeERC20?
+        SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
     }
+
+    /**
+     * @notice Sets the cost of creating a question
+     * @param _cost The cost of creating a question
+     */
+    function setCreateCost(uint256 _cost) external onlyApi {
+        createCost = _cost;
+    }
+
+    /**
+     * @notice Sets the address of the question API.
+     * @param _questionApi The address of the question API.
+     */
+    function setQuestionApi(address _questionApi) public onlyOwner {
+        questionApi = _questionApi;
+    }
+
+    // ------------------------------- Modifier
+    modifier onlyApi() {
+        if (msg.sender != questionApi) revert NotTheApi();
+        _;
+    }
+    // ------------------------------- Errors
+    error NotTheApi();
 }

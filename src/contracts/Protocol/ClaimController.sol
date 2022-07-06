@@ -5,15 +5,19 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IClaimController.sol";
 
 contract ClaimController is Ownable, IClaimController {
+    address public questionApi;
     mapping(uint256 => uint256) public claimLimits;
     mapping(uint256 => mapping(address => Answer)) public answers;
     mapping(uint256 => address[]) public claims;
 
-    function initializeQuestion(uint256 questionId, uint256 claimLimit) public onlyOwner {
+    /**
+     * @notice Initializes a question to receive claims
+     * @param questionId The id of the question
+     * @param claimLimit The limit for the amount of people that can claim the question
+     */
+    function initializeQuestion(uint256 questionId, uint256 claimLimit) public onlyApi {
         claimLimits[questionId] = claimLimit;
     }
-
-    error ClaimLimitReached();
 
     function claim(uint256 questionId) public onlyOwner {
         if (claims[questionId].length >= claimLimits[questionId]) revert ClaimLimitReached();
@@ -22,8 +26,6 @@ contract ClaimController is Ownable, IClaimController {
         Answer memory _answer = Answer({state: STATE.CLAIMED, author: _msgSender(), answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
         answers[questionId][_msgSender()] = _answer;
     }
-
-    error NeedClaimToAnswer();
 
     function answer(uint256 questionId, string calldata answerURL) public onlyOwner {
         if (answers[questionId][_msgSender()].state != STATE.CLAIMED) revert NeedClaimToAnswer();
@@ -34,6 +36,26 @@ contract ClaimController is Ownable, IClaimController {
 
     function getClaims(uint256 questionId) public view returns (address[] memory _claims) {
         return claims[questionId];
+    }
+
+    function getClaimLimit(uint256 questionId) public view returns (uint256) {
+        return claimLimits[questionId];
+    }
+
+    //------------------------------------------------------ Errors
+    error ClaimLimitReached();
+    error NeedClaimToAnswer();
+
+    // Api stuff
+    function setQuestionApi(address _questionApi) public onlyOwner {
+        questionApi = _questionApi;
+    }
+
+    // ------------------------------- Modifier
+    error NotTheApi();
+    modifier onlyApi() {
+        if (msg.sender != questionApi) revert NotTheApi();
+        _;
     }
 
     //------------------------------------------------------ Structs

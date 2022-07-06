@@ -36,21 +36,37 @@ contract QuestionAPI is Ownable {
     // TODO add "unvote"
 
     // TODO lock metric
-    function createQuestion(string memory uri, uint256 claimLimit) public {
-        _costController.payForCreateQuestion();
+    // uint8?
 
-        uint256 newTokenId = _question.safeMint(_msgSender(), uri);
+    /**
+     * @notice Creates a question
+     * @param uri The IPFS hash of the question
+     * @param claimLimit The limit for the amount of people that can claim the question
+     * @return The question id
+     */
+    function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
+        // Pay to create a question
+        _costController.payForCreateQuestion(msg.sender);
 
-        _questionStateController.initializeQuestion(newTokenId);
-        _claimController.initializeQuestion(newTokenId, claimLimit);
+        // Mint a new question
+        uint256 questionId = _question.safeMint(_msgSender(), uri);
+
+        // Initialize the question
+        _questionStateController.initializeQuestion(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit);
+
+        return questionId;
     }
 
     // TODO lock metric
+    /**
+     * @notice Upvotes a question
+     * @param questionId The questionId of the question to upvote
+     * @param amount Metric amount to put behind the vote
+     */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
         _questionStateController.voteFor(questionId, amount);
     }
-
-    error ClaimsNotOpen();
 
     // TODO lock metric
     function claimQuestion(uint256 questionId) public {
@@ -64,6 +80,13 @@ contract QuestionAPI is Ownable {
     function answerQuestion(uint256 questionId, string calldata answerURL) public {
         _claimController.answer(questionId, answerURL);
     }
+
+    function setCreateCost(uint256 cost) public onlyOwner {
+        _costController.setCreateCost(cost);
+    }
+
+    //------------------------------------------------------ Errors
+    error ClaimsNotOpen();
 
     //------------------------------------------------------ Proxy
 
