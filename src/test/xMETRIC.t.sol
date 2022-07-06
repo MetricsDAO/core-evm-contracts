@@ -17,7 +17,8 @@ contract xMetricTest is Test {
         vm.label(bob, "Bob");
 
         vm.startPrank(bob);
-        metricToken = new xMETRIC(1000000000 * 10**18);
+        metricToken = new xMETRIC();
+        metricToken.transfer(bob, 1000000000e18);
         vm.stopPrank();
     }
 
@@ -89,11 +90,11 @@ contract xMetricTest is Test {
         // Bob sends money to alice
         vm.startPrank(bob);
         uint256 startBal = metricToken.balanceOf(bob);
-        uint256 sendAmount = 10 * 10**18;
+        uint256 sendAmount = 10e18;
         metricToken.addTransactor(bob);
         metricToken.transfer(alice, sendAmount);
         assertEq(metricToken.balanceOf(alice), sendAmount);
-        assertEq((startBal - sendAmount), metricToken.balanceOf(bob));
+        assertEq((startBal), metricToken.balanceOf(bob));
         vm.stopPrank();
     }
 
@@ -139,6 +140,45 @@ contract xMetricTest is Test {
         vm.prank(address(0xC));
         metricToken.transferFrom(alice, address(0xC), sendAmount);
         assertEq(metricToken.balanceOf(address(0xC)), sendAmount);
+    }
+
+    function test_AnyoneCanBurnTheirOwnTokens() public {
+        vm.prank(bob);
+        metricToken.transfer(alice, 100e18);
+        // Alice burns her own tokens
+        vm.startPrank(alice);
+        uint256 startBal = metricToken.balanceOf(alice);
+        uint256 burnAmount = 10e18;
+        metricToken.burn(burnAmount);
+        assertEq(metricToken.balanceOf(alice), startBal - burnAmount);
+        vm.stopPrank();
+    }
+
+    function test_OwnerCanBurnEveryonesTokens() public {
+        vm.prank(bob);
+        metricToken.transfer(alice, 100e18);
+
+        // Bob burns Alice's tokens
+        vm.startPrank(bob);
+        uint256 startBal = metricToken.balanceOf(alice);
+        uint256 burnAmount = 10e18;
+        metricToken.burnFrom(alice, burnAmount);
+        assertEq(metricToken.balanceOf(alice), startBal - burnAmount);
+        vm.stopPrank();
+    }
+
+    function test_AliceCannotBurnBobsTokens() public {
+        vm.prank(bob);
+        metricToken.transfer(alice, 100e18);
+
+        // Alice burns Bob's tokens
+        vm.startPrank(alice);
+        uint256 startBal = metricToken.balanceOf(bob);
+        uint256 burnAmount = 10e18;
+        vm.expectRevert("Ownable: caller is not the owner");
+        metricToken.burnFrom(bob, burnAmount);
+        assertEq(metricToken.balanceOf(bob), startBal);
+        vm.stopPrank();
     }
 
     function test_mint() public {
