@@ -31,13 +31,16 @@ contract QuestionAPITest is Test {
         vm.label(alice, "Alice");
 
         vm.startPrank(owner);
-        _actionCostController = new ActionCostController(address(_metricToken));
+        //Deploy Metric
         _metricToken = new MetricToken();
         vm.label(address(_metricToken), "METRIC");
-        _metricToken.transfer(owner, 1000e18);
+        //Fund Accounts
+        _metricToken.transfer(owner, 10000e18);
 
+        //Approve Metric Transfer
         _metricToken.approve(address(_actionCostController), _metricToken.balanceOf(owner));
 
+        _actionCostController = new ActionCostController(address(_metricToken));
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
