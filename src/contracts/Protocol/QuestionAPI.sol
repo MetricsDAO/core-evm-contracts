@@ -81,6 +81,10 @@ contract QuestionAPI is Ownable {
         _claimController.answer(questionId, answerURL);
     }
 
+    /**
+     * @notice Changes the cost of creating a question
+     * @param cost The new cost of creating a question
+     */
     function setCreateCost(uint256 cost) public onlyOwner {
         _costController.setCreateCost(cost);
     }

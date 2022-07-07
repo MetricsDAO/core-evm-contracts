@@ -31,7 +31,7 @@ contract ActionCostController is Ownable, IActionCostController {
     */
     function payForCreateQuestion(address _user) external onlyApi {
         // TODO where do we want to store locked metric?
-        lockedPerUser[msg.sender] += createCost;
+        lockedPerUser[_user] += createCost;
         // Why safeERC20?
         SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
     }
@@ -50,6 +50,11 @@ contract ActionCostController is Ownable, IActionCostController {
      */
     function setQuestionApi(address _questionApi) public onlyOwner {
         questionApi = _questionApi;
+    }
+
+    // ------------------------------- Getter
+    function getLockedPerUser(address _user) public view returns (uint256) {
+        return lockedPerUser[_user];
     }
 
     // ------------------------------- Modifier
