@@ -8,6 +8,7 @@ contract QuestionStateController is IQuestionStateController, Ownable {
     address public questionApi;
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
+    mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
@@ -24,15 +25,35 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         state[questionId] = STATE.VOTING;
     }
 
-    function publish(uint256 questionId) public onlyOwner onlyState(STATE.VOTING, questionId) {
+    function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+        // if some voting barrier is passed, we can publish the question
         state[questionId] = STATE.PUBLISHED;
     }
 
-    function voteFor(uint256 questionId, uint256 amount) public onlyApi onlyState(STATE.VOTING, questionId) {
-        Vote memory _vote = Vote({voter: _msgSender(), amount: amount, weightedVote: amount});
+    // Cannot for for yourself
+    // Can only vote once? Shouldnt matter
+    function voteFor(
+        address _user,
+        uint256 questionId,
+        uint256 amount
+    ) public onlyApi onlyState(STATE.VOTING, questionId) {
+        Vote memory _vote = Vote({voter: _user, amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
+        questionIndex[_user][questionId] = votes[questionId].votes.length - 1;
         votes[questionId].totalVoteCount += amount;
         // Lock tokens for voting
+    }
+
+    function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+        uint256 index = questionIndex[_user][questionId];
+        uint256 amount = votes[questionId].votes[index].amount;
+
+        votes[questionId].votes[index].amount = 0;
+        votes[questionId].votes[index].weightedVote = 0;
+
+        votes[questionId].totalVoteCount -= amount;
+
+        // Unlock tokens for voting
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk

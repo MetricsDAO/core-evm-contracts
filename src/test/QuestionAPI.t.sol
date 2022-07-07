@@ -108,7 +108,7 @@ contract QuestionAPITest is Test {
         vm.stopPrank();
     }
 
-    function test_CreateQuestionAndVoteForQuestion() public {
+    function test_CreateQuestionAndVoteForQuestionThenUnvoteForQuestion() public {
         console.log("Should correctly create a question and vote for it");
 
         vm.startPrank(other);
@@ -127,6 +127,15 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
         assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
         assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+
+        // Question is set for the right address and values
+        _questionStateController.getVotes(questionId);
+
+        // Unvote for the question
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Check that accounting was done properly.
+        _questionStateController.getVotes(questionId);
         vm.stopPrank();
     }
 

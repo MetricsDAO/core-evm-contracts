@@ -69,7 +69,15 @@ contract QuestionAPI is Ownable {
         if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
             _questionStateController.readyForVotes(questionId);
         }
-        _questionStateController.voteFor(questionId, amount);
+        _questionStateController.voteFor(msg.sender, questionId, amount);
+    }
+
+    /**
+     * @notice Unvotes a question
+     * @param questionId The questionId of the question to upvote
+     */
+    function unvoteQuestion(uint256 questionId) public {
+        _questionStateController.unvoteFor(msg.sender, questionId);
     }
 
     // TODO lock metric
