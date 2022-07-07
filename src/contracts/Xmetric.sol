@@ -3,8 +3,9 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
-contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
+contract Xmetric is ERC20("xMETRIC", "xMETRIC"), ERC20Pausable, Ownable {
     constructor() {
         setTransactor(msg.sender, true);
     }
@@ -39,6 +40,14 @@ contract xMETRIC is ERC20("xMETRIC", "xMETRIC"), Ownable {
 
     function setTransactor(address _transactor, bool _isAllowed) public onlyOwner {
         canTransact[_transactor] = _isAllowed;
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unPause() public onlyOwner {
+        _unpause();
     }
 
     //------------------------------------------------------Getters
