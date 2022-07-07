@@ -20,7 +20,7 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         state[questionId] = STATE.DRAFT;
     }
 
-    function readyForVotes(uint256 questionId) public onlyOwner onlyState(STATE.DRAFT, questionId) {
+    function readyForVotes(uint256 questionId) public onlyApi onlyState(STATE.DRAFT, questionId) {
         state[questionId] = STATE.VOTING;
     }
 
@@ -28,10 +28,11 @@ contract QuestionStateController is IQuestionStateController, Ownable {
         state[questionId] = STATE.PUBLISHED;
     }
 
-    function voteFor(uint256 questionId, uint256 amount) public onlyOwner onlyState(STATE.VOTING, questionId) {
+    function voteFor(uint256 questionId, uint256 amount) public onlyApi onlyState(STATE.VOTING, questionId) {
         Vote memory _vote = Vote({voter: _msgSender(), amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
-        votes[questionId].totalVoteCount = votes[questionId].totalVoteCount + amount;
+        votes[questionId].totalVoteCount += amount;
+        // Lock tokens for voting
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
@@ -44,6 +45,10 @@ contract QuestionStateController is IQuestionStateController, Ownable {
 
     function getVotes(uint256 questionId) public view returns (Vote[] memory _votes) {
         return votes[questionId].votes;
+    }
+
+    function getTotalVotes(uint256 questionId) public view returns (uint256) {
+        return votes[questionId].totalVoteCount;
     }
 
     function setQuestionApi(address _questionApi) public onlyOwner {

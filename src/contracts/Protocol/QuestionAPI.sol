@@ -63,8 +63,12 @@ contract QuestionAPI is Ownable {
      * @notice Upvotes a question
      * @param questionId The questionId of the question to upvote
      * @param amount Metric amount to put behind the vote
+     * We can manipulate this very easily -- think of a way to make it secure
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
+        if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
+            _questionStateController.readyForVotes(questionId);
+        }
         _questionStateController.voteFor(questionId, amount);
     }
 
