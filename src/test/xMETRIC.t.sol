@@ -10,14 +10,14 @@ contract xMetricTest is Test {
     address alice = address(0xa);
     address bob = address(0xb);
 
-    xMETRIC metricToken;
+    Xmetric metricToken;
 
     function setUp() public {
         vm.label(alice, "Alice");
         vm.label(bob, "Bob");
 
         vm.startPrank(bob);
-        metricToken = new xMETRIC();
+        metricToken = new Xmetric();
         metricToken.transfer(bob, 1000000000e18);
         vm.stopPrank();
     }
