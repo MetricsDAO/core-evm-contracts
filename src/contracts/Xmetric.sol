@@ -17,6 +17,14 @@ contract Xmetric is ERC20("xMETRIC", "xMETRIC"), ERC20Pausable, Ownable {
         return true;
     }
 
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20, ERC20Pausable) {
+        super._beforeTokenTransfer(from, to, amount);
+    }
+
     function transferFrom(
         address from,
         address to,

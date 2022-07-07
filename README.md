@@ -106,6 +106,11 @@ Then run the following command
 foundryup
 ```
 
+## Run Foundry tests
+
+`forge install`  
+`forge test`
+
 #### Install project dependencies
 
 (install npm if you haven't already)

@@ -108,7 +108,7 @@ contract xMetricTest is Test {
 
         // Alice should not be able to transfer this out -- both through transfer and transferFrom
         vm.startPrank(alice);
-        vm.expectRevert(xMETRIC.AddressCannotTransact.selector);
+        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
 
         // Through transfer
         metricToken.transfer(bob, sendAmount);
@@ -118,7 +118,7 @@ contract xMetricTest is Test {
         vm.stopPrank();
 
         vm.prank(address(0xa2));
-        vm.expectRevert(xMETRIC.AddressCannotTransact.selector);
+        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
         metricToken.transferFrom(alice, bob, sendAmount);
 
         vm.prank(bob);
@@ -127,7 +127,7 @@ contract xMetricTest is Test {
     }
 
     function test_ChefCanTransact() public {
-        // Bob send alice xMETRIC token. Alice cannot spend this. Bob adds chef contract as transactor. Alice approves chef contract as spender.
+        // Bob send alice Xmetric token. Alice cannot spend this. Bob adds chef contract as transactor. Alice approves chef contract as spender.
         // Chef contract is able to withdraw Alice's tokens (and for instance return token Y)
         vm.startPrank(bob);
         uint256 sendAmount = 10 * 10**18;
