@@ -3,12 +3,11 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
+import "./onlyApi.sol";
 
-contract QuestionStateController is IQuestionStateController, Ownable {
-    address public questionApi;
+contract QuestionStateController is IQuestionStateController, Ownable, onlyApi {
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
-    mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
@@ -39,21 +38,8 @@ contract QuestionStateController is IQuestionStateController, Ownable {
     ) public onlyApi onlyState(STATE.VOTING, questionId) {
         Vote memory _vote = Vote({voter: _user, amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
-        questionIndex[_user][questionId] = votes[questionId].votes.length - 1;
         votes[questionId].totalVoteCount += amount;
-        // Lock tokens for voting
-    }
-
-    function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
-        uint256 index = questionIndex[_user][questionId];
-        uint256 amount = votes[questionId].votes[index].amount;
-
-        votes[questionId].votes[index].amount = 0;
-        votes[questionId].votes[index].weightedVote = 0;
-
-        votes[questionId].totalVoteCount -= amount;
-
-        // Unlock tokens for voting
+        // TODO Lock tokens for voting
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
@@ -74,13 +60,6 @@ contract QuestionStateController is IQuestionStateController, Ownable {
 
     function setQuestionApi(address _questionApi) public onlyOwner {
         questionApi = _questionApi;
-    }
-
-    // ------------------------------- Modifier
-    error NotTheApi();
-    modifier onlyApi() {
-        if (msg.sender != questionApi) revert NotTheApi();
-        _;
     }
 
     //------------------------------------------------------ Structs

@@ -2,18 +2,17 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IActionCostController.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import "./interfaces/IActionCostController.sol";
+import "./onlyApi.sol";
 import "../MetricToken.sol";
 
 // TODO we probably want a CostController or something to ensure user locks enough metric
 // ^^ price per action, each one is editable
 // Basically the QuestionAPI will request the price from this controler and ensure
-contract ActionCostController is Ownable, IActionCostController {
+contract ActionCostController is Ownable, onlyApi, IActionCostController {
     MetricToken private metric;
 
-    address public questionApi;
     uint256 public createCost;
 
     mapping(address => uint256) lockedPerUser;
@@ -36,32 +35,8 @@ contract ActionCostController is Ownable, IActionCostController {
         SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
     }
 
-    /**
-     * @notice Sets the cost of creating a question
-     * @param _cost The cost of creating a question
-     */
-    function setCreateCost(uint256 _cost) external onlyApi {
-        createCost = _cost;
-    }
-
-    /**
-     * @notice Sets the address of the question API.
-     * @param _questionApi The address of the question API.
-     */
-    function setQuestionApi(address _questionApi) public onlyOwner {
-        questionApi = _questionApi;
-    }
-
     // ------------------------------- Getter
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
     }
-
-    // ------------------------------- Modifier
-    modifier onlyApi() {
-        if (msg.sender != questionApi) revert NotTheApi();
-        _;
-    }
-    // ------------------------------- Errors
-    error NotTheApi();
 }

@@ -72,14 +72,6 @@ contract QuestionAPI is Ownable {
         _questionStateController.voteFor(msg.sender, questionId, amount);
     }
 
-    /**
-     * @notice Unvotes a question
-     * @param questionId The questionId of the question to upvote
-     */
-    function unvoteQuestion(uint256 questionId) public {
-        _questionStateController.unvoteFor(msg.sender, questionId);
-    }
-
     // TODO lock metric
     function claimQuestion(uint256 questionId) public {
         // TODO it sucks to do an int state check here, and I don't want a getter for every state
@@ -91,14 +83,6 @@ contract QuestionAPI is Ownable {
     // TODO lock metric
     function answerQuestion(uint256 questionId, string calldata answerURL) public {
         _claimController.answer(questionId, answerURL);
-    }
-
-    /**
-     * @notice Changes the cost of creating a question
-     * @param cost The new cost of creating a question
-     */
-    function setCreateCost(uint256 cost) public onlyOwner {
-        _costController.setCreateCost(cost);
     }
 
     //------------------------------------------------------ Errors
