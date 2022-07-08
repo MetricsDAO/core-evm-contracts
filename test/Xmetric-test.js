@@ -99,7 +99,7 @@ describe("xMETRIC", async function () {
     expect(frankBalance).to.equal("4000");
   });
 
-  it("should allow topChef to harvest to allocation groups", async function () {
+  it("should allow judy to approve Frank to transferFrom Judy to question api contract", async function () {
     // set frank to be transactor
     await xMetric.setTransactor(frank.address, true);
     // judy can now approve question api
