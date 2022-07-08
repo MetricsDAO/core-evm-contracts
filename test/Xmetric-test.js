@@ -1,7 +1,6 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
-const { utils } = require("ethers");
-const { mineBlocks, BN } = require("./utils");
+const { BN } = require("./utils");
 
 describe("xMETRIC", async function () {
   let xMetric;
@@ -11,20 +10,16 @@ describe("xMETRIC", async function () {
   let alice;
   let frank;
   let judy;
-  let topChef;
-  let topChefSigner;
   let signers;
   let questionAPI;
-  let questionApiSigner;
   let bountyQuestion;
   let claimController;
   let questionStateController;
   let costController;
 
-  const topChefAllocation = 100000;
+  const questionAPIAllocation = 100000;
 
   beforeEach(async function () {
-    const provider = new ethers.providers.JsonRpcProvider();
     signers = await ethers.getSigners();
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
@@ -33,10 +28,10 @@ describe("xMETRIC", async function () {
     const xMetricContract = await ethers.getContractFactory("Xmetric");
     xMetric = await xMetricContract.deploy();
 
-    [owner, bob, alice, judy, frank, topChefSigner] = signers;
+    [owner, bob, alice, judy, frank] = signers;
 
     await xMetric.transfer(bob.address, BN(2000).div(10));
-    await xMetric.transfer(judy.address, BN(topChefAllocation));
+    await xMetric.transfer(judy.address, BN(questionAPIAllocation));
 
     // deploy Bounty Question
     const questionContract = await ethers.getContractFactory("BountyQuestion");
@@ -63,16 +58,6 @@ describe("xMETRIC", async function () {
       claimController.address,
       costController.address
     );
-
-    signers.push(questionAPI);
-
-    questionApiSigner = signers[20];
-
-    // set factory to be owner
-    await bountyQuestion.transferOwnership(questionAPI.address);
-    await claimController.transferOwnership(questionAPI.address);
-    await questionStateController.transferOwnership(questionAPI.address);
-    await costController.transferOwnership(questionAPI.address);
   });
 
   it("should have the correct symbol and decimals and owner", async function () {
@@ -115,31 +100,14 @@ describe("xMETRIC", async function () {
   });
 
   it("should allow topChef to harvest to allocation groups", async function () {
-    // set top chef to be transactor
+    // set frank to be transactor
+    await xMetric.setTransactor(frank.address, true);
+    // judy can now approve question api
+    await xMetric.connect(judy).approve(frank.address, BN(questionAPIAllocation));
 
-    await xMetric.setTransactor(questionApiSigner.address, true);
-    // await xMetric.setTransactor(topChefSigner.address, true);
-    // judy can now approve top Chef
-    await xMetric.connect(judy).approve(questionApiSigner.address, BN(topChefAllocation));
+    await xMetric.connect(frank).transferFrom(judy.address, questionAPI.address, BN(questionAPIAllocation));
 
-    // await xMetric.setTransactor(judy.address, true);
-
-    // await xMetric.connect(judy).transferFrom(judy.address, questionAPI.address, BN(topChefAllocation));
-
-    // await xMetric.setTransactor(judy.address, false);
-
-    // const questionAPIBalance = await xMetric.balanceOf(questionAPI.address);
-    // expect(questionAPIBalance).to.equal("100000");
-
-    // await topChef.toggleRewards(true);
-    // await topChef.addAllocationGroup(allocationGroup1.address, 1, true);
-
-    // await mineBlocks(2);
-    // await topChef.connect(allocationGroup1).claim(0);
-
-    // const balance1 = await xMetric.balanceOf(allocationGroup1.address);
-    // expect(balance1).to.equal(utils.parseEther("4"));
+    const questionAPIBalance = await xMetric.balanceOf(questionAPI.address);
+    expect(questionAPIBalance).to.equal("100000");
   });
 });
-
-// Can we set up a time next week and it's more of an ask of @Titus and @Addison as well to do an internal lunch and learn for writing tests in foundry we could invite others something very basic just sort of going over the lines of tests and how it works
