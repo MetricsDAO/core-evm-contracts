@@ -3,9 +3,9 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IClaimController.sol";
+import "./onlyApi.sol";
 
-contract ClaimController is Ownable, IClaimController {
-    address public questionApi;
+contract ClaimController is Ownable, IClaimController, OnlyApi {
     mapping(uint256 => uint256) public claimLimits;
     mapping(uint256 => mapping(address => Answer)) public answers;
     mapping(uint256 => address[]) public claims;
@@ -45,18 +45,6 @@ contract ClaimController is Ownable, IClaimController {
     //------------------------------------------------------ Errors
     error ClaimLimitReached();
     error NeedClaimToAnswer();
-
-    // Api stuff
-    function setQuestionApi(address _questionApi) public onlyOwner {
-        questionApi = _questionApi;
-    }
-
-    // ------------------------------- Modifier
-    error NotTheApi();
-    modifier onlyApi() {
-        if (msg.sender != questionApi) revert NotTheApi();
-        _;
-    }
 
     //------------------------------------------------------ Structs
 

@@ -20,7 +20,7 @@ import "./onlyApi.sol";
 // philosphy -> start out gated and the protocol can evolve in the same way the dao does
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable, onlyApi {
+contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;

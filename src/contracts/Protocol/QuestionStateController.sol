@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./onlyApi.sol";
 
-contract QuestionStateController is IQuestionStateController, Ownable, onlyApi {
+contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
 
@@ -56,10 +56,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, onlyApi {
 
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
         return votes[questionId].totalVoteCount;
-    }
-
-    function setQuestionApi(address _questionApi) public onlyOwner {
-        questionApi = _questionApi;
     }
 
     //------------------------------------------------------ Structs

@@ -10,7 +10,7 @@ import "../MetricToken.sol";
 // TODO we probably want a CostController or something to ensure user locks enough metric
 // ^^ price per action, each one is editable
 // Basically the QuestionAPI will request the price from this controler and ensure
-contract ActionCostController is Ownable, onlyApi, IActionCostController {
+contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     MetricToken private metric;
 
     uint256 public createCost;
@@ -39,16 +39,4 @@ contract ActionCostController is Ownable, onlyApi, IActionCostController {
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
     }
-
-    /**
-     * @notice Sets the address of the question API.
-     * @param _questionApi The address of the question API.
-     */
-    function setQuestionApi(address _questionApi) public onlyOwner {
-        questionApi = _questionApi;
-    }
-
-    // ------------------------------- Getter
-    function getLockedPerUser(address _user) public view returns (uint256) {
-        return lockedPerUser[_user];
-    }
+}

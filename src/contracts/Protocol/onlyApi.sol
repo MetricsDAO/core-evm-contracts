@@ -2,7 +2,7 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract onlyApi {
+contract OnlyApi is Ownable {
     address public questionApi;
 
     // ------------------------------- Setter

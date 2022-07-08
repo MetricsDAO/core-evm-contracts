@@ -44,6 +44,7 @@ contract QuestionAPITest is Test {
         _claimController.setQuestionApi(address(_questionAPI));
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setQuestionApi(address(_questionAPI));
 
         _metricToken.transfer(other, 100e18);
         vm.stopPrank();
