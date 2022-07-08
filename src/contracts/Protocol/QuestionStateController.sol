@@ -3,30 +3,43 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
+import "./onlyApi.sol";
 
-contract QuestionStateController is IQuestionStateController, Ownable {
+contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
 
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
-    function initializeQuestion(uint256 questionId) public onlyOwner {
+    /**
+     * @notice Initializes a question to draft.
+     * @param questionId The id of the question
+     */
+    function initializeQuestion(uint256 questionId) public onlyApi {
         state[questionId] = STATE.DRAFT;
     }
 
-    function readyForVotes(uint256 questionId) public onlyOwner onlyState(STATE.DRAFT, questionId) {
+    function readyForVotes(uint256 questionId) public onlyApi onlyState(STATE.DRAFT, questionId) {
         state[questionId] = STATE.VOTING;
     }
 
-    function publish(uint256 questionId) public onlyOwner onlyState(STATE.VOTING, questionId) {
+    function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+        // if some voting barrier is passed, we can publish the question
         state[questionId] = STATE.PUBLISHED;
     }
 
-    function voteFor(uint256 questionId, uint256 amount) public onlyOwner onlyState(STATE.VOTING, questionId) {
-        Vote memory _vote = Vote({voter: _msgSender(), amount: amount, weightedVote: amount});
+    // Cannot for for yourself
+    // Can only vote once? Shouldnt matter
+    function voteFor(
+        address _user,
+        uint256 questionId,
+        uint256 amount
+    ) public onlyApi onlyState(STATE.VOTING, questionId) {
+        Vote memory _vote = Vote({voter: _user, amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
-        votes[questionId].totalVoteCount = votes[questionId].totalVoteCount + amount;
+        votes[questionId].totalVoteCount += amount;
+        // TODO Lock tokens for voting
     }
 
     function setBadState(uint256 questionId) public onlyOwner {
@@ -43,6 +56,10 @@ contract QuestionStateController is IQuestionStateController, Ownable {
 
     function getVotes(uint256 questionId) public view returns (Vote[] memory _votes) {
         return votes[questionId].votes;
+    }
+
+    function getTotalVotes(uint256 questionId) public view returns (uint256) {
+        return votes[questionId].totalVoteCount;
     }
 
     //------------------------------------------------------ Structs

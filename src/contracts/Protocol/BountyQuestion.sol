@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./onlyApi.sol";
 
 // TODO remove ERC721 stuff here
 // TODO introduce a Challenge data model
@@ -19,7 +20,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 // philosphy -> start out gated and the protocol can evolve in the same way the dao does
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable {
+contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
@@ -29,7 +30,7 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     constructor() ERC721("MetricsDAO Question", "MDQ") {}
 
     // working standard metadata format:  Title, Description, Program
-    function safeMint(address to, string memory uri) public onlyOwner returns (uint256) {
+    function safeMint(address to, string calldata uri) public onlyApi returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
