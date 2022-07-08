@@ -52,12 +52,3 @@ contract ActionCostController is Ownable, onlyApi, IActionCostController {
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
     }
-
-    // ------------------------------- Modifier
-    modifier onlyApi() {
-        if (msg.sender != questionApi) revert NotTheApi();
-        _;
-    }
-    // ------------------------------- Errors
-    error NotTheApi();
-}
