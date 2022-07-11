@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IClaimController.sol";
-import "./OnlyApi.sol";
+import "./OnlyAPI.sol";
 
 contract ClaimController is Ownable, IClaimController, OnlyApi {
     mapping(uint256 => uint256) public claimLimits;
