@@ -36,10 +36,10 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     }
 
     /**
-     * @notice Sets the cost of creating a question
-     * @param _cost The cost of creating a question
+     * @notice Changes the cost of creating a question
+     * @param _cost The new cost of creating a question
      */
-    function setCreateCost(uint256 _cost) external onlyApi {
+    function setCreateCost(uint256 _cost) external onlyOwner {
         createCost = _cost;
     }
 

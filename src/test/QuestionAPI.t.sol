@@ -75,7 +75,7 @@ contract QuestionAPITest is Test {
 
         // Update the costs of creating a question
         vm.prank(owner);
-        _questionAPI.setCreateCost(9e18);
+        _costController.setCreateCost(9e18);
 
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
