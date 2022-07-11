@@ -52,7 +52,6 @@ describe("xMETRIC", async function () {
     // deploy Factory
     const factoryContract = await ethers.getContractFactory("QuestionAPI");
     questionAPI = await factoryContract.deploy(
-      xMetric.address,
       bountyQuestion.address,
       questionStateController.address,
       claimController.address,
