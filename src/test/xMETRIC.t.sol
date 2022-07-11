@@ -32,7 +32,7 @@ contract xMetricTest is Test {
     }
 
     function test_GetTokenSymbol() public {
-        assertEq(metricToken.name(), "xMETRIC");
+        assertEq(metricToken.name(), "Xmetric");
     }
 
     function test_GetTokenDecimals() public {
