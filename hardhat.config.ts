@@ -29,7 +29,11 @@ const config: HardhatUserConfig = {
   networks: {
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts: process.env.ROPSTEN_KEY !== undefined ? [process.env.ROPSTEN_KEY] : [],
+    },
+    polygon: {
+      url: process.env.POLYGON_URL || "",
+      accounts: process.env.POLYGON_KEY !== undefined ? [process.env.POLYGON_KEY] : [],
     },
     hardhat: {
       mining: {
@@ -46,6 +50,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       ropsten: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
+      polygon: process.env.ETHERSCAN_API_KEY || "",
     },
   },
   paths: {
