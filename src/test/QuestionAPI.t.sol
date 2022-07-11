@@ -78,5 +78,36 @@ contract QuestionAPITest is Test {
         vm.stopPrank();
     }
 
+    function test_CreateQuestionAndVoteForQuestionThenUnvoteForQuestion() public {
+        console.log("Should correctly create a question and vote for it");
+
+        vm.startPrank(other);
+        // Create a question and see that it is created and balance is updated.
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+
+        // Assert that the question is now a DRAFT and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.DRAFT));
+        assertEq(_claimController.getClaimLimit(questionId), 25);
+
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+
+        // Question is set for the right address and values
+        _questionStateController.getVotes(questionId);
+
+        // Unvote for the question
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Check that accounting was done properly.
+        _questionStateController.getVotes(questionId);
+        vm.stopPrank();
+    }
+
     // --------------------- Testing for access controlls
 }
