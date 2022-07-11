@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IActionCostController.sol";
-import "./OnlyApi.sol";
+import "./OnlyAPI.sol";
 import "../MetricToken.sol";
 
 // TODO we probably want a CostController or something to ensure user locks enough metric

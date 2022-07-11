@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
-import "./OnlyApi.sol";
+import "./OnlyAPI.sol";
 
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionVote) public votes;
