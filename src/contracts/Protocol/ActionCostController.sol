@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IActionCostController.sol";
 import "./OnlyApi.sol";
-import "../MetricToken.sol";
 
 // TODO we probably want a CostController or something to ensure user locks enough metric
 // ^^ price per action, each one is editable
@@ -36,14 +35,6 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
     }
 
-    /**
-     * @notice Changes the cost of creating a question
-     * @param _cost The new cost of creating a question
-     */
-    function setCreateCost(uint256 _cost) external onlyOwner {
-        createCost = _cost;
-    }
-
     // ------------------------------- Getter
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
@@ -51,7 +42,11 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
 
     // ------------------------------- Admin
 
-    function setCreateCost(uint256 _cost) public onlyOwner {
+    /**
+     * @notice Changes the cost of creating a question
+     * @param _cost The new cost of creating a question
+     */
+    function setCreateCost(uint256 _cost) external onlyOwner {
         createCost = _cost;
     }
 
