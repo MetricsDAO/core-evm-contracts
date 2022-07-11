@@ -35,6 +35,10 @@ const config: HardhatUserConfig = {
       url: process.env.POLYGON_URL || "",
       accounts: process.env.POLYGON_KEY !== undefined ? [process.env.POLYGON_KEY] : [],
     },
+    goerli: {
+      url: process.env.GOERLI_URL || "",
+      accounts: process.env.GOERLI_KEY !== undefined ? [process.env.GOERLI_KEY] : [],
+    },
     hardhat: {
       mining: {
         auto: false,
@@ -51,6 +55,7 @@ const config: HardhatUserConfig = {
       ropsten: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       polygon: process.env.ETHERSCAN_API_KEY || "",
+      goerli: process.env.ETHERSCAN_API_KEY || "",
     },
   },
   paths: {
