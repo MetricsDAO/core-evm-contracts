@@ -42,7 +42,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // TODO Lock tokens for voting
     }
 
-    function setBadState(uint256 questionId) public onlyOwner {
+    function setBadState(uint256 questionId) public onlyApi {
         state[questionId] = STATE.BAD;
     }
 
