@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IActionCostController.sol";
-import "./onlyApi.sol";
+import "./OnlyApi.sol";
 import "../MetricToken.sol";
 
 // TODO we probably want a CostController or something to ensure user locks enough metric
