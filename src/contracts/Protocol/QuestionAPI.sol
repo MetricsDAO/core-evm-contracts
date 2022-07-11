@@ -7,7 +7,6 @@ import "./BountyChallenge.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
-import "../MetricToken.sol";
 
 // TODO a lot of talk about "admins" -> solve that
 contract QuestionAPI is Ownable {
@@ -16,16 +15,13 @@ contract QuestionAPI is Ownable {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
-    MetricToken private _metricToken;
 
     constructor(
-        address metric,
         address bountyQuestion,
         address questionStateController,
         address claimController,
         address costController
     ) {
-        _metricToken = MetricToken(metric);
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
@@ -120,9 +116,5 @@ contract QuestionAPI is Ownable {
 
     function setCostController(address newCost) public onlyOwner {
         _costController = IActionCostController(newCost);
-    }
-
-    function setMetricToken(address newMetric) public onlyOwner {
-        _metricToken = MetricToken(newMetric);
     }
 }

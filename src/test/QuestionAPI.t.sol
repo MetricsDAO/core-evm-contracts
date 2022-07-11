@@ -34,7 +34,6 @@ contract QuestionAPITest is Test {
         _questionStateController = new QuestionStateController();
         _costController = new ActionCostController(address(_metricToken));
         _questionAPI = new QuestionAPI(
-            address(_metricToken),
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
@@ -153,6 +152,18 @@ contract QuestionAPITest is Test {
         uint256 questionState = _questionStateController.getState(badQuestion);
         assertEq(questionState, 7);
         }
+
+    function testdisqualifyQuestion() public {
+        vm.startPrank(other);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        _questionAPI.disqualifyQuestion(badQuestion);
+
+        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.BAD));
+    }
 
     // --------------------- Testing for access controlls
 
