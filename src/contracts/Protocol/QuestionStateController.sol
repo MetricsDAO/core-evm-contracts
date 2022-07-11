@@ -3,11 +3,12 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
-import "./onlyApi.sol";
+import "./OnlyApi.sol";
 
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
+    mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
     // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
@@ -38,11 +39,24 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     ) public onlyApi onlyState(STATE.VOTING, questionId) {
         Vote memory _vote = Vote({voter: _user, amount: amount, weightedVote: amount});
         votes[questionId].votes.push(_vote);
+        questionIndex[_user][questionId] = votes[questionId].votes.length - 1;
         votes[questionId].totalVoteCount += amount;
         // TODO Lock tokens for voting
     }
 
-    function setBadState(uint256 questionId) public onlyOwner {
+    function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+        uint256 index = questionIndex[_user][questionId];
+        uint256 amount = votes[questionId].votes[index].amount;
+
+        votes[questionId].votes[index].amount = 0;
+        votes[questionId].votes[index].weightedVote = 0;
+
+        votes[questionId].totalVoteCount -= amount;
+
+        // TODO Unlock tokens for voting
+    }
+
+    function setBadState(uint256 questionId) public onlyApi {
         state[questionId] = STATE.BAD;
     }
 
