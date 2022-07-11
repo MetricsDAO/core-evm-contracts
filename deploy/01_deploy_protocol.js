@@ -25,7 +25,6 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: metricToken.address,
-        constructorArguments: [deployer],
         contract: "src/contracts/MetricToken.sol:MetricToken",
       });
     } catch (error) {
