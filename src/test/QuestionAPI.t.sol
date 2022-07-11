@@ -57,6 +57,42 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(owner), 1000000000e18 - 100e18);
     }
 
+    function test_CreateTwoQuestionsWithChangingActionCost() public {
+        console.log("Should correctly create 2 questions and do proper accounting.");
+
+        vm.startPrank(other);
+        // Create a question and see that it is created and balance is updated.
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+
+        // Assert that the question is now a DRAFT and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionIdOne), uint256(IQuestionStateController.STATE.DRAFT));
+        assertEq(_claimController.getClaimLimit(questionIdOne), 25);
+
+        vm.stopPrank();
+
+        // Update the costs of creating a question
+        vm.prank(owner);
+        _costController.setCreateCost(9e18);
+
+        vm.startPrank(other);
+        // Create a question and see that it is created and balance is updated.
+        assertEq(_metricToken.balanceOf(other), 99e18);
+        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://MDAO", 15);
+        assertEq(_metricToken.balanceOf(other), 90e18);
+
+        // Assert that the question is now a DRAFT and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionIdTwo), uint256(IQuestionStateController.STATE.DRAFT));
+        assertEq(_claimController.getClaimLimit(questionIdTwo), 15);
+
+        // Assert that accounting has been done correctly
+        assertEq(_costController.getLockedPerUser(other), 10e18);
+
+        vm.stopPrank();
+    }
+
     function test_CreateQuestion() public {
         console.log("Should correctly create a question");
 
@@ -77,7 +113,7 @@ contract QuestionAPITest is Test {
 
         vm.stopPrank();
     }
-
+    
     function test_CreateQuestionAndVoteForQuestionThenUnvoteForQuestion() public {
         console.log("Should correctly create a question and vote for it");
 
@@ -108,6 +144,15 @@ contract QuestionAPITest is Test {
         _questionStateController.getVotes(questionId);
         vm.stopPrank();
     }
+    
+    function test_DisqualifyQuestion() public {
+        vm.startPrank(owner);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
+        _questionAPI.disqualifyQuestion(badQuestion);
+        uint256 questionState = _questionStateController.getState(badQuestion);
+        assertEq(questionState, 7);
+        }
 
     // --------------------- Testing for access controlls
 

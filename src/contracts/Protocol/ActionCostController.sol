@@ -35,6 +35,14 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
     }
 
+    /**
+     * @notice Changes the cost of creating a question
+     * @param _cost The new cost of creating a question
+     */
+    function setCreateCost(uint256 _cost) external onlyOwner {
+        createCost = _cost;
+    }
+
     // ------------------------------- Getter
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
