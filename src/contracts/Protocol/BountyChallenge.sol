@@ -27,6 +27,7 @@ contract BountyChallenge is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bu
 
     Counters.Counter private _tokenIdCounter;
     mapping(uint256 => address) private _authors; // TODO if we want questions to be transferable, then owner != author
+    mapping(uint256 => uint256) private _createdAt;
 
     constructor() ERC721("MetricsDAO Question", "MDQ") {}
 

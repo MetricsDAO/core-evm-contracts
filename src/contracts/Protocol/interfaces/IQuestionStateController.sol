@@ -23,7 +23,7 @@ interface IQuestionStateController {
         UNINIT,
         DRAFT,
         VOTING,
-        PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered, during this transition provide the questions that inspired it
+        PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered
         IN_GRADING,
         COMPLETED,
         CANCELLED,
