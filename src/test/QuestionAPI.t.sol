@@ -66,8 +66,8 @@ contract QuestionAPITest is Test {
         uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
-        // Assert that the question is now a DRAFT and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionIdOne), uint256(IQuestionStateController.STATE.DRAFT));
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionIdOne), uint256(IQuestionStateController.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionIdOne), 25);
 
         vm.stopPrank();
@@ -82,8 +82,8 @@ contract QuestionAPITest is Test {
         uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://MDAO", 15);
         assertEq(_metricToken.balanceOf(other), 90e18);
 
-        // Assert that the question is now a DRAFT and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionIdTwo), uint256(IQuestionStateController.STATE.DRAFT));
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionIdTwo), uint256(IQuestionStateController.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionIdTwo), 15);
 
         // Assert that accounting has been done correctly
@@ -102,8 +102,8 @@ contract QuestionAPITest is Test {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
-        // Assert that the question is now a DRAFT and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.DRAFT));
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Other cannot directly call onlyApi functions
@@ -112,7 +112,7 @@ contract QuestionAPITest is Test {
 
         vm.stopPrank();
     }
-    
+
     function test_CreateQuestionAndVoteForQuestionThenUnvoteForQuestion() public {
         console.log("Should correctly create a question and vote for it");
 
@@ -123,8 +123,8 @@ contract QuestionAPITest is Test {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
-        // Assert that the question is now a DRAFT and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.DRAFT));
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
@@ -143,17 +143,84 @@ contract QuestionAPITest is Test {
         _questionStateController.getVotes(questionId);
         vm.stopPrank();
     }
-    
+
+    function test_UnvotingWithoutFirstHavingVotedDoesNotWork() public {
+        console.log("It should not be possible to unvote if you have not voted for the question.");
+
+        vm.startPrank(other);
+        // Create a question and see that it is created and balance is updated.
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_claimController.getClaimLimit(questionId), 25);
+
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+
+        // Question is set for the right address and values
+        _questionStateController.getVotes(questionId);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        vm.expectRevert(QuestionStateController.HasNotVotedForQuestion.selector);
+
+        // Unvote for the question
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Check that accounting was done properly.
+        _questionStateController.getVotes(questionId);
+        vm.stopPrank();
+    }
+
+    function test_CannotVoteSameQuestionMultipleTimes() public {
+        console.log("It should not be possible to vote multiple times for the same question.");
+
+        vm.startPrank(other);
+        // Create a question and see that it is created and balance is updated.
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_claimController.getClaimLimit(questionId), 25);
+
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+        assertEq(_metricToken.balanceOf(other), 99e18);
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+
+        // Question is set for the right address and values
+        _questionStateController.getVotes(questionId);
+
+        // Vote for the question again
+        vm.expectRevert(QuestionStateController.HasAlreadyVotedForQuestion.selector);
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+
+        // Check that accounting was done properly.
+        _questionStateController.getVotes(questionId);
+        vm.stopPrank();
+    }
+
     function test_DisqualifyQuestion() public {
         vm.startPrank(owner);
         _metricToken.approve(address(_costController), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
-        assertEq(questionState, 7);
-        }
+        assertEq(questionState, 6);
+    }
 
-    function testdisqualifyQuestion() public {
+    function test_DisqualifyQuestionTwo() public {
         vm.startPrank(other);
         _metricToken.approve(address(_costController), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
@@ -166,6 +233,4 @@ contract QuestionAPITest is Test {
     }
 
     // --------------------- Testing for access controlls
-
-    function test_UnvotingAnotherUsersQuestionDoesNotWork() public {}
 }

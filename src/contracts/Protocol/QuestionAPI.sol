@@ -62,9 +62,7 @@ contract QuestionAPI is Ownable {
      * We can manipulate this very easily -- think of a way to make it secure
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
-        if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
-            _questionStateController.readyForVotes(questionId);
-        }
+        if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.VOTING)) revert QuestionNotOpenToVoting();
         _questionStateController.voteFor(msg.sender, questionId, amount);
     }
 
@@ -95,6 +93,7 @@ contract QuestionAPI is Ownable {
 
     //------------------------------------------------------ Errors
     error ClaimsNotOpen();
+    error QuestionNotOpenToVoting();
 
     //------------------------------------------------------ Proxy
 
