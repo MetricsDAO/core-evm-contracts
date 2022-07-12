@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import fs from "fs";
 
 async function main() {
-  const newTrasactor = "";
+  const newTrasactor = "0xABF28f8D9adFB2255F4a059e37d3BcE9104969dB";
 
   const network = process.env.HARDHAT_NETWORK;
   console.log("adding transactor on: ", network);
