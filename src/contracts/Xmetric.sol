@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
-contract Xmetric is ERC20("Xmetric", "xMETRIC"), ERC20Pausable, Ownable {
+contract Xmetric is ERC20("xMetric", "xMETRIC"), ERC20Pausable, Ownable {
     constructor() {
         setTransactor(msg.sender, true);
     }
