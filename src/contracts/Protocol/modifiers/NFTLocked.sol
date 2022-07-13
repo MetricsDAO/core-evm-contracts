@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 abstract contract NFTLocked is Ownable {
+    bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+
     mapping(bytes32 => address) private _nfts;
 
     function addHolderRole(bytes32 role, address nft) public onlyOwner {
