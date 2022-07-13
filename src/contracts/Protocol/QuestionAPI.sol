@@ -3,15 +3,14 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BountyQuestion.sol";
-import "./BountyChallenge.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
+import "./modifiers/NFTLocked.sol";
 
 // TODO a lot of talk about "admins" -> solve that
-contract QuestionAPI is Ownable {
+contract QuestionAPI is Ownable, NFTLocked {
     BountyQuestion private _question;
-    BountyChallenge private _challenge;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
@@ -42,7 +41,7 @@ contract QuestionAPI is Ownable {
      */
     function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
         // Pay to create a question
-        _costController.payForCreateQuestion(msg.sender);
+        _costController.payForCreateQuestion(_msgSender());
 
         // Mint a new question
         uint256 questionId = _question.safeMint(_msgSender(), uri);
@@ -50,6 +49,33 @@ contract QuestionAPI is Ownable {
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
+
+        return questionId;
+    }
+
+    /**
+     * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
+     * @param uri The IPFS hash of the challenge
+     * @param claimLimit The limit for the amount of people that can claim the challenge
+     * @return questionId The question id
+     */
+    function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
+        // Pay to create a question
+        // _costController.payForCreateChallenge(msg.sender); ? Not sure if we want this -- doubt it
+        // keep as questionId or should be challengeId?
+
+        // Mint a new question
+        uint256 questionId = _question.safeMint(_msgSender(), uri);
+
+        // Initialize the question
+        _questionStateController.initializeQuestion(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit);
+
+        // Make challenge ready for votes -- this can be removed later as we skip drafts
+        _questionStateController.readyForVotes(questionId);
+
+        // Publish the question (make it a challenge)
+        _questionStateController.publish(questionId);
 
         return questionId;
     }
@@ -65,7 +91,7 @@ contract QuestionAPI is Ownable {
         if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
             _questionStateController.readyForVotes(questionId);
         }
-        _questionStateController.voteFor(msg.sender, questionId, amount);
+        _questionStateController.voteFor(_msgSender(), questionId, amount);
     }
 
     /**
@@ -73,7 +99,7 @@ contract QuestionAPI is Ownable {
      * @param questionId The questionId of the question to upvote
      */
     function unvoteQuestion(uint256 questionId) public {
-        _questionStateController.unvoteFor(msg.sender, questionId);
+        _questionStateController.unvoteFor(_msgSender(), questionId);
     }
 
     // TODO lock metric
@@ -100,10 +126,6 @@ contract QuestionAPI is Ownable {
 
     function setQuestionProxy(address newQuestion) public onlyOwner {
         _question = BountyQuestion(newQuestion);
-    }
-
-    function setChallengeProxy(address newChallenge) public onlyOwner {
-        _challenge = BountyChallenge(newChallenge);
     }
 
     function setQuestionStateController(address newQuestion) public onlyOwner {
