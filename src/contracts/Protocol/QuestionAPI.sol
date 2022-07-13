@@ -6,9 +6,10 @@ import "./BountyQuestion.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
+import "./modifiers/NFTLocked.sol";
 
 // TODO a lot of talk about "admins" -> solve that
-contract QuestionAPI is Ownable {
+contract QuestionAPI is Ownable, NFTLocked {
     BountyQuestion private _question;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
@@ -48,6 +49,33 @@ contract QuestionAPI is Ownable {
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
+
+        return questionId;
+    }
+
+    /**
+     * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
+     * @param uri The IPFS hash of the challenge
+     * @param claimLimit The limit for the amount of people that can claim the challenge
+     * @return questionId The question id
+     */
+    function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
+        // Pay to create a question
+        // _costController.payForCreateChallenge(msg.sender); ? Not sure if we want this -- doubt it
+        // keep as questionId or should be challengeId?
+
+        // Mint a new question
+        uint256 questionId = _question.safeMint(_msgSender(), uri);
+
+        // Initialize the question
+        _questionStateController.initializeQuestion(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit);
+
+        // Make challenge ready for votes -- this can be removed later as we skip drafts
+        _questionStateController.readyForVotes(questionId);
+
+        // Publish the question (make it a challenge)
+        _questionStateController.publish(questionId);
 
         return questionId;
     }
