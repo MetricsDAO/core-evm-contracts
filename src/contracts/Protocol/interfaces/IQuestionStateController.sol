@@ -10,8 +10,6 @@ interface IQuestionStateController {
         uint256 amount
     ) external;
 
-    function readyForVotes(uint256 questionId) external;
-
     function unvoteFor(address _user, uint256 questionId) external;
 
     function publish(uint256 questionId) external;
@@ -23,7 +21,6 @@ interface IQuestionStateController {
 
     enum STATE {
         UNINIT,
-        DRAFT,
         VOTING,
         PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered
         IN_GRADING,

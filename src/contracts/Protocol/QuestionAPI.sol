@@ -71,9 +71,6 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
 
-        // Make challenge ready for votes -- this can be removed later as we skip drafts
-        _questionStateController.readyForVotes(questionId);
-
         // Publish the question (make it a challenge)
         _questionStateController.publish(questionId);
 
@@ -88,10 +85,7 @@ contract QuestionAPI is Ownable, NFTLocked {
      * We can manipulate this very easily -- think of a way to make it secure
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
-        if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
-            _questionStateController.readyForVotes(questionId);
-        }
-        _questionStateController.voteFor(_msgSender(), questionId, amount);
+        _questionStateController.voteFor(msg.sender, questionId, amount);
     }
 
     /**
