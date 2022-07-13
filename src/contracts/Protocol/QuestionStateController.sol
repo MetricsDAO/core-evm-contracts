@@ -8,9 +8,11 @@ import "./modifiers/OnlyAPI.sol";
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionVote) public votes;
     mapping(uint256 => STATE) public state;
+
+    // Mapping for all questions that are upvoted by the user?
+    mapping(address => mapping(uint256 => bool)) public hasVoted;
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
-    // TODO ? map a user's address to their votes
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
     /**
@@ -18,10 +20,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      * @param questionId The id of the question
      */
     function initializeQuestion(uint256 questionId) public onlyApi {
-        state[questionId] = STATE.DRAFT;
-    }
-
-    function readyForVotes(uint256 questionId) public onlyApi onlyState(STATE.DRAFT, questionId) {
         state[questionId] = STATE.VOTING;
     }
 
@@ -30,29 +28,39 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         state[questionId] = STATE.PUBLISHED;
     }
 
-    // Cannot for for yourself
-    // Can only vote once? Shouldnt matter
     function voteFor(
         address _user,
         uint256 questionId,
         uint256 amount
     ) public onlyApi onlyState(STATE.VOTING, questionId) {
-        Vote memory _vote = Vote({voter: _user, amount: amount, weightedVote: amount});
+        // Checks
+        if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
+
+        // Effects
+        Vote memory _vote = Vote({voter: _user, amount: amount});
         votes[questionId].votes.push(_vote);
+
+        hasVoted[_user][questionId] = true;
         questionIndex[_user][questionId] = votes[questionId].votes.length - 1;
+
         votes[questionId].totalVoteCount += amount;
+
+        // Interactions
         // TODO Lock tokens for voting
     }
 
     function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+        // Checks
+        if (!hasVoted[_user][questionId]) revert HasNotVotedForQuestion();
+
+        // Effects
         uint256 index = questionIndex[_user][questionId];
         uint256 amount = votes[questionId].votes[index].amount;
 
         votes[questionId].votes[index].amount = 0;
-        votes[questionId].votes[index].weightedVote = 0;
-
         votes[questionId].totalVoteCount -= amount;
 
+        // Interactions
         // TODO Unlock tokens for voting
     }
 
@@ -76,9 +84,12 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return votes[questionId].totalVoteCount;
     }
 
-    //------------------------------------------------------ Structs
-
+    //------------------------------------------------------ Errors
+    error HasNotVotedForQuestion();
+    error HasAlreadyVotedForQuestion();
     error InvalidStateTransition();
+
+    //------------------------------------------------------ Structs
     modifier onlyState(STATE required, uint256 questionId) {
         if (required != state[questionId]) revert InvalidStateTransition();
         _;
@@ -92,13 +103,11 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     struct Vote {
         address voter;
         uint256 amount;
-        uint256 weightedVote;
     }
 
     //UNINIT is the default state, and must be first in the enum set
     // enum STATE {
     //     UNINIT,
-    //     DRAFT,
     //     VOTING,
     //     PUBLISHED,
     //     IN_GRADING,
