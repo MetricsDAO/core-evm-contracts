@@ -17,7 +17,7 @@ contract OnlyApi is Ownable {
 
     // ------------------------ Modifiers
     modifier onlyApi() {
-        if (msg.sender != questionApi) revert NotTheApi();
+        if (_msgSender() != questionApi) revert NotTheApi();
         _;
     }
 

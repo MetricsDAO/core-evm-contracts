@@ -42,7 +42,7 @@ contract QuestionAPI is Ownable {
      */
     function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
         // Pay to create a question
-        _costController.payForCreateQuestion(msg.sender);
+        _costController.payForCreateQuestion(_msgSender());
 
         // Mint a new question
         uint256 questionId = _question.safeMint(_msgSender(), uri);
@@ -65,7 +65,7 @@ contract QuestionAPI is Ownable {
         if (_questionStateController.getState(questionId) == uint256(IQuestionStateController.STATE.DRAFT)) {
             _questionStateController.readyForVotes(questionId);
         }
-        _questionStateController.voteFor(msg.sender, questionId, amount);
+        _questionStateController.voteFor(_msgSender(), questionId, amount);
     }
 
     /**
@@ -73,7 +73,7 @@ contract QuestionAPI is Ownable {
      * @param questionId The questionId of the question to upvote
      */
     function unvoteQuestion(uint256 questionId) public {
-        _questionStateController.unvoteFor(msg.sender, questionId);
+        _questionStateController.unvoteFor(_msgSender(), questionId);
     }
 
     // TODO lock metric
