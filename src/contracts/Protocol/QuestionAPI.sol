@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BountyQuestion.sol";
-import "./BountyChallenge.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
@@ -11,7 +10,6 @@ import "./interfaces/IActionCostController.sol";
 // TODO a lot of talk about "admins" -> solve that
 contract QuestionAPI is Ownable {
     BountyQuestion private _question;
-    BountyChallenge private _challenge;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
@@ -100,10 +98,6 @@ contract QuestionAPI is Ownable {
 
     function setQuestionProxy(address newQuestion) public onlyOwner {
         _question = BountyQuestion(newQuestion);
-    }
-
-    function setChallengeProxy(address newChallenge) public onlyOwner {
-        _challenge = BountyChallenge(newChallenge);
     }
 
     function setQuestionStateController(address newQuestion) public onlyOwner {
