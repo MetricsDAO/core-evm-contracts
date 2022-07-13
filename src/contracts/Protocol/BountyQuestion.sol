@@ -24,12 +24,12 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
-    // mapping(uint256 => address) private _authors; // TODO if we want questions to be transferable, then owner != author
-    // uint256[] public tokenIds;
-    mapping(address => uint256[]) public _authors;
+    mapping(address => uint256[]) public authors; // TODO if we want questions to be transferable, then owner != author
     mapping(uint256 => uint256) private _createdAt;
 
-    constructor() ERC721("MetricsDAO Question", "MDQ") {}
+    constructor() ERC721("MetricsDAO Question", "MDQ") {
+        _tokenIdCounter.increment();
+    }
 
     // working standard metadata format:  Title, Description, Program
     function safeMint(address to, string calldata uri) public onlyApi returns (uint256) {
@@ -37,7 +37,7 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-        _authors[to].push(tokenId);
+        authors[to].push(tokenId);
         return tokenId;
     }
 
@@ -64,6 +64,6 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     }
 
     function getAuthor(address user) public view returns (uint256[] memory) {
-        return _authors[user];
+        return authors[user];
     }
 }
