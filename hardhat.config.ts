@@ -54,7 +54,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       ropsten: process.env.ETHERSCAN_API_KEY || "",
       mainnet: process.env.ETHERSCAN_API_KEY || "",
-      polygon: process.env.ETHERSCAN_API_KEY || "",
+      polygon: process.env.POLYGON_SCAN_API_KEY || "",
       goerli: process.env.ETHERSCAN_API_KEY || "",
     },
   },

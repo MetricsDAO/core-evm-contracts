@@ -16,12 +16,12 @@ contract StakingChef is Chef {
     // --------------------------------------------------------------------- staking functions
     function stakeMetric(uint256 metricAmount) external {
         // Effects
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
 
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedStakingRewards();
         }
-        staker[msg.sender] = Staker({
+        staker[_msgSender()] = Staker({
             shares: stake.shares + metricAmount,
             startDate: block.timestamp,
             rewardDebt: stake.rewardDebt + (((metricAmount) * getLifetimeShareValue()) / ACC_METRIC_PRECISION),
@@ -31,7 +31,7 @@ contract StakingChef is Chef {
         addTotalAllocShares(metricAmount);
 
         // Interactions
-        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), msg.sender, address(this), metricAmount);
+        SafeERC20.safeTransferFrom(IERC20(getMetricToken()), _msgSender(), address(this), metricAmount);
     }
 
     function updateAccumulatedStakingRewards() public {
@@ -51,21 +51,21 @@ contract StakingChef is Chef {
         if (viewPendingHarvest() == 0) revert NoClaimableRewardsToWithdraw();
 
         // Effects
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
         harvest();
 
         uint256 toClaim = stake.claimable;
         stake.claimable = 0;
 
         // Interactions
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, toClaim);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toClaim);
 
-        emit Claim(msg.sender, stake, toClaim);
+        emit Claim(_msgSender(), stake, toClaim);
     }
 
     function unStakeMetric() public {
         // Checks
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
         if (stake.shares == 0) revert NoMetricToWithdraw();
 
         if (areRewardsActive()) {
@@ -74,43 +74,43 @@ contract StakingChef is Chef {
 
         // Effects
         uint256 toWithdraw = stake.shares;
-        removeAllocShares(staker[msg.sender].shares);
+        removeAllocShares(staker[_msgSender()].shares);
         stake.shares = 0;
 
         // Interactions
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, toWithdraw);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toWithdraw);
 
-        emit UnStake(msg.sender, stake, toWithdraw);
+        emit UnStake(_msgSender(), stake, toWithdraw);
     }
 
     function harvest() internal {
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
         updateAccumulatedStakingRewards();
 
         uint256 claimable = (stake.shares * getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
 
         stake.rewardDebt = stake.rewardDebt + claimable;
         stake.claimable = stake.claimable + claimable;
-        emit Claim(msg.sender, stake, claimable);
+        emit Claim(_msgSender(), stake, claimable);
     }
 
     //------------------------------------------------------Getters
 
     function getStake() public view returns (Staker memory) {
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
         return stake;
     }
 
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest() public view returns (uint256) {
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
 
         return (stake.shares * getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
     }
 
     function viewPendingClaims() public view returns (uint256) {
-        Staker storage stake = staker[msg.sender];
+        Staker storage stake = staker[_msgSender()];
 
         return stake.claimable;
     }

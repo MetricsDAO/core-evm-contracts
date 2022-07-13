@@ -9,11 +9,16 @@ import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/QuestionStateController.sol";
 import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
+import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 contract QuestionAPITest is Test {
+    // Roles
+    bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+
     // Accounts
     address owner = address(0x0a);
     address other = address(0x0b);
+    address manager = address(0x0c);
 
     MetricToken _metricToken;
     QuestionAPI _questionAPI;
@@ -21,13 +26,16 @@ contract QuestionAPITest is Test {
     ClaimController _claimController;
     ActionCostController _costController;
     QuestionStateController _questionStateController;
+    NFT _mockAuthNFT;
 
     function setUp() public {
         // Labeling
         vm.label(owner, "Owner");
         vm.label(other, "User");
+        vm.label(manager, "Manager");
 
         vm.startPrank(owner);
+        _mockAuthNFT = new NFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
@@ -46,6 +54,9 @@ contract QuestionAPITest is Test {
         _bountyQuestion.setQuestionApi(address(_questionAPI));
 
         _metricToken.transfer(other, 100e18);
+
+        _mockAuthNFT.mintTo(manager);
+
         vm.stopPrank();
     }
 
@@ -217,7 +228,9 @@ contract QuestionAPITest is Test {
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
+
         assertEq(questionState, 6);
+        vm.stopPrank();
     }
 
     function test_DisqualifyQuestionTwo() public {
@@ -230,6 +243,35 @@ contract QuestionAPITest is Test {
         _questionAPI.disqualifyQuestion(badQuestion);
 
         assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.BAD));
+    }
+
+    function test_ProgramManagerCreateChallenge() public {
+        console.log("Only a user with the ProgramManager role should be allowed to create a challenge.");
+
+        // Check that the manager holds the nft
+        assertEq(_mockAuthNFT.ownerOf(1), manager);
+
+        // Create a program manager role tied to the mockAuthNFT.
+        // This means that anyone holding a token of mockAuthNFT has program_manager_role permissions
+        vm.prank(owner);
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFT));
+
+        // Create a challenge from the manager
+        vm.prank(manager);
+        uint256 questionId = _questionAPI.createChallenge("ipfs://XYZ", 25);
+
+        // Verify that challenge is published
+        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.PUBLISHED));
+
+        // Make sure we cannot vote for the challenge
+        vm.prank(other);
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+
+        // Make sure that not any user can create a challenge
+        vm.prank(other);
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
 
     // --------------------- Testing for access controlls

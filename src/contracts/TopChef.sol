@@ -136,18 +136,18 @@ contract TopChef is Chef {
         uint256 totalClaimable = group.claimable + toClaim;
         group.claimable = totalClaimable;
 
-        emit Harvest(msg.sender, agIndex, toClaim);
+        emit Harvest(_msgSender(), agIndex, toClaim);
         return totalClaimable;
     }
 
     function claim(uint256 agIndex) external {
         AllocationGroup storage group = _allocations[agIndex];
-        if (!(msg.sender == group.groupAddress)) revert SenderNotOwner();
+        if (!(_msgSender() == group.groupAddress)) revert SenderNotOwner();
         uint256 claimable = harvest(agIndex);
         if (claimable == 0) revert NoRewardsToClaim();
         group.claimable = 0;
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, claimable);
-        emit Withdraw(msg.sender, agIndex, claimable);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), claimable);
+        emit Withdraw(_msgSender(), agIndex, claimable);
     }
 
     //------------------------------------------------------Structs

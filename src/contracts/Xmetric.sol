@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
-contract Xmetric is ERC20("Xmetric", "xMETRIC"), ERC20Pausable, Ownable {
+contract Xmetric is ERC20("xMETRIC", "xMETRIC"), ERC20Pausable, Ownable {
+
     constructor() {
-        setTransactor(msg.sender, true);
+        setTransactor(_msgSender(), true);
     }
 
     //------------------------------------------------------Overrides
@@ -30,14 +31,14 @@ contract Xmetric is ERC20("Xmetric", "xMETRIC"), ERC20Pausable, Ownable {
         address to,
         uint256 amount
     ) public override transactor returns (bool) {
-        _spendAllowance(from, msg.sender, amount);
+        _spendAllowance(from, _msgSender(), amount);
         _mint(to, amount);
         _burn(from, amount);
         return true;
     }
 
     function burn(uint256 amount) public {
-        _burn(msg.sender, amount);
+        _burn(_msgSender(), amount);
     }
 
     function burnFrom(address from, uint256 amount) public onlyOwner {
@@ -70,8 +71,8 @@ contract Xmetric is ERC20("Xmetric", "xMETRIC"), ERC20Pausable, Ownable {
     error AddressCannotTransact();
 
     modifier transactor() {
-        // Check if msg.sender is allowed to transact
-        if (canTransact[msg.sender] != true) revert AddressCannotTransact();
+        // Check if _msgSender() is allowed to transact
+        if (canTransact[_msgSender()] != true) revert AddressCannotTransact();
         _;
     }
 }
