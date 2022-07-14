@@ -106,6 +106,12 @@ Then run the following command
 foundryup
 ```
 
+## Run Foundry tests
+
+`forge install`  
+`forge test`
+`forge test -vv` this will display console.logs
+
 #### Install project dependencies
 
 (install npm if you haven't already)
@@ -131,6 +137,15 @@ We utilize a hardhat library called [hardhat deploy](https://github.com/wighawag
 
 You can run the base deployment to a test network with this command `npx hardhat deploy --network ropsten`  
 To run locally `npx hardhat --network localhost deploy`
+
+When running you're own hardhat node/local blockchain you can use --tags to deploy a contract when initialising  
+`npx hardhat node --tags TopChef`
+
+to deploy to a specific network and to deploy a specific contract you'll need to run something like this
+`npx hardhat --network ${networkname} deploy --tags QuestionAPI`
+
+Deployment scripts should have tags and dependencies for example QuestionAPI is a tag with 4 dependencies  
+Each depedency should de deployed in order before the tag is deployed
 
 ```shell
 npx hardhat accounts

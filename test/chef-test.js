@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { mineBlocks, BN } = require("./utils");
 
-describe("Allocator Contract", function () {
+describe("Allocator Contract", async function () {
   let topChef;
   let metric;
 
@@ -14,6 +14,8 @@ describe("Allocator Contract", function () {
 
   beforeEach(async function () {
     [origin, allocationGroup1, allocationGroup2, ...addrs] = await ethers.getSigners();
+    // Set To TRUE as tests are based on hardhat.config
+    await network.provider.send("evm_setAutomine", [true]);
 
     // deploy METRIC
     const metricContract = await ethers.getContractFactory("MetricToken");
@@ -228,13 +230,13 @@ describe("Allocator Contract", function () {
     it("will over time update single allocation group with lots of metric", async function () {
       await topChef.toggleRewards(true);
       await topChef.addAllocationGroup(allocationGroup1.address, 40, true);
-      await mineBlocks(1000);
+      await mineBlocks(100);
 
       await topChef.connect(allocationGroup1).claim(0);
 
       const balance1 = await metric.balanceOf(allocationGroup1.address);
 
-      expect(balance1).to.equal(utils.parseEther("4008"));
+      expect(balance1).to.equal(utils.parseEther("408"));
     });
   });
   describe("Maintain AGs over time ", function () {

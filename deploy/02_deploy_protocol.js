@@ -25,7 +25,6 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: metricToken.address,
-        constructorArguments: [deployer],
         contract: "src/contracts/MetricToken.sol:MetricToken",
       });
     } catch (error) {
@@ -53,4 +52,5 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["MetricToken", "TopChef", "StakingChef"];
+module.exports.tags = ["TopChef", "StakingChef"];
+module.exports.dependencies = ["MetricToken"];

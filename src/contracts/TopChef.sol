@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -45,9 +45,8 @@ contract TopChef is Chef {
         uint256 agIndex,
         uint256 shares,
         bool newAutoDistribute
-    ) public onlyOwner {
-        // Checks
-        if (!(areRewardsActive())) revert RewardsInactive();
+    ) public activeRewards onlyOwner {
+        // Checks (modifier)
 
         // Effects
         harvest(agIndex);
@@ -57,10 +56,9 @@ contract TopChef is Chef {
         _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
-    function removeAllocationGroup(uint256 agIndex) external onlyOwner {
+    function removeAllocationGroup(uint256 agIndex) external activeRewards onlyOwner {
         // Checks
-        if (!(agIndex < _allocations.length)) revert IndexDoesNotMatchAllocation();
-        if (!(areRewardsActive())) revert RewardsInactive();
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
 
         // Effects
         _allocations[agIndex].autodistribute = true;
@@ -103,8 +101,7 @@ contract TopChef is Chef {
         return claimable + harvestable;
     }
 
-    function updateAccumulatedAllocations() public {
-        if (!(areRewardsActive())) revert RewardsInactive();
+    function updateAccumulatedAllocations() public activeRewards {
         if (block.number <= getLastRewardBlock()) {
             return;
         }
@@ -126,9 +123,8 @@ contract TopChef is Chef {
         }
     }
 
-    function harvest(uint256 agIndex) public returns (uint256) {
+    function harvest(uint256 agIndex) public activeRewards returns (uint256) {
         // Checks
-        if (!(areRewardsActive())) revert RewardsInactive();
         AllocationGroup storage group = _allocations[agIndex];
         // TODO do we want a backup in case a group looses access to their wallet
 
@@ -140,18 +136,18 @@ contract TopChef is Chef {
         uint256 totalClaimable = group.claimable + toClaim;
         group.claimable = totalClaimable;
 
-        emit Harvest(msg.sender, agIndex, toClaim);
+        emit Harvest(_msgSender(), agIndex, toClaim);
         return totalClaimable;
     }
 
     function claim(uint256 agIndex) external {
         AllocationGroup storage group = _allocations[agIndex];
-        if (!(msg.sender == group.groupAddress)) revert SenderNotOwner();
+        if (!(_msgSender() == group.groupAddress)) revert SenderNotOwner();
         uint256 claimable = harvest(agIndex);
         if (claimable == 0) revert NoRewardsToClaim();
         group.claimable = 0;
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), msg.sender, claimable);
-        emit Withdraw(msg.sender, agIndex, claimable);
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), claimable);
+        emit Withdraw(_msgSender(), agIndex, claimable);
     }
 
     //------------------------------------------------------Structs
