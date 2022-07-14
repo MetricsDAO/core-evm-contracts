@@ -34,6 +34,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 amount
     ) public onlyApi onlyState(STATE.VOTING, questionId) {
         // Checks
+        // TODO check if creator can upvote their own ?
+        // TODO limit the max amount of token they can use?
         if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
 
         // Effects
@@ -46,7 +48,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         votes[questionId].totalVoteCount += amount;
 
         // Interactions
-        // TODO Lock tokens for voting
+        // TODO Lock tokens for voting include safeTransferFrom
     }
 
     function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
@@ -104,14 +106,4 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         address voter;
         uint256 amount;
     }
-
-    //UNINIT is the default state, and must be first in the enum set
-    // enum STATE {
-    //     UNINIT,
-    //     VOTING,
-    //     PUBLISHED,
-    //     IN_GRADING,
-    //     COMPLETED,
-    //     CANCELLED
-    // }
 }
