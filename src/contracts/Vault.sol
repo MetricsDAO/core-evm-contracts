@@ -16,64 +16,64 @@ contract Vault is Ownable {
     }
 
     uint256 public depositsCount;
-    mapping(address => uint256[]) public depositsByTokenAddress;
+    mapping(address => uint256[]) public depositsByMetricAddress;
     mapping(address => uint256[]) public depositsByWithdrawers;
-    mapping(uint256 => Items) public lockedToken;
-    mapping(address => mapping(address => uint256)) public walletTokenBalance;
+    mapping(uint256 => Items) public lockedMetric;
+    mapping(address => mapping(address => uint256)) public walletMetricBalance;
 
     event Withdraw(address withdrawer, uint256 amount);
 
     constructor() {}
 
-    function lockTokens(
-        IERC20 _token,
+    function lockMetric(
+        IERC20 _metric,
         address _withdrawer,
         uint256 _amount,
         uint256 _unlockTimestamp
     ) external returns (uint256 _id) {
-        require(_amount > 500, "Token amount too low!");
+        require(_amount >= 500, "Metric amount too low!");
         require(_unlockTimestamp < 10000000000, "Unlock timestamp is not in seconds!");
         require(_unlockTimestamp > block.timestamp, "Unlock timestamp is not in the future!");
-        require(_token.allowance(msg.sender, address(this)) >= _amount, "Approve tokens first!");
-        _token.safeTransferFrom(msg.sender, address(this), _amount);
+        require(_metric.allowance(msg.sender, address(this)) >= _amount, "Approve tokens first!");
+        _metric.safeTransferFrom(msg.sender, address(this), _amount);
 
-        walletTokenBalance[address(_token)][msg.sender] = walletTokenBalance[address(_token)][msg.sender].add(_amount);
+        walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
 
         _id = ++depositsCount;
-        lockedToken[_id].token = _token;
-        lockedToken[_id].withdrawer = _withdrawer;
-        lockedToken[_id].amount = _amount;
-        lockedToken[_id].unlockTimestamp = _unlockTimestamp;
-        lockedToken[_id].withdrawn = false;
-        lockedToken[_id].deposited = true;
+        lockedMetric[_id].metric = _metric;
+        lockedMetric[_id].withdrawer = _withdrawer;
+        lockedMetric[_id].amount = _amount;
+        lockedMetric[_id].unlockTimestamp = _unlockTimestamp;
+        lockedMetric[_id].withdrawn = false;
+        lockedMetric[_id].deposited = true;
 
-        depositsByTokenAddress[address(_token)].push(_id);
+        depositsByMetricAddress[address(_metric)].push(_id);
         depositsByWithdrawers[_withdrawer].push(_id);
         return _id;
     }
 
-    function withdrawTokens(uint256 _id) external {
-        require(block.timestamp >= lockedToken[_id].unlockTimestamp, "Tokens are still locked!");
-        require(msg.sender == lockedToken[_id].withdrawer, "You are not the withdrawer!");
-        require(lockedToken[_id].deposited, "Tokens are not yet deposited!");
-        require(!lockedToken[_id].withdrawn, "Tokens are already withdrawn!");
+    function withdrawmetrics(uint256 _id) external {
+        require(block.timestamp >= lockedMetric[_id].unlockTimestamp, "Metrics are still locked!");
+        require(msg.sender == lockedMetric[_id].withdrawer, "You are not the withdrawer!");
+        require(lockedMetric[_id].deposited, "Metrics are not yet deposited!");
+        require(!lockedMetric[_id].withdrawn, "Metrics are already withdrawn!");
 
-        lockedToken[_id].withdrawn = true;
+        lockedMetric[_id].withdrawn = true;
 
-        walletTokenBalance[address(lockedToken[_id].token)][msg.sender] = walletTokenBalance[address(lockedToken[_id].token)][msg.sender].sub(
-            lockedToken[_id].amount
+        walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
+            lockedMetric[_id].amount
         );
 
-        emit Withdraw(msg.sender, lockedToken[_id].amount);
-        lockedToken[_id].token.safeTransfer(msg.sender, lockedToken[_id].amount);
+        emit Withdraw(msg.sender, lockedMetric[_id].amount);
+        lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount);
     }
 
-    function getDepositsByTokenAddress(address _id) external view returns (uint256[] memory) {
-        return depositsByTokenAddress[_id];
+    function getDepositsByMetricAddress(address _id) external view returns (uint256[] memory) {
+        return depositsByMetricAddress[_id];
     }
 
-    function getDepositsByWithdrawer(address _token, address _withdrawer) external view returns (uint256) {
-        return walletTokenBalance[_token][_withdrawer];
+    function getDepositsByWithdrawer(address _metric, address _withdrawer) external view returns (uint256) {
+        return walletMetricBalance[_metric][_withdrawer];
     }
 
     function getVaultsByWithdrawer(address _withdrawer) external view returns (uint256[] memory) {
@@ -81,10 +81,10 @@ contract Vault is Ownable {
     }
 
     function getVaultById(uint256 _id) external view returns (Items memory) {
-        return lockedToken[_id];
+        return lockedMetric[_id];
     }
 
-    function getTokenTotalLockedBalance(address _token) external view returns (uint256) {
-        return IERC20(_token).balanceOf(address(this));
+    function getMetricTotalLockedBalance(address _metric) external view returns (uint256) {
+        return IERC20(_metric).balanceOf(address(this));
     }
 }
