@@ -173,6 +173,26 @@ contract StakingChefTest is Test {
         assertEq(sharesUnstake, 0);
     }
 
+    function test_UnstakeClaimMetric() public {
+        console.log("Should Claim Metric when Unstaking");
+
+        uint256 balancestart = metricToken.balanceOf(bob);
+
+        // Stake
+        vm.startPrank(bob);
+        stakingChef.stakeMetric(10e18);
+
+        // mine a block
+        vm.roll(block.number + 1);
+
+        // Unstake
+        stakingChef.unStakeMetric();
+
+        // check earned balance
+        uint256 earned = metricToken.balanceOf(bob) - balancestart;
+        assertEq(earned, 4e18);
+    }
+
     function test_StakeUnstakeStake() public {
         console.log("Should be able to stake twice.");
 
