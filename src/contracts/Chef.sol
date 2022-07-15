@@ -31,15 +31,15 @@ abstract contract Chef is Ownable {
 
     function toggleRewards(bool isOn) public onlyOwner {
         _rewardsActive = isOn;
-        setLastRewardBlock();
+        setLastRewardBlock(block.number);
     }
 
     function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
         _metricPerBlock = metricAmount * 10**18;
     }
 
-    function setLastRewardBlock() internal virtual {
-        _lastRewardBlock = block.number;
+    function setLastRewardBlock(uint256 blockNumber) internal virtual {
+        _lastRewardBlock = blockNumber;
     }
 
     function setMetricToken(address metricTokenAddress) public virtual onlyOwner {
@@ -50,7 +50,6 @@ abstract contract Chef is Ownable {
         uint256 accumulated = getAccumulated();
         uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
-        setLastRewardBlock();
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
