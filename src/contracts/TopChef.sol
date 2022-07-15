@@ -63,6 +63,7 @@ contract TopChef is Chef {
         // Effects
         _allocations[agIndex].autodistribute = true;
         harvest(agIndex);
+        claim(agIndex);
 
         removeAllocShares(_allocations[agIndex].shares);
 
@@ -140,14 +141,14 @@ contract TopChef is Chef {
         return totalClaimable;
     }
 
-    function claim(uint256 agIndex) external {
+    function claim(uint256 agIndex) public {
         AllocationGroup storage group = _allocations[agIndex];
-        if (!(_msgSender() == group.groupAddress)) revert SenderNotOwner();
         uint256 claimable = harvest(agIndex);
-        if (claimable == 0) revert NoRewardsToClaim();
-        group.claimable = 0;
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), claimable);
-        emit Withdraw(_msgSender(), agIndex, claimable);
+        if (claimable != 0) {
+            group.claimable = 0;
+            SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
+            emit Withdraw(group.groupAddress, agIndex, claimable);
+        }
     }
 
     //------------------------------------------------------Structs
@@ -164,10 +165,8 @@ contract TopChef is Chef {
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
     error RewardsInactive();
-    error SenderNotOwner();
     error NoClaimableRewardToWithdraw();
     error SenderDoesNotRepresentGroup();
-    error NoRewardsToClaim();
 
     //------------------------------------------------------ Modifiers
     modifier activeRewards() {

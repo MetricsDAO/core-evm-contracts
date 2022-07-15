@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { ethers, network } = require("hardhat");
-const { mineBlocks, BN } = require("./utils");
+const { mineBlocks, BN, add } = require("./utils");
 
 describe("Allocator Contract", async function () {
   let topChef;
@@ -99,6 +99,20 @@ describe("Allocator Contract", async function () {
       // ensure the second added one is now the first one in the array
       const groups = await topChef.getAllocationGroups();
       expect(30).to.equal(groups[0].shares);
+    });
+
+    it("Removing an AG with pending rewards should claim them", async function () {
+      await topChef.toggleRewards(true);
+
+      // add two allocation groups
+      await topChef.addAllocationGroup(allocationGroup1.address, 20, true);
+
+      // remove the first one and ensure they got their rewards
+
+      const pendingBalance = await topChef.connect(allocationGroup1).viewPendingRewards(0);
+      await topChef.removeAllocationGroup(0);
+      const actualBalance = await metric.balanceOf(allocationGroup1.address);
+      expect(actualBalance).to.equal(add(pendingBalance, ethers.utils.parseEther("4")));
     });
   });
 
