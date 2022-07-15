@@ -17,7 +17,7 @@ contract TopChef is Chef {
 
     function addAllocationGroup(address newAddress, uint256 newShares) external onlyOwner nonDuplicated(newAddress) {
         // Checks
-        if (!(newShares > 0)) revert SharesNotGreaterThanZero();
+        if (newShares <= 0) revert SharesNotGreaterThanZero();
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
