@@ -26,7 +26,6 @@ contract TopChef is Chef {
         AllocationGroup memory group = AllocationGroup({
             groupAddress: newAddress,
             shares: newShares,
-            autodistribute: newAutoDistribute,
             rewardDebt: (newShares * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
         });
@@ -55,19 +54,19 @@ contract TopChef is Chef {
         if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
 
         // Effects
-        _allocations[agIndex].autodistribute = true;
         harvest(agIndex);
-        uint256 claimable = _allocations[agIndex].claimable;
+        AllocationGroup memory group = _allocations[agIndex];
+
+        uint256 claimable = group.claimable;
 
         removeAllocShares(_allocations[agIndex].shares);
-
         _allocations[agIndex] = _allocations[_allocations.length - 1];
         _allocations.pop();
 
         // Interactions
         if (claimable > 0) {
-            SafeERC20.safeTransfer(IERC20(getMetricToken()), _allocations[agIndex].groupAddress, claimable);
-            emit Withdraw(_allocations[agIndex].groupAddress, agIndex, claimable);
+            SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
+            emit Withdraw(group.groupAddress, agIndex, claimable);
         }
     }
 
