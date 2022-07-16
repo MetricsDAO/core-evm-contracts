@@ -128,7 +128,6 @@ describe("Question API Contract", function () {
       await questionIDtx.wait();
 
       const authorWithQuestion = await bountyQuestion.getAuthor(xmetricaddr1.address);
-      console.log("AUTHOR WITH QUESTOIN", authorWithQuestion[authorWithQuestion.length - 1]);
       const claimlimit = await claimController.getClaimLimit(authorWithQuestion[authorWithQuestion.length - 1]);
       expect(claimlimit).to.equal(new BN(10));
 

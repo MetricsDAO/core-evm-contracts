@@ -15,13 +15,9 @@ contract TopChef is Chef {
 
     //------------------------------------------------------Manage Allocation Groups
 
-    function addAllocationGroup(
-        address newAddress,
-        uint256 newShares,
-        bool newAutoDistribute
-    ) external onlyOwner nonDuplicated(newAddress) {
+    function addAllocationGroup(address newAddress, uint256 newShares) external onlyOwner nonDuplicated(newAddress) {
         // Checks
-        if (!(newShares > 0)) revert SharesNotGreaterThanZero();
+        if (newShares <= 0) revert SharesNotGreaterThanZero();
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
         }
@@ -30,7 +26,6 @@ contract TopChef is Chef {
         AllocationGroup memory group = AllocationGroup({
             groupAddress: newAddress,
             shares: newShares,
-            autodistribute: newAutoDistribute,
             rewardDebt: (newShares * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
         });
@@ -43,8 +38,7 @@ contract TopChef is Chef {
     function updateAllocationGroup(
         address groupAddress,
         uint256 agIndex,
-        uint256 shares,
-        bool newAutoDistribute
+        uint256 shares
     ) public activeRewards onlyOwner {
         // Checks (modifier)
 
@@ -53,7 +47,6 @@ contract TopChef is Chef {
         addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
-        _allocations[agIndex].autodistribute = newAutoDistribute;
     }
 
     function removeAllocationGroup(uint256 agIndex) external activeRewards onlyOwner {
@@ -61,13 +54,20 @@ contract TopChef is Chef {
         if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
 
         // Effects
-        _allocations[agIndex].autodistribute = true;
         harvest(agIndex);
+        AllocationGroup memory group = _allocations[agIndex];
+
+        uint256 claimable = group.claimable;
 
         removeAllocShares(_allocations[agIndex].shares);
-
         _allocations[agIndex] = _allocations[_allocations.length - 1];
         _allocations.pop();
+
+        // Interactions
+        if (claimable > 0) {
+            SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
+            emit Withdraw(group.groupAddress, agIndex, claimable);
+        }
     }
 
     //------------------------------------------------------Getters
@@ -136,18 +136,20 @@ contract TopChef is Chef {
         uint256 totalClaimable = group.claimable + toClaim;
         group.claimable = totalClaimable;
 
-        emit Harvest(_msgSender(), agIndex, toClaim);
+        if (toClaim > 0) {
+            emit Harvest(_msgSender(), agIndex, toClaim);
+        }
         return totalClaimable;
     }
 
-    function claim(uint256 agIndex) external {
+    function claim(uint256 agIndex) public {
         AllocationGroup storage group = _allocations[agIndex];
-        if (!(_msgSender() == group.groupAddress)) revert SenderNotOwner();
         uint256 claimable = harvest(agIndex);
-        if (claimable == 0) revert NoRewardsToClaim();
-        group.claimable = 0;
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), claimable);
-        emit Withdraw(_msgSender(), agIndex, claimable);
+        if (claimable != 0) {
+            group.claimable = 0;
+            SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
+            emit Withdraw(group.groupAddress, agIndex, claimable);
+        }
     }
 
     //------------------------------------------------------Structs
@@ -155,7 +157,6 @@ contract TopChef is Chef {
     struct AllocationGroup {
         address groupAddress;
         uint256 shares;
-        bool autodistribute;
         uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
         uint256 claimable;
     }
@@ -164,10 +165,8 @@ contract TopChef is Chef {
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
     error RewardsInactive();
-    error SenderNotOwner();
     error NoClaimableRewardToWithdraw();
     error SenderDoesNotRepresentGroup();
-    error NoRewardsToClaim();
 
     //------------------------------------------------------ Modifiers
     modifier activeRewards() {
