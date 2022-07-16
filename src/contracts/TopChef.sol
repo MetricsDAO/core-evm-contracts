@@ -112,7 +112,6 @@ contract TopChef is Chef {
         // ^^ will help with fuzz testing
 
         setLifetimeShareValue();
-        setLastRewardBlock(block.number);
     }
 
     // TODO when we implement the emission rate, ensure this function is called before update the rate

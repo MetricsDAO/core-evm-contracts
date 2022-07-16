@@ -41,7 +41,6 @@ contract StakingChef is Chef {
         }
 
         setLifetimeShareValue();
-        setLastRewardBlock(block.number);
     }
 
     // --------------------------------------------------------------------- Manage rewards and Principal
