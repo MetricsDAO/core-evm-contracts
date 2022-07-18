@@ -31,8 +31,8 @@ describe("Question API Contract", function () {
 
   beforeEach(async function () {
     [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, ...addrs] = await ethers.getSigners();
+    // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
-
     // deploy Metric
     const metricContract = await ethers.getContractFactory("MetricToken");
     metric = await metricContract.deploy();
