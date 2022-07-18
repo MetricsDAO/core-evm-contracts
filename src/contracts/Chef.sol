@@ -4,20 +4,9 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MetricToken.sol";
 
-// POSSIBLE FUTURE ITERATIONS
-// TODO implement claim(address)
-// TODO implement staking function
-// TODO implement payable function
-// TODO implement withdrawl function
-// TODO implement updatedAccumulatedAllocations
-
-// TODO WE ADD THESE TO MAIN CHEF or should each contract have it's own
-// TODO we make below more loosely coupled
-// TODO viewPendingHarvest
-// TODO viewPendingClaims
-
 abstract contract Chef is Ownable {
     uint256 private _metricPerBlock;
+    // This constant is used to remove the last 6 digits of METRIC to account for rounding issues
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
     bool private _rewardsActive;
@@ -47,6 +36,7 @@ abstract contract Chef is Ownable {
     }
 
     function setLifetimeShareValue() public virtual {
+        if (!_rewardsActive) revert RewardsNotActive();
         uint256 accumulated = getAccumulated();
         uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
@@ -65,10 +55,12 @@ abstract contract Chef is Ownable {
     }
 
     function addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
+        if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares + newShares;
     }
 
     function removeAllocShares(uint256 oldShares) internal virtual {
+        if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares;
     }
 
@@ -104,6 +96,7 @@ abstract contract Chef is Ownable {
     }
 
     function accumulatedMetricDividedByShares(uint256 accumulatedWithPrecision) public view returns (uint256) {
+        if (getTotalAllocationShares() == 0) revert InvalidShareAmount();
         return accumulatedWithPrecision / getTotalAllocationShares();
     }
 
@@ -120,8 +113,15 @@ abstract contract Chef is Ownable {
         _;
     }
 
+    function renounceOwnership() public override onlyOwner {
+        revert CannotRenounce();
+    }
+
     //------------------------------------------------------Errors
     error DuplicateAddress();
+    error CannotRenounce();
+    error InvalidShareAmount();
+    error RewardsNotActive();
 
     //------------------------------------------------------Events
     event Harvest(address harvester, uint256 agIndex, uint256 amount);

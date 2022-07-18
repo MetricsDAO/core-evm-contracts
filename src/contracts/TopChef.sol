@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
@@ -41,6 +41,8 @@ contract TopChef is Chef {
         uint256 shares
     ) public activeRewards onlyOwner {
         // Checks (modifier)
+        if (shares <= 0) revert SharesNotGreaterThanZero();
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
 
         // Effects
         harvest(agIndex);
@@ -79,6 +81,7 @@ contract TopChef is Chef {
     //------------------------------------------------------Distribution
 
     function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
         AllocationGroup memory group = _allocations[agIndex];
 
         if (areRewardsActive()) {
@@ -89,12 +92,14 @@ contract TopChef is Chef {
     }
 
     function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
         AllocationGroup memory group = _allocations[agIndex];
 
         return group.claimable;
     }
 
     function viewPendingRewards(uint256 agIndex) public view returns (uint256) {
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
         AllocationGroup memory group = _allocations[agIndex];
         uint256 claimable = group.claimable;
         uint256 harvestable = viewPendingHarvest(agIndex);
@@ -124,6 +129,8 @@ contract TopChef is Chef {
 
     function harvest(uint256 agIndex) public activeRewards returns (uint256) {
         // Checks
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
+
         AllocationGroup storage group = _allocations[agIndex];
         // TODO do we want a backup in case a group looses access to their wallet
 
