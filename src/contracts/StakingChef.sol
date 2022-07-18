@@ -41,7 +41,6 @@ contract StakingChef is Chef {
         }
 
         setLifetimeShareValue();
-        setLastRewardBlock(block.number);
     }
 
     // --------------------------------------------------------------------- Manage rewards and Principal
@@ -73,14 +72,21 @@ contract StakingChef is Chef {
         }
 
         // Effects
+        harvest();
+        uint256 toClaim = staker[_msgSender()].claimable;
         uint256 toWithdraw = stake.shares;
         removeAllocShares(staker[_msgSender()].shares);
         stake.shares = 0;
 
         // Interactions
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toWithdraw);
 
-        emit UnStake(_msgSender(), stake, toWithdraw);
+        if (toWithdraw + toClaim > 0) {
+            SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toWithdraw + toClaim);
+            emit UnStake(_msgSender(), stake, toWithdraw);
+        }
+        if (toClaim > 0) {
+            emit Claim(_msgSender(), stake, toWithdraw);
+        }
     }
 
     function harvest() internal {
