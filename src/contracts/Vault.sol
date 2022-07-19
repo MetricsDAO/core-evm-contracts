@@ -56,9 +56,12 @@ contract Vault is Ownable {
 
     //TODO: Double check math
     function slashMetric(uint256 _id) external onlyOwner {
+        require(lockedMetric[_id].slashed = false);
         walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
             lockedMetric[_id].amount.div(2)
         );
+
+        lockedMetric[_id].slashed = true;
 
         emit Withdraw(msg.sender, lockedMetric[_id].amount);
         //TODO: send to treasury
@@ -95,6 +98,6 @@ contract Vault is Ownable {
         bool withdrawn;
         bool deposited;
         bool published;
-        bool disqualified;
+        bool slashed;
     }
 }
