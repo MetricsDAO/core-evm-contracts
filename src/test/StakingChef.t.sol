@@ -148,7 +148,7 @@ contract StakingChefTest is Test {
 
         // Stake additional
         stakingChef.stakeMetric(10e18);
-        (uint256 shares, , , ) = stakingChef.staker(bob);
+        (uint256 shares, , ) = stakingChef.staker(bob);
 
         assertEq(shares, 20e18);
         vm.stopPrank();
@@ -162,14 +162,14 @@ contract StakingChefTest is Test {
         stakingChef.stakeMetric(10e18);
 
         // Get q shares
-        (uint256 sharesStake, , , ) = stakingChef.staker(bob);
+        (uint256 sharesStake, , ) = stakingChef.staker(bob);
         assertEq(sharesStake, 10e18);
 
         // Unstake
         stakingChef.unStakeMetric();
 
         // Get q shares
-        (uint256 sharesUnstake, , , ) = stakingChef.staker(bob);
+        (uint256 sharesUnstake, , ) = stakingChef.staker(bob);
         assertEq(sharesUnstake, 0);
     }
 
@@ -200,12 +200,12 @@ contract StakingChefTest is Test {
         vm.startPrank(bob);
         stakingChef.stakeMetric(10e18);
         stakingChef.unStakeMetric();
-        (uint256 sharesUnstake, , , ) = stakingChef.staker(bob);
+        (uint256 sharesUnstake, , ) = stakingChef.staker(bob);
         assertEq(sharesUnstake, 0);
 
         // Stake again
         stakingChef.stakeMetric(10e18);
-        (uint256 sharesStake, , , ) = stakingChef.staker(bob);
+        (uint256 sharesStake, , ) = stakingChef.staker(bob);
         assertEq(sharesStake, 10e18);
     }
 
@@ -215,11 +215,11 @@ contract StakingChefTest is Test {
         stakingChef.stakeMetric(10e18);
         stakingChef.stakeMetric(15e18);
         stakingChef.stakeMetric(33e18);
-        (uint256 staked, , , ) = stakingChef.staker(bob);
+        (uint256 staked, , ) = stakingChef.staker(bob);
         assertEq(staked, 58e18);
 
         stakingChef.unStakeMetric();
-        (staked, , , ) = stakingChef.staker(bob);
+        (staked, , ) = stakingChef.staker(bob);
         assertEq(staked, 0);
     }
 
@@ -267,7 +267,7 @@ contract StakingChefTest is Test {
         // Bob should have a staking position of 100
         // Bob accumulated rewards should be 40 --> 0 + ((10*40) * 100/100)
 
-        (uint256 staked, , , ) = stakingChef.staker(bob);
+        (uint256 staked, , ) = stakingChef.staker(bob);
         assertEq(staked, 100e18);
         vm.prank(bob);
         assertEq(stakingChef.viewPendingHarvest(), 40e18);
@@ -284,8 +284,8 @@ contract StakingChefTest is Test {
         // Alice should ave a staking position of 400e18
         // Bob accumulated rewards should be 44e18 --> 40 + ((5*4) * (100/500))
         // Alice accumulated rewards should be 16e18 --> 0 + ((5*4) * (400/500))
-        (uint256 bobStaked, , , ) = stakingChef.staker(bob);
-        (uint256 aliceStaked, , , ) = stakingChef.staker(alice);
+        (uint256 bobStaked, , ) = stakingChef.staker(bob);
+        (uint256 aliceStaked, , ) = stakingChef.staker(alice);
         assertEq(bobStaked, 100e18);
         assertEq(aliceStaked, 400e18);
 
@@ -306,8 +306,8 @@ contract StakingChefTest is Test {
         // Alice should ave a staking position of 400e18
         // Bob accumulated rewards should be 8e18 --> 0 + ((10*4) * (100/500))
         // Alice accumulated rewards should be 48e18 --> 16e18 + ((10*4) * (400/500))
-        (bobStaked, , , ) = stakingChef.staker(bob);
-        (aliceStaked, , , ) = stakingChef.staker(alice);
+        (bobStaked, , ) = stakingChef.staker(bob);
+        (aliceStaked, , ) = stakingChef.staker(alice);
         assertEq(bobStaked, 100e18);
         assertEq(aliceStaked, 400e18);
 
@@ -320,7 +320,7 @@ contract StakingChefTest is Test {
         vm.prank(alice);
         stakingChef.claim();
 
-        (bobStaked, , , ) = stakingChef.staker(bob);
+        (bobStaked, , ) = stakingChef.staker(bob);
 
         vm.prank(bob);
         stakingChef.stakeMetric(300e18);
@@ -333,8 +333,8 @@ contract StakingChefTest is Test {
         // Alice should ave a staking position of 400e18
         // Bob accumulated rewards should be 18e18 --> 8e18 + ((5*4) * (400/800))
         // Alice accumulated rewards should be 10e18 --> 0 + ((5*4) * (400/800))
-        (bobStaked, , , ) = stakingChef.staker(bob);
-        (aliceStaked, , , ) = stakingChef.staker(alice);
+        (bobStaked, , ) = stakingChef.staker(bob);
+        (aliceStaked, , ) = stakingChef.staker(alice);
         assertEq(bobStaked, 400e18);
         assertEq(aliceStaked, 400e18);
 
@@ -353,8 +353,8 @@ contract StakingChefTest is Test {
         // Alice should ave a staking position of 400e18
         // Bob accumulated rewards should be 0e18 --> 0 + ((0*4) * (400/800))
         // Alice accumulated rewards should be 0e18 --> 0 + ((0*4) * (400/800))
-        (bobStaked, , , ) = stakingChef.staker(bob);
-        (aliceStaked, , , ) = stakingChef.staker(alice);
+        (bobStaked, , ) = stakingChef.staker(bob);
+        (aliceStaked, , ) = stakingChef.staker(alice);
         assertEq(bobStaked, 400e18);
         assertEq(aliceStaked, 400e18);
 
@@ -364,8 +364,8 @@ contract StakingChefTest is Test {
         assertEq(stakingChef.viewPendingHarvest(), 0);
 
         // Get rewardDebt and claimable from struct for each staker
-        (, uint256 bobRewardDebt, uint256 bobClaimable, ) = stakingChef.staker(bob);
-        (, uint256 aliceRewardDebt, uint256 aliceClaimable, ) = stakingChef.staker(alice);
+        (, uint256 bobRewardDebt, uint256 bobClaimable) = stakingChef.staker(bob);
+        (, uint256 aliceRewardDebt, uint256 aliceClaimable) = stakingChef.staker(alice);
 
         assertEq(bobClaimable, 0);
         assertEq(aliceClaimable, 0);

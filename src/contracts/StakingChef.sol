@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
@@ -15,6 +15,9 @@ contract StakingChef is Chef {
 
     // --------------------------------------------------------------------- staking functions
     function stakeMetric(uint256 metricAmount) external {
+        // Checks
+        if (metricAmount <= 0) revert CannotStakeNoMetric();
+
         // Effects
         Staker storage stake = staker[_msgSender()];
 
@@ -23,7 +26,6 @@ contract StakingChef is Chef {
         }
         staker[_msgSender()] = Staker({
             shares: stake.shares + metricAmount,
-            startDate: block.timestamp,
             rewardDebt: stake.rewardDebt + (((metricAmount) * getLifetimeShareValue()) / ACC_METRIC_PRECISION),
             claimable: stake.claimable
         });
@@ -126,13 +128,13 @@ contract StakingChef is Chef {
         uint256 shares;
         uint256 rewardDebt;
         uint256 claimable;
-        uint256 startDate;
     }
 
     // --------------------------------------------------------------------- Errors
     error RewardsAreNotActive();
     error NoMetricToWithdraw();
     error NoClaimableRewardsToWithdraw();
+    error CannotStakeNoMetric();
 
     // --------------------------------------------------------------------- Events
     event Claim(address harvester, StakingChef.Staker, uint256 amount);
