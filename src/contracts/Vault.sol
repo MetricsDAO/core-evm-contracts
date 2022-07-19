@@ -20,9 +20,6 @@ contract Vault is Ownable {
         uint256 _amount,
         uint256 _unlockTimestamp
     ) external returns (uint256 _id) {
-        // TODO: Figure out amount of time before question times out
-        // require(_unlockTimestamp < 10000000000, "Unlock timestamp is not in seconds!");
-        // require(_unlockTimestamp > block.timestamp, "Unlock timestamp is not in the future!");
         _metric.safeTransferFrom(msg.sender, address(this), _amount);
 
         walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
@@ -58,16 +55,17 @@ contract Vault is Ownable {
         lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount);
     }
 
-    function withdrawMetricForDqQuestion(uint256 _id) external onlyOwner {
-        lockedMetric[_id].withdrawn = true;
+    //TODO: Slash 1/2 of staked METRIC for bad question
+    // function withdrawMetricForDqQuestion(uint256 _id) external onlyOwner {
+    //     lockedMetric[_id].withdrawn = true;
 
-        walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
-            lockedMetric[_id].amount
-        );
+    //     walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
+    //         lockedMetric[_id].amount
+    //     );
 
-        emit Withdraw(msg.sender, lockedMetric[_id].amount);
-        lockedMetric[_id].metric.safeTransfer(address(this), lockedMetric[_id].amount);
-    }
+    //     emit Withdraw(msg.sender, lockedMetric[_id].amount);
+    //     lockedMetric[_id].metric.safeTransfer(address(this), lockedMetric[_id].amount);
+    // }
 
     function getDepositsByMetricAddress(address _id) external view returns (uint256[] memory) {
         return depositsByMetricAddress[_id];
