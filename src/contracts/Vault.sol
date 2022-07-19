@@ -39,7 +39,6 @@ contract Vault is Ownable {
     }
 
     function withdrawMetric(uint256 _id) external {
-        // require(block.timestamp >= lockedMetric[_id].unlockTimestamp, "Metric can not be unlocked");
         require(msg.sender == lockedMetric[_id].withdrawer, "You are not the withdrawer!");
         require(lockedMetric[_id].deposited, "No Metric Deposited!");
         require(lockedMetric[_id].published, "Question has not been published");
@@ -55,17 +54,17 @@ contract Vault is Ownable {
         lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount);
     }
 
-    //TODO: Slash 1/2 of staked METRIC for bad question
-    // function withdrawMetricForDqQuestion(uint256 _id) external onlyOwner {
-    //     lockedMetric[_id].withdrawn = true;
+    //TODO: Double check math
+    function slashMetric(uint256 _id) external onlyOwner {
+        walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
+            lockedMetric[_id].amount.div(2)
+        );
 
-    //     walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
-    //         lockedMetric[_id].amount
-    //     );
-
-    //     emit Withdraw(msg.sender, lockedMetric[_id].amount);
-    //     lockedMetric[_id].metric.safeTransfer(address(this), lockedMetric[_id].amount);
-    // }
+        emit Withdraw(msg.sender, lockedMetric[_id].amount);
+        //TODO: send to treasury
+        lockedMetric[_id].metric.safeTransfer(address(this), lockedMetric[_id].amount.div(2));
+        lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount.div(2));
+    }
 
     function getDepositsByMetricAddress(address _id) external view returns (uint256[] memory) {
         return depositsByMetricAddress[_id];
