@@ -13,6 +13,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(address => mapping(uint256 => bool)) public hasVoted;
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
+    //TODO mapping     mapping(STATE => uint256[]) public questionState;
+
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
     /**
