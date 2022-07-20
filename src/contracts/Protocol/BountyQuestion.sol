@@ -23,8 +23,10 @@ contract BountyQuestion is Ownable, OnlyApi {
 
     Counters.Counter private _tokenIdCounter;
 
-    mapping(uint256 => string) public questionMetadata;
     mapping(address => QuestionData[]) public authors;
+    mapping(uint256 => uint256) private _createdAt;
+
+    mapping(uint256 => string) public questionMetadata;
 
     constructor() {
         _tokenIdCounter.increment();
@@ -36,11 +38,18 @@ contract BountyQuestion is Ownable, OnlyApi {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
-        creators[tokenId].push(author);
         questionMetadata[tokenId] = uri;
-
-        // Interactions
-
+        QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
+        authors[author].push(_question);
         return tokenId;
+    }
+
+    function getAuthor(address user) public view returns (QuestionData[] memory) {
+        return authors[user];
+    }
+
+    struct QuestionData {
+        uint256 tokenId;
+        string url;
     }
 }

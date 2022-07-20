@@ -15,6 +15,8 @@ contract QuestionAPI is Ownable, NFTLocked {
     IClaimController private _claimController;
     IActionCostController private _costController;
 
+    uint256 public currentQuestionId;
+
     constructor(
         address bountyQuestion,
         address questionStateController,
@@ -47,9 +49,9 @@ contract QuestionAPI is Ownable, NFTLocked {
         uint256 questionId = _question.createQuestion(_msgSender(), uri);
 
         // Initialize the question
-        _questionStateController.initializeQuestion(questionId);
+        _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
-
+        currentQuestionId = questionId;
         return questionId;
     }
 
@@ -68,7 +70,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         uint256 questionId = _question.createQuestion(_msgSender(), uri);
 
         // Initialize the question
-        _questionStateController.initializeQuestion(questionId);
+        _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
 
         // Publish the question (make it a challenge)
