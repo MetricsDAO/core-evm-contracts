@@ -1,11 +1,11 @@
 const { ethers } = require("ethers");
 require("dotenv").config();
 
-const costControllerJson = require(`../deployments/${process.env.NETWORK}/ActionCostController.json`);
-const bountyQuestionJson = require(`../deployments/${process.env.NETWORK}/BountyQuestion.json`);
-const questionStateControllerJson = require(`../deployments/${process.env.NETWORK}/QuestionStateController.json`);
-const claimControllerJson = require(`../deployments/${process.env.NETWORK}/ClaimController.json`);
-const questionAPIJson = require(`../deployments/${process.env.NETWORK}/QuestionAPI.json`);
+const costControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ActionCostController.json`);
+const bountyQuestionJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/BountyQuestion.json`);
+const questionStateControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionStateController.json`);
+const claimControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ClaimController.json`);
+const questionAPIJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionAPI.json`);
 
 // CHANGE THIS TO WHATEVER PROVIDER YOUR USING CURRENTLY LOCALHOST/HARDHAT
 const provider = new ethers.providers.JsonRpcProvider();
