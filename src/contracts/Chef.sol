@@ -35,15 +35,14 @@ abstract contract Chef is Ownable {
         metric = MetricToken(metricTokenAddress);
     }
 
-    function setLifetimeShareValue() public virtual {
-        if (!_rewardsActive) revert RewardsNotActive();
-        uint256 accumulatedWithMetricPrecision = _getAcculatedWithmetricPrecision();
+    function setLifetimeShareValue() public virtual activeRewards {
+        uint256 accumulatedWithMetricPrecision = _getAccumulatedWithMetricPrecision();
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
         _setLastRewardBlock();
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
-        uint256 accumulatedWithMetricPrecision = _getAcculatedWithmetricPrecision();
+        uint256 accumulatedWithMetricPrecision = _getAccumulatedWithMetricPrecision();
         uint256 lifetimesharevalue = _getLifetimeShareValue();
         return lifetimesharevalue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
     }
@@ -76,7 +75,7 @@ abstract contract Chef is Ownable {
         return _rewardsActive;
     }
 
-    function _getAcculatedWithmetricPrecision() internal view virtual returns (uint256) {
+    function _getAccumulatedWithMetricPrecision() internal view virtual returns (uint256) {
         uint256 blocksSince = block.number - getLastRewardBlock();
         uint256 accumulated = blocksSince * getMetricPerBlock();
         return accumulated * ACC_METRIC_PRECISION;
@@ -108,7 +107,7 @@ abstract contract Chef is Ownable {
         _;
     }
 
-    function renounceOwnership() public override onlyOwner {
+    function renounceOwnership() public view override onlyOwner {
         revert CannotRenounce();
     }
 
@@ -121,4 +120,10 @@ abstract contract Chef is Ownable {
     //------------------------------------------------------Events
     event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);
     event Withdraw(address indexed withdrawer, uint256 agIndex, uint256 amount);
+
+    //------------------------------------------------------ Modifiers
+    modifier activeRewards() {
+        if (!areRewardsActive()) revert RewardsNotActive();
+        _;
+    }
 }

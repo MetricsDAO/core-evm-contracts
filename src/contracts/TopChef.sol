@@ -47,11 +47,13 @@ contract TopChef is Chef {
 
         // Effects
         harvest(agIndex);
-        _addTotalAllocShares(_allocations[agIndex].shares, shares);
-        _allocations[agIndex].groupAddress = groupAddress;
-        _allocations[agIndex].shares = shares;
 
-        emit UpdateGroup(_allocations[agIndex]);
+        AllocationGroup storage group = _allocations[agIndex];
+        _addTotalAllocShares(group.shares, shares);
+        group.groupAddress = groupAddress;
+        group.shares = shares;
+
+        emit UpdateGroup(group);
     }
 
     function removeAllocationGroup(uint256 agIndex) external validIndex(agIndex) activeRewards onlyOwner {
@@ -159,7 +161,6 @@ contract TopChef is Chef {
     //------------------------------------------------------ Errors
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
-    error RewardsInactive();
 
     // --------------------------------------------------------------------- Events
     event RemoveGroup(TopChef.AllocationGroup);
@@ -167,10 +168,10 @@ contract TopChef is Chef {
     event UpdateGroup(TopChef.AllocationGroup);
 
     //------------------------------------------------------ Modifiers
-    modifier activeRewards() {
-        if (!areRewardsActive()) revert RewardsInactive();
-        _;
-    }
+    // modifier activeRewards() {
+    //     if (!areRewardsActive()) revert RewardsInactive();
+    //     _;
+    // }
 
     modifier validIndex(uint256 agIndex) {
         if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();

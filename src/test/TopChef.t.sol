@@ -291,7 +291,7 @@ contract topChefTest is Test {
         topChef.toggleRewards(false);
 
         vm.prank(owner);
-        vm.expectRevert(TopChef.RewardsInactive.selector);
+        vm.expectRevert(Chef.RewardsNotActive.selector);
         topChef.harvest(0);
     }
 }
