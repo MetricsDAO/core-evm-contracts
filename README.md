@@ -141,6 +141,10 @@ To run locally `npx hardhat --network localhost deploy`
 When running you're own hardhat node/local blockchain you can use --tags to deploy a contract when initialising  
 `npx hardhat node --tags TopChef`
 
+For development you can run `npx hardhat node` that will run all scripts in deploy folder
+
+After deploying Question API you should run script setQuestionApi script in scripts folder
+
 to deploy to a specific network and to deploy a specific contract you'll need to run something like this
 `npx hardhat --network ${networkname} deploy --tags QuestionAPI`
 
