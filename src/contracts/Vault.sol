@@ -8,15 +8,20 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Vault is Ownable {
     uint256 public depositsCount;
     mapping(address => uint256[]) public depositsByWithdrawers;
-    mapping(uint256 => Items) public lockedMetric;
+    mapping(uint256 => lockAttributes) public lockedMetric;
     mapping(address => mapping(address => uint256)) public walletMetricBalance;
+    // mapping(uint256 => lockedMetric) question;
     LockStates public currentState;
 
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
     }
 
-    function lockMetric(address _withdrawer, uint256 _amount) external returns (uint256 _id) {
+    function lockMetric(
+        address _withdrawer,
+        uint256 _amount,
+        uint256 questionId
+    ) external returns (uint256 _id) {
         _metric.safeTransferFrom(msg.sender, address(this), _amount);
 
         walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
@@ -25,7 +30,7 @@ contract Vault is Ownable {
         lockedMetric[_id].withdrawer = _withdrawer;
         lockedMetric[_id].amount = _amount;
 
-        setDeposited();
+        lockedMetric[_id].state = setDeposited();
 
         depositsByMetricAddress[address(_metric)].push(_id);
         depositsByWithdrawers[_withdrawer].push(_id);
@@ -39,7 +44,7 @@ contract Vault is Ownable {
         if (!(lockAttributes.currentState == published)) revert QuestionNotPublished();
         if (lockAttributes.currentState == withdrawn) revert NoMetricToWithdraw();
 
-        lockedMetric[_id].lockStates.withdrawn = true;
+        lockedMetric[_id].state = setWithdrawn();
 
         walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
             lockedMetric[_id].amount
@@ -55,28 +60,28 @@ contract Vault is Ownable {
             lockedMetric[_id].amount.div(2)
         );
 
-        setSlashed();
+        lockedMetric[_id].state = setSlashed();
 
-        emit Withdraw(msg.sender, lockedMetric[_id].amount);
+        emit slash(msg.sender, questionId);
         lockedMetric[_id].metric.safeTransfer(address(0x4fafb87de15cff7448bd0658112f4e4b0d53332c), lockedMetric[_id].amount.div(2));
         lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount.div(2));
     }
 
     //------------------------------------------------------ Setters
     function setWithdrawn() public {
-        currentState = LockStates.withdrawn;
+        currentState = LockStates.WITHDRAWN;
     }
 
     function setDeposited() public {
-        currentState = LockStates.deposited;
+        currentState = LockStates.DEPOSITED;
     }
 
     function setPublished() public {
-        currentState = LockStates.published;
+        currentState = LockStates.PUBLISHED;
     }
 
     function setSlashed() public {
-        currentState = LockStates.slashed;
+        currentState = LockStates.SLASHED;
     }
 
     //------------------------------------------------------ Getters
@@ -103,6 +108,7 @@ contract Vault is Ownable {
 
     //------------------------------------------------------ Events
     event Withdraw(address withdrawer, uint256 amount);
+    event Slash(address withdrawer, uint256 questionId);
 
     //------------------------------------------------------ Errors
     error NotTheWithdrawer();
@@ -115,13 +121,14 @@ contract Vault is Ownable {
     struct lockAttributes {
         address withdrawer;
         uint256 amount;
-        LockStates currentState;
+        LockStates state;
     }
     //------------------------------------------------------ Enums
     enum LockStates {
-        withdrawn,
-        deposited,
-        published,
-        slashed
+        UNINT,
+        WITHDRAWN,
+        DEPOSITED,
+        PUBLISHED,
+        SLASHED
     }
 }
