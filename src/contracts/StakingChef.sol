@@ -26,7 +26,7 @@ contract StakingChef is Chef {
         }
         staker[_msgSender()] = Staker({
             shares: stake.shares + metricAmount,
-            rewardDebt: stake.rewardDebt + (((metricAmount) * _getLifetimeShareValue()) / ACC_METRIC_PRECISION),
+            lifetimeEarnings: stake.lifetimeEarnings + (((metricAmount) * _getLifetimeShareValue()) / ACC_METRIC_PRECISION),
             claimable: stake.claimable
         });
 
@@ -95,9 +95,9 @@ contract StakingChef is Chef {
         Staker storage stake = staker[_msgSender()];
         updateAccumulatedStakingRewards();
 
-        uint256 claimable = (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
+        uint256 claimable = (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.lifetimeEarnings;
 
-        stake.rewardDebt = stake.rewardDebt + claimable;
+        stake.lifetimeEarnings = stake.lifetimeEarnings + claimable;
         stake.claimable = stake.claimable + claimable;
         emit Claim(_msgSender(), stake, claimable);
     }
@@ -114,7 +114,7 @@ contract StakingChef is Chef {
     function viewPendingHarvest() public view returns (uint256) {
         Staker storage stake = staker[_msgSender()];
 
-        return (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
+        return (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.lifetimeEarnings;
     }
 
     function viewPendingClaims() public view returns (uint256) {
@@ -126,7 +126,7 @@ contract StakingChef is Chef {
     // --------------------------------------------------------------------- Structs
     struct Staker {
         uint256 shares;
-        uint256 rewardDebt;
+        uint256 lifetimeEarnings;
         uint256 claimable;
     }
 

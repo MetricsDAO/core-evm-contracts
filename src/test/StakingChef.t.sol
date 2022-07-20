@@ -363,15 +363,15 @@ contract StakingChefTest is Test {
         vm.prank(alice);
         assertEq(stakingChef.viewPendingHarvest(), 0);
 
-        // Get rewardDebt and claimable from struct for each staker
-        (, uint256 bobRewardDebt, uint256 bobClaimable) = stakingChef.staker(bob);
-        (, uint256 aliceRewardDebt, uint256 aliceClaimable) = stakingChef.staker(alice);
+        // Get lifetimeEarnings and claimable from struct for each staker
+        (, uint256 bobLifetimeEarnings, uint256 bobClaimable) = stakingChef.staker(bob);
+        (, uint256 aliceLifetimeEarnings, uint256 aliceClaimable) = stakingChef.staker(alice);
 
         assertEq(bobClaimable, 0);
         assertEq(aliceClaimable, 0);
 
-        assertEq(bobRewardDebt, 218e18);
-        assertEq(aliceRewardDebt, 218e18);
+        assertEq(bobLifetimeEarnings, 218e18);
+        assertEq(aliceLifetimeEarnings, 218e18);
 
         // Unstake
         vm.prank(bob);

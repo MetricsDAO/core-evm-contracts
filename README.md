@@ -56,7 +56,7 @@ So in sushi:
 1.  Every `x` blocks, calculate minted Sushi Tokens for each LP contract based on their (shares / total shares)
 2.  Then, do the math to figure out how many rewards each LP token is worth (based on the total amount of LP tokens staked)
 3.  Then, when a user requests their rewards, their claimable amount is based on how many tokens they have staked - and from the previous step, we know how many rewards each LP token gets.
-4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
+4.  Historical withdrawals are tracked through "lifetimeEarnings" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 This contract is a bit more simplified. Basically there are no LP tokens - so those values are tracked at the top level.
 
@@ -70,7 +70,7 @@ This contract is a bit more simplified. Basically there are no LP tokens - so th
 1.  Every `x` blocks, calculate METRIC Tokens for each AG based on their (shares / total shares)
 2.  Then, do the math to figure out how many METRIC tokens will be distributed in total
 3.  Then, when a user requests their rewards, their claimable amount is based on how many shares they have - and from the previous step, we know how many rewards each AG group gets.
-4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
+4.  Historical withdrawals are tracked through "lifetimeEarnings" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 ---
 
