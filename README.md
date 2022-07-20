@@ -32,7 +32,7 @@ With that abstraction, oversimplified, we can:
 
 1.  every block, tag X $metric as UNLOCKED within the Alloctor. These need to be calculated on-demand, as the code will not be executed every block.
 
-2.  then get that amount of UNLOCKED metric at a given time, and distribute amongst shareholders based on their shares/total shares -- if it's push distribution, send it also - if it's poll distribution, lock it up and let it stack.
+2.  then get that amount of UNLOCKED metric at a given time, and distribute amongst shareholders based on their shares/total shares -- if it's push distribution, send it also - if it's pull distribution, lock it up and let it stack.
 
 ---
 
