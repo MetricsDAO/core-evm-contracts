@@ -39,10 +39,10 @@ contract Vault is Ownable {
     }
 
     function withdrawMetric(uint256 _id) external {
-        require(msg.sender == lockedMetric[_id].withdrawer, "You are not the withdrawer!");
-        require(lockedMetric[_id].deposited, "No Metric Deposited!");
-        require(lockedMetric[_id].published, "Question has not been published");
-        require(!lockedMetric[_id].withdrawn, "Metric already withdrawn!");
+        if (!(msg.sender == lockedMetric[_id].withdrawer)) revert NotTheWithdrawer();
+        if (!(lockedMetric[_id].deposited)) revert NoMetricDeposited();
+        if (!(lockedMetric[_id].published)) revert QuestionNotPublished();
+        if (lockedMetric[_id].withdrawn) revert NoMetricToWithdraw();
 
         lockedMetric[_id].withdrawn = true;
 
@@ -91,7 +91,14 @@ contract Vault is Ownable {
 
     event Withdraw(address withdrawer, uint256 amount);
 
-    struct Items {
+    //------------------------------------------------------ Errors
+    error NotTheWithdrawer();
+    error NoMetricToWithdraw();
+    error NoMetricDeposited();
+    error QuestionNotPublished();
+
+    //------------------------------------------------------ Structs
+    struct lockAttributes {
         address withdrawer;
         uint256 amount;
         uint256 unlockTimestamp;
