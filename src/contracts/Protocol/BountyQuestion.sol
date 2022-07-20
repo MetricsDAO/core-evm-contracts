@@ -24,7 +24,7 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
-    mapping(address => uint256[]) public authors; // TODO if we want questions to be transferable, then owner != author
+    mapping(address => QuestionData[]) public authors; // TODO if we want questions to be transferable, then owner != author
     mapping(uint256 => uint256) private _createdAt;
 
     constructor() ERC721("MetricsDAO Question", "MDQ") {
@@ -37,7 +37,8 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-        authors[to].push(tokenId);
+        QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
+        authors[to].push(_question);
         return tokenId;
     }
 
@@ -63,7 +64,12 @@ contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Bur
         return super.supportsInterface(interfaceId);
     }
 
-    function getAuthor(address user) public view returns (uint256[] memory) {
+    function getAuthor(address user) public view returns (QuestionData[] memory) {
         return authors[user];
+    }
+
+    struct QuestionData {
+        uint256 tokenId;
+        string url;
     }
 }
