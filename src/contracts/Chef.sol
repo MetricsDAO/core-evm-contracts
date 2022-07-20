@@ -20,14 +20,14 @@ abstract contract Chef is Ownable {
 
     function toggleRewards(bool isOn) public onlyOwner {
         _rewardsActive = isOn;
-        setLastRewardBlock();
+        _setLastRewardBlock();
     }
 
     function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
         _metricPerBlock = metricAmount * 10**18;
     }
 
-    function setLastRewardBlock() internal virtual {
+    function _setLastRewardBlock() internal virtual {
         _lastRewardBlock = block.number;
     }
 
@@ -39,7 +39,7 @@ abstract contract Chef is Ownable {
         if (!_rewardsActive) revert RewardsNotActive();
         uint256 accumulatedWithMetricPrecision = _getAcculatedWithmetricPrecision();
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
-        setLastRewardBlock();
+        _setLastRewardBlock();
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
@@ -57,7 +57,7 @@ abstract contract Chef is Ownable {
         _totalAllocShares = _totalAllocShares - oldShares + newShares;
     }
 
-    function removeAllocShares(uint256 oldShares) internal virtual {
+    function _removeAllocShares(uint256 oldShares) internal virtual {
         if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares;
     }
@@ -75,11 +75,6 @@ abstract contract Chef is Ownable {
     function areRewardsActive() public view virtual returns (bool) {
         return _rewardsActive;
     }
-
-    // function _getAccumulated() internal view virtual returns (uint256) {
-    //     uint256 blocksSince = block.number - getLastRewardBlock();
-    //     return blocksSince * getMetricPerBlock();
-    // }
 
     function _getAcculatedWithmetricPrecision() internal view virtual returns (uint256) {
         uint256 blocksSince = block.number - getLastRewardBlock();

@@ -53,7 +53,7 @@ contract StakingChef is Chef {
 
         // Effects
         Staker storage stake = staker[_msgSender()];
-        harvest();
+        _harvest();
 
         uint256 toClaim = stake.claimable;
         stake.claimable = 0;
@@ -74,10 +74,10 @@ contract StakingChef is Chef {
         }
 
         // Effects
-        harvest();
+        _harvest();
         uint256 toClaim = staker[_msgSender()].claimable;
         uint256 toWithdraw = stake.shares;
-        removeAllocShares(staker[_msgSender()].shares);
+        _removeAllocShares(staker[_msgSender()].shares);
         stake.shares = 0;
 
         // Interactions
@@ -91,7 +91,7 @@ contract StakingChef is Chef {
         }
     }
 
-    function harvest() internal {
+    function _harvest() internal {
         Staker storage stake = staker[_msgSender()];
         updateAccumulatedStakingRewards();
 

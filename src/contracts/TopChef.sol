@@ -61,7 +61,7 @@ contract TopChef is Chef {
 
         uint256 claimable = group.claimable;
 
-        removeAllocShares(_allocations[agIndex].shares);
+        _removeAllocShares(_allocations[agIndex].shares);
         _allocations[agIndex] = _allocations[_allocations.length - 1];
         _allocations.pop();
 
