@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { mineBlocks, BN, closeEnough } = require("./utils");
 
 describe("Staking Contract", function () {
@@ -14,6 +14,9 @@ describe("Staking Contract", function () {
   let vestingContract;
 
   beforeEach(async function () {
+    // Set To TRUE as tests are based on hardhat.config
+    await network.provider.send("evm_setAutomine", [true]);
+
     [origin, staker1, staker2, vestingContract] = await ethers.getSigners();
 
     // deploy METRIC

@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Chef.sol";
@@ -26,12 +26,14 @@ contract TopChef is Chef {
         AllocationGroup memory group = AllocationGroup({
             groupAddress: newAddress,
             shares: newShares,
-            rewardDebt: (newShares * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
+            lifetimeEarnings: (newShares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
         });
 
         _allocations.push(group);
-        addTotalAllocShares(group.shares);
+        _addTotalAllocShares(group.shares);
+
+        emit AddGroup(group);
     }
 
     // TODO do we actually need to do this?
@@ -39,27 +41,29 @@ contract TopChef is Chef {
         address groupAddress,
         uint256 agIndex,
         uint256 shares
-    ) public activeRewards onlyOwner {
+    ) public activeRewards validIndex(agIndex) onlyOwner {
         // Checks (modifier)
+        if (shares <= 0) revert SharesNotGreaterThanZero();
 
         // Effects
         harvest(agIndex);
-        addTotalAllocShares(_allocations[agIndex].shares, shares);
-        _allocations[agIndex].groupAddress = groupAddress;
-        _allocations[agIndex].shares = shares;
+
+        AllocationGroup storage group = _allocations[agIndex];
+        _addTotalAllocShares(group.shares, shares);
+        group.groupAddress = groupAddress;
+        group.shares = shares;
+
+        emit UpdateGroup(group);
     }
 
-    function removeAllocationGroup(uint256 agIndex) external activeRewards onlyOwner {
-        // Checks
-        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
-
+    function removeAllocationGroup(uint256 agIndex) external validIndex(agIndex) activeRewards onlyOwner {
         // Effects
         harvest(agIndex);
         AllocationGroup memory group = _allocations[agIndex];
 
         uint256 claimable = group.claimable;
 
-        removeAllocShares(_allocations[agIndex].shares);
+        _removeAllocShares(_allocations[agIndex].shares);
         _allocations[agIndex] = _allocations[_allocations.length - 1];
         _allocations.pop();
 
@@ -68,6 +72,7 @@ contract TopChef is Chef {
             SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
             emit Withdraw(group.groupAddress, agIndex, claimable);
         }
+        emit RemoveGroup(group);
     }
 
     //------------------------------------------------------Getters
@@ -78,23 +83,23 @@ contract TopChef is Chef {
 
     //------------------------------------------------------Distribution
 
-    function viewPendingHarvest(uint256 agIndex) public view returns (uint256) {
+    function viewPendingHarvest(uint256 agIndex) public view validIndex(agIndex) returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
 
         if (areRewardsActive()) {
-            return ((group.shares * (getLifeTimeShareValueEstimate())) / ACC_METRIC_PRECISION) - group.rewardDebt;
+            return ((group.shares * (getLifeTimeShareValueEstimate())) / ACC_METRIC_PRECISION) - group.lifetimeEarnings;
         } else {
-            return (group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION - group.rewardDebt;
+            return (group.shares * (_getLifetimeShareValue())) / ACC_METRIC_PRECISION - group.lifetimeEarnings;
         }
     }
 
-    function viewPendingClaims(uint256 agIndex) public view returns (uint256) {
+    function viewPendingClaims(uint256 agIndex) public view validIndex(agIndex) returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
 
         return group.claimable;
     }
 
-    function viewPendingRewards(uint256 agIndex) public view returns (uint256) {
+    function viewPendingRewards(uint256 agIndex) public view validIndex(agIndex) returns (uint256) {
         AllocationGroup memory group = _allocations[agIndex];
         uint256 claimable = group.claimable;
         uint256 harvestable = viewPendingHarvest(agIndex);
@@ -105,11 +110,6 @@ contract TopChef is Chef {
         if (block.number <= getLastRewardBlock()) {
             return;
         }
-
-        // TODO confirm budget is correct with assertions
-        // Not sure we can project emission rate over X years?
-        // Not entirely sure how to handle this, but we can at least try to make it work.
-        // ^^ will help with fuzz testing
 
         setLifetimeShareValue();
     }
@@ -122,16 +122,14 @@ contract TopChef is Chef {
         }
     }
 
-    function harvest(uint256 agIndex) public activeRewards returns (uint256) {
-        // Checks
+    function harvest(uint256 agIndex) public activeRewards validIndex(agIndex) returns (uint256) {
         AllocationGroup storage group = _allocations[agIndex];
-        // TODO do we want a backup in case a group looses access to their wallet
 
         // Effects
         updateAccumulatedAllocations();
-        uint256 toClaim = ((group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION) - group.rewardDebt;
+        uint256 toClaim = ((group.shares * (_getLifetimeShareValue())) / ACC_METRIC_PRECISION) - group.lifetimeEarnings;
 
-        group.rewardDebt = group.rewardDebt + toClaim;
+        group.lifetimeEarnings = group.lifetimeEarnings + toClaim;
         uint256 totalClaimable = group.claimable + toClaim;
         group.claimable = totalClaimable;
 
@@ -141,7 +139,7 @@ contract TopChef is Chef {
         return totalClaimable;
     }
 
-    function claim(uint256 agIndex) public {
+    function claim(uint256 agIndex) public validIndex(agIndex) {
         AllocationGroup storage group = _allocations[agIndex];
         uint256 claimable = harvest(agIndex);
         if (claimable != 0) {
@@ -156,20 +154,27 @@ contract TopChef is Chef {
     struct AllocationGroup {
         address groupAddress;
         uint256 shares;
-        uint256 rewardDebt; // keeps track of how much the user is owed or has been credited already
+        uint256 lifetimeEarnings; // keeps track of how much the user is owed or has been credited already
         uint256 claimable;
     }
 
     //------------------------------------------------------ Errors
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
-    error RewardsInactive();
-    error NoClaimableRewardToWithdraw();
-    error SenderDoesNotRepresentGroup();
+
+    // --------------------------------------------------------------------- Events
+    event RemoveGroup(TopChef.AllocationGroup);
+    event AddGroup(TopChef.AllocationGroup);
+    event UpdateGroup(TopChef.AllocationGroup);
 
     //------------------------------------------------------ Modifiers
-    modifier activeRewards() {
-        if (!(areRewardsActive())) revert RewardsInactive();
+    // modifier activeRewards() {
+    //     if (!areRewardsActive()) revert RewardsInactive();
+    //     _;
+    // }
+
+    modifier validIndex(uint256 agIndex) {
+        if (agIndex >= _allocations.length) revert IndexDoesNotMatchAllocation();
         _;
     }
 }
