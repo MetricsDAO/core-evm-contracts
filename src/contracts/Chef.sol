@@ -37,24 +37,22 @@ abstract contract Chef is Ownable {
 
     function setLifetimeShareValue() public virtual {
         if (!_rewardsActive) revert RewardsNotActive();
-        uint256 accumulated = getAccumulated();
-        uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
+        uint256 accumulatedWithMetricPrecision = _getAcculatedWithmetricPrecision();
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
         setLastRewardBlock();
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
-        uint256 accumulated = getAccumulated();
-        uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
-        uint256 lifetimesharevalue = getLifetimeShareValue();
+        uint256 accumulatedWithMetricPrecision = _getAcculatedWithmetricPrecision();
+        uint256 lifetimesharevalue = _getLifetimeShareValue();
         return lifetimesharevalue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
     }
 
-    function addTotalAllocShares(uint256 shares) internal virtual {
+    function _addTotalAllocShares(uint256 shares) internal virtual {
         _totalAllocShares = _totalAllocShares + shares;
     }
 
-    function addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
+    function _addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
         if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares + newShares;
     }
@@ -78,12 +76,14 @@ abstract contract Chef is Ownable {
         return _rewardsActive;
     }
 
-    function getAccumulated() internal view virtual returns (uint256) {
-        uint256 blocksSince = block.number - getLastRewardBlock();
-        return blocksSince * getMetricPerBlock();
-    }
+    // function _getAccumulated() internal view virtual returns (uint256) {
+    //     uint256 blocksSince = block.number - getLastRewardBlock();
+    //     return blocksSince * getMetricPerBlock();
+    // }
 
-    function getAcculatedWithmetricPrecision(uint256 accumulated) internal view virtual returns (uint256) {
+    function _getAcculatedWithmetricPrecision() internal view virtual returns (uint256) {
+        uint256 blocksSince = block.number - getLastRewardBlock();
+        uint256 accumulated = blocksSince * getMetricPerBlock();
         return accumulated * ACC_METRIC_PRECISION;
     }
 
@@ -91,7 +91,7 @@ abstract contract Chef is Ownable {
         return _totalAllocShares;
     }
 
-    function getLifetimeShareValue() internal view returns (uint256) {
+    function _getLifetimeShareValue() internal view returns (uint256) {
         return _lifetimeShareValue;
     }
 

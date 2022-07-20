@@ -26,12 +26,12 @@ contract TopChef is Chef {
         AllocationGroup memory group = AllocationGroup({
             groupAddress: newAddress,
             shares: newShares,
-            rewardDebt: (newShares * getLifetimeShareValue()) / ACC_METRIC_PRECISION,
+            rewardDebt: (newShares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION,
             claimable: 0
         });
 
         _allocations.push(group);
-        addTotalAllocShares(group.shares);
+        _addTotalAllocShares(group.shares);
     }
 
     // TODO do we actually need to do this?
@@ -46,7 +46,7 @@ contract TopChef is Chef {
 
         // Effects
         harvest(agIndex);
-        addTotalAllocShares(_allocations[agIndex].shares, shares);
+        _addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
     }
@@ -87,7 +87,7 @@ contract TopChef is Chef {
         if (areRewardsActive()) {
             return ((group.shares * (getLifeTimeShareValueEstimate())) / ACC_METRIC_PRECISION) - group.rewardDebt;
         } else {
-            return (group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION - group.rewardDebt;
+            return (group.shares * (_getLifetimeShareValue())) / ACC_METRIC_PRECISION - group.rewardDebt;
         }
     }
 
@@ -136,7 +136,7 @@ contract TopChef is Chef {
 
         // Effects
         updateAccumulatedAllocations();
-        uint256 toClaim = ((group.shares * (getLifetimeShareValue())) / ACC_METRIC_PRECISION) - group.rewardDebt;
+        uint256 toClaim = ((group.shares * (_getLifetimeShareValue())) / ACC_METRIC_PRECISION) - group.rewardDebt;
 
         group.rewardDebt = group.rewardDebt + toClaim;
         uint256 totalClaimable = group.claimable + toClaim;

@@ -26,11 +26,11 @@ contract StakingChef is Chef {
         }
         staker[_msgSender()] = Staker({
             shares: stake.shares + metricAmount,
-            rewardDebt: stake.rewardDebt + (((metricAmount) * getLifetimeShareValue()) / ACC_METRIC_PRECISION),
+            rewardDebt: stake.rewardDebt + (((metricAmount) * _getLifetimeShareValue()) / ACC_METRIC_PRECISION),
             claimable: stake.claimable
         });
 
-        addTotalAllocShares(metricAmount);
+        _addTotalAllocShares(metricAmount);
 
         // Interactions
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), _msgSender(), address(this), metricAmount);
@@ -95,7 +95,7 @@ contract StakingChef is Chef {
         Staker storage stake = staker[_msgSender()];
         updateAccumulatedStakingRewards();
 
-        uint256 claimable = (stake.shares * getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
+        uint256 claimable = (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
 
         stake.rewardDebt = stake.rewardDebt + claimable;
         stake.claimable = stake.claimable + claimable;
@@ -114,7 +114,7 @@ contract StakingChef is Chef {
     function viewPendingHarvest() public view returns (uint256) {
         Staker storage stake = staker[_msgSender()];
 
-        return (stake.shares * getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
+        return (stake.shares * _getLifetimeShareValue()) / ACC_METRIC_PRECISION - stake.rewardDebt;
     }
 
     function viewPendingClaims() public view returns (uint256) {
