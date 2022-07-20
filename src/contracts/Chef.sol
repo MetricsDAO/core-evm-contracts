@@ -20,14 +20,14 @@ abstract contract Chef is Ownable {
 
     function toggleRewards(bool isOn) public onlyOwner {
         _rewardsActive = isOn;
-        setLastRewardBlock();
+        _setLastRewardBlock();
     }
 
     function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
         _metricPerBlock = metricAmount * 10**18;
     }
 
-    function setLastRewardBlock() internal virtual {
+    function _setLastRewardBlock() internal virtual {
         _lastRewardBlock = block.number;
     }
 
@@ -35,31 +35,28 @@ abstract contract Chef is Ownable {
         metric = MetricToken(metricTokenAddress);
     }
 
-    function setLifetimeShareValue() public virtual {
-        if (!_rewardsActive) revert RewardsNotActive();
-        uint256 accumulated = getAccumulated();
-        uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
+    function setLifetimeShareValue() public virtual activeRewards {
+        uint256 accumulatedWithMetricPrecision = _getAccumulatedWithMetricPrecision();
         _lifetimeShareValue = _lifetimeShareValue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
-        setLastRewardBlock();
+        _setLastRewardBlock();
     }
 
     function getLifeTimeShareValueEstimate() public view virtual returns (uint256) {
-        uint256 accumulated = getAccumulated();
-        uint256 accumulatedWithMetricPrecision = getAcculatedWithmetricPrecision(accumulated);
-        uint256 lifetimesharevalue = getLifetimeShareValue();
+        uint256 accumulatedWithMetricPrecision = _getAccumulatedWithMetricPrecision();
+        uint256 lifetimesharevalue = _getLifetimeShareValue();
         return lifetimesharevalue + accumulatedMetricDividedByShares(accumulatedWithMetricPrecision);
     }
 
-    function addTotalAllocShares(uint256 shares) internal virtual {
+    function _addTotalAllocShares(uint256 shares) internal virtual {
         _totalAllocShares = _totalAllocShares + shares;
     }
 
-    function addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
+    function _addTotalAllocShares(uint256 oldShares, uint256 newShares) internal virtual {
         if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares + newShares;
     }
 
-    function removeAllocShares(uint256 oldShares) internal virtual {
+    function _removeAllocShares(uint256 oldShares) internal virtual {
         if (oldShares > _totalAllocShares) revert InvalidShareAmount();
         _totalAllocShares = _totalAllocShares - oldShares;
     }
@@ -78,12 +75,9 @@ abstract contract Chef is Ownable {
         return _rewardsActive;
     }
 
-    function getAccumulated() internal view virtual returns (uint256) {
+    function _getAccumulatedWithMetricPrecision() internal view virtual returns (uint256) {
         uint256 blocksSince = block.number - getLastRewardBlock();
-        return blocksSince * getMetricPerBlock();
-    }
-
-    function getAcculatedWithmetricPrecision(uint256 accumulated) internal view virtual returns (uint256) {
+        uint256 accumulated = blocksSince * getMetricPerBlock();
         return accumulated * ACC_METRIC_PRECISION;
     }
 
@@ -91,7 +85,7 @@ abstract contract Chef is Ownable {
         return _totalAllocShares;
     }
 
-    function getLifetimeShareValue() internal view returns (uint256) {
+    function _getLifetimeShareValue() internal view returns (uint256) {
         return _lifetimeShareValue;
     }
 
@@ -113,7 +107,7 @@ abstract contract Chef is Ownable {
         _;
     }
 
-    function renounceOwnership() public override onlyOwner {
+    function renounceOwnership() public view override onlyOwner {
         revert CannotRenounce();
     }
 
@@ -124,6 +118,12 @@ abstract contract Chef is Ownable {
     error RewardsNotActive();
 
     //------------------------------------------------------Events
-    event Harvest(address harvester, uint256 agIndex, uint256 amount);
-    event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
+    event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);
+    event Withdraw(address indexed withdrawer, uint256 agIndex, uint256 amount);
+
+    //------------------------------------------------------ Modifiers
+    modifier activeRewards() {
+        if (!areRewardsActive()) revert RewardsNotActive();
+        _;
+    }
 }
