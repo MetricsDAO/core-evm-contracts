@@ -44,7 +44,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         _costController.payForCreateQuestion(_msgSender());
 
         // Mint a new question
-        uint256 questionId = _question.safeMint(_msgSender(), uri);
+        uint256 questionId = _question.createQuestion(_msgSender(), uri);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
@@ -65,7 +65,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         // keep as questionId or should be challengeId?
 
         // Mint a new question
-        uint256 questionId = _question.safeMint(_msgSender(), uri);
+        uint256 questionId = _question.createQuestion(_msgSender(), uri);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);

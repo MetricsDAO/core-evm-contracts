@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
 
-// TODO remove ERC721 stuff here
-// TODO introduce a Challenge data model
 // Question -> Challenge is many -> one mapping
 // auto-transition from question -> challenge on:
 //   Voting threshold -> do we want manual approval? -> yes
@@ -20,50 +18,29 @@ import "./modifiers/OnlyAPI.sol";
 // philosphy -> start out gated and the protocol can evolve in the same way the dao does
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable, OnlyApi {
+contract BountyQuestion is Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
-    mapping(address => uint256[]) public authors; // TODO if we want questions to be transferable, then owner != author
-    mapping(uint256 => uint256) private _createdAt;
 
-    constructor() ERC721("MetricsDAO Question", "MDQ") {
+    mapping(uint256 => string) public questionMetadata;
+    mapping(address => QuestionData[]) public authors;
+
+    constructor() {
         _tokenIdCounter.increment();
     }
 
-    // working standard metadata format:  Title, Description, Program
-    function safeMint(address to, string calldata uri) public onlyApi returns (uint256) {
+    function createQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
+        // Checks
+        // Effects
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
-        authors[to].push(tokenId);
+
+        creators[tokenId].push(author);
+        questionMetadata[tokenId] = uri;
+
+        // Interactions
+
         return tokenId;
-    }
-
-    //------------------------------------------------------ Solidity Overrides
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-
-    function getAuthor(address user) public view returns (uint256[] memory) {
-        return authors[user];
     }
 }
