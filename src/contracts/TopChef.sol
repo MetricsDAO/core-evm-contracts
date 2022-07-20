@@ -32,6 +32,8 @@ contract TopChef is Chef {
 
         _allocations.push(group);
         _addTotalAllocShares(group.shares);
+
+        emit AddGroup(group);
     }
 
     // TODO do we actually need to do this?
@@ -48,6 +50,8 @@ contract TopChef is Chef {
         _addTotalAllocShares(_allocations[agIndex].shares, shares);
         _allocations[agIndex].groupAddress = groupAddress;
         _allocations[agIndex].shares = shares;
+
+        emit UpdateGroup(_allocations[agIndex]);
     }
 
     function removeAllocationGroup(uint256 agIndex) external validIndex(agIndex) activeRewards onlyOwner {
@@ -66,6 +70,7 @@ contract TopChef is Chef {
             SafeERC20.safeTransfer(IERC20(getMetricToken()), group.groupAddress, claimable);
             emit Withdraw(group.groupAddress, agIndex, claimable);
         }
+        emit RemoveGroup(group);
     }
 
     //------------------------------------------------------Getters
@@ -155,8 +160,11 @@ contract TopChef is Chef {
     error SharesNotGreaterThanZero();
     error IndexDoesNotMatchAllocation();
     error RewardsInactive();
-    error NoClaimableRewardToWithdraw();
-    error SenderDoesNotRepresentGroup();
+
+    // --------------------------------------------------------------------- Events
+    event RemoveGroup(TopChef.AllocationGroup);
+    event AddGroup(TopChef.AllocationGroup);
+    event UpdateGroup(TopChef.AllocationGroup);
 
     //------------------------------------------------------ Modifiers
     modifier activeRewards() {

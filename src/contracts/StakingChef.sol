@@ -31,37 +31,10 @@ contract StakingChef is Chef {
         });
 
         _addTotalAllocShares(metricAmount);
+        emit Stake(_msgSender(), metricAmount);
 
         // Interactions
         SafeERC20.safeTransferFrom(IERC20(getMetricToken()), _msgSender(), address(this), metricAmount);
-    }
-
-    function updateAccumulatedStakingRewards() public {
-        if (!areRewardsActive()) revert RewardsAreNotActive();
-        if (block.number <= getLastRewardBlock()) {
-            return;
-        }
-
-        setLifetimeShareValue();
-    }
-
-    // --------------------------------------------------------------------- Manage rewards and Principal
-
-    function claim() public {
-        // Checks
-        if (viewPendingHarvest() == 0) revert NoClaimableRewardsToWithdraw();
-
-        // Effects
-        Staker storage stake = staker[_msgSender()];
-        _harvest();
-
-        uint256 toClaim = stake.claimable;
-        stake.claimable = 0;
-
-        // Interactions
-        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toClaim);
-
-        emit Claim(_msgSender(), stake, toClaim);
     }
 
     function unStakeMetric() public {
@@ -89,6 +62,34 @@ contract StakingChef is Chef {
         if (toClaim > 0) {
             emit Claim(_msgSender(), stake, toWithdraw);
         }
+    }
+
+    // --------------------------------------------------------------------- Manage rewards and Principal
+
+    function claim() public {
+        // Checks
+        if (viewPendingHarvest() == 0) revert NoClaimableRewardsToWithdraw();
+
+        // Effects
+        Staker storage stake = staker[_msgSender()];
+        _harvest();
+
+        uint256 toClaim = stake.claimable;
+        stake.claimable = 0;
+
+        // Interactions
+        SafeERC20.safeTransfer(IERC20(getMetricToken()), _msgSender(), toClaim);
+
+        emit Claim(_msgSender(), stake, toClaim);
+    }
+
+    function updateAccumulatedStakingRewards() public {
+        if (!areRewardsActive()) revert RewardsAreNotActive();
+        if (block.number <= getLastRewardBlock()) {
+            return;
+        }
+
+        setLifetimeShareValue();
     }
 
     function _harvest() internal {
@@ -137,6 +138,7 @@ contract StakingChef is Chef {
     error CannotStakeNoMetric();
 
     // --------------------------------------------------------------------- Events
-    event Claim(address harvester, StakingChef.Staker, uint256 amount);
-    event UnStake(address withdrawer, StakingChef.Staker, uint256 amount);
+    event Claim(address indexed harvester, StakingChef.Staker, uint256 amount);
+    event UnStake(address indexed withdrawer, StakingChef.Staker, uint256 amount);
+    event Stake(address indexed staker, uint256 amount);
 }

@@ -119,6 +119,6 @@ abstract contract Chef is Ownable {
     error RewardsNotActive();
 
     //------------------------------------------------------Events
-    event Harvest(address harvester, uint256 agIndex, uint256 amount);
-    event Withdraw(address withdrawer, uint256 agIndex, uint256 amount);
+    event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);
+    event Withdraw(address indexed withdrawer, uint256 agIndex, uint256 amount);
 }
