@@ -40,11 +40,11 @@ contract Vault is Ownable {
 
     function withdrawMetric(uint256 _id) external {
         if (!(msg.sender == lockedMetric[_id].withdrawer)) revert NotTheWithdrawer();
-        if (!(lockedMetric[_id].deposited)) revert NoMetricDeposited();
-        if (!(lockedMetric[_id].published)) revert QuestionNotPublished();
-        if (lockedMetric[_id].withdrawn) revert NoMetricToWithdraw();
+        if (!(lockedMetric[_id].lockStates.deposited)) revert NoMetricDeposited();
+        if (!(lockedMetric[_id].lockStates.published)) revert QuestionNotPublished();
+        if (lockedMetric[_id].lockStates.withdrawn) revert NoMetricToWithdraw();
 
-        lockedMetric[_id].withdrawn = true;
+        lockedMetric[_id].lockStates.withdrawn = true;
 
         walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
             lockedMetric[_id].amount
@@ -101,10 +101,12 @@ contract Vault is Ownable {
     struct lockAttributes {
         address withdrawer;
         uint256 amount;
-        uint256 unlockTimestamp;
-        bool withdrawn;
-        bool deposited;
-        bool published;
-        bool slashed;
+    }
+    //------------------------------------------------------ Enums
+    enum lockStates {
+        withdrawn,
+        deposoted,
+        published,
+        slashed
     }
 }
