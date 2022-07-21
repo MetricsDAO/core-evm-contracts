@@ -11,7 +11,6 @@ contract Vault is Ownable {
     mapping(address => uint256[]) public depositsByWithdrawers;
     mapping(uint256 => lockAttributes) public lockedMetric;
     mapping(address => mapping(address => uint256)) public walletMetricBalance;
-    // mapping(uint256 => lockedMetric) question;
     LockStates public currentState;
 
     constructor(address metricTokenAddress, address questionStateController) {
@@ -23,49 +22,47 @@ contract Vault is Ownable {
         address _withdrawer,
         uint256 _amount,
         uint256 questionId
-    ) external returns (uint256 _id) {
+    ) external {
         _metric.safeTransferFrom(msg.sender, address(this), _amount);
 
         walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
 
-        _id = ++depositsCount;
-        lockedMetric[_id].withdrawer = _withdrawer;
-        lockedMetric[_id].amount = _amount;
+        lockedMetric[questionId].withdrawer = _withdrawer;
+        lockedMetric[questionId].amount = _amount;
 
-        lockedMetric[_id].state = setDeposited();
+        lockedMetric[questionId].state = setDeposited();
 
-        depositsByMetricAddress[address(_metric)].push(_id);
-        depositsByWithdrawers[_withdrawer].push(_id);
-        return _id;
+        depositsByMetricAddress[address(_metric)].push(questionId);
+        depositsByWithdrawers[_withdrawer].push(QuestionId);
     }
 
-    function withdrawMetric(uint256 _id) external {
-        if (!(msg.sender == lockedMetric[_id].withdrawer)) revert NotTheWithdrawer();
+    function withdrawMetric(uint256 questionId) external {
+        if (!(msg.sender == lockedMetric[questionId].withdrawer)) revert NotTheWithdrawer();
         if (!(lockAttributes.currentState == DEPOSITED)) revert NoMetricDeposited();
         if (!(_questionStateController.getState(questionId) == PUBLISHED)) revert QuestionNotPublished();
         if (lockAttributes.currentState == WITHDRAWN) revert NoMetricToWithdraw();
 
-        lockedMetric[_id].state = setWithdrawn();
+        lockedMetric[questionId].state = setWithdrawn();
 
-        walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
-            lockedMetric[_id].amount
-        );
+        walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
+            msg.sender
+        ].sub(lockedMetric[questionId].amount);
 
-        emit Withdraw(msg.sender, lockedMetric[_id].amount);
-        lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount);
+        emit Withdraw(msg.sender, lockedMetric[questionId].amount);
+        lockedMetric[questionId].metric.safeTransfer(msg.sender, lockedMetric[questionId].amount);
     }
 
-    function slashMetric(uint256 _id) external onlyOwner {
+    function slashMetric(uint256 questionId) external onlyOwner {
         if (!(lockAttributes.currentState == slashed)) revert AlreadySlashed();
-        walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[_id].metric)][msg.sender].sub(
-            lockedMetric[_id].amount.div(2)
-        );
+        walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
+            msg.sender
+        ].sub(lockedMetric[questionId].amount.div(2));
 
-        lockedMetric[_id].state = setSlashed();
+        lockedMetric[questionId].state = setSlashed();
 
         emit slash(msg.sender, questionId);
-        lockedMetric[_id].metric.safeTransfer(address(0x4fafb87de15cff7448bd0658112f4e4b0d53332c), lockedMetric[_id].amount.div(2));
-        lockedMetric[_id].metric.safeTransfer(msg.sender, lockedMetric[_id].amount.div(2));
+        lockedMetric[questionId].metric.safeTransfer(address(0x4fafb87de15cff7448bd0658112f4e4b0d53332c), lockedMetric[questionId].amount.div(2));
+        lockedMetric[questionId].metric.safeTransfer(msg.sender, lockedMetric[questionId].amount.div(2));
     }
 
     //------------------------------------------------------ Setters
@@ -83,8 +80,8 @@ contract Vault is Ownable {
 
     //------------------------------------------------------ Getters
 
-    function getDepositsByMetricAddress(address _id) external view returns (uint256[] memory) {
-        return depositsByMetricAddress[_id];
+    function getDepositsByMetricAddress(address questionId) external view returns (uint256[] memory) {
+        return depositsByMetricAddress[questionId];
     }
 
     function getDepositsByWithdrawer(address _metric, address _withdrawer) external view returns (uint256) {
@@ -95,8 +92,8 @@ contract Vault is Ownable {
         return depositsByWithdrawers[_withdrawer];
     }
 
-    function getVaultById(uint256 _id) external view returns (Items memory) {
-        return lockedMetric[_id];
+    function getVaultById(uint256 questionId) external view returns (Items memory) {
+        return lockedMetric[questionId];
     }
 
     function getMetricTotalLockedBalance(address _metric) external view returns (uint256) {
