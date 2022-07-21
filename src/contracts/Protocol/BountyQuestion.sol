@@ -9,43 +9,40 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
 
-// Question -> Challenge is many -> one mapping
-// auto-transition from question -> challenge on:
-//   Voting threshold -> do we want manual approval? -> yes
-//   Admin approval (Messari group wants to write their own challenges)
-// TODO ability for author to unlock and "kill" their question -> reimburse voters
-
-// philosphy -> start out gated and the protocol can evolve in the same way the dao does
-
 /// @custom:security-contact contracts@metricsdao.xyz
 contract BountyQuestion is Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
 
-    mapping(address => QuestionData[]) public authors;
-    mapping(uint256 => uint256) private _createdAt;
+    // This maps the author to the list of token IDs they have created
+    mapping(address => uint256[]) public authors;
 
-    mapping(uint256 => string) public questionMetadata;
+    // This maps the token ID to the question data
+    mapping(uint256 => QuestionData) public questions;
 
     constructor() {
         _tokenIdCounter.increment();
     }
 
     function createQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
-        // Checks
-        // Effects
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
-        questionMetadata[tokenId] = uri;
-        QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
-        authors[author].push(_question);
+        questions[tokenId] = QuestionData({tokenId: tokenId, url: uri});
+        // QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
+        authors[author].push(tokenId);
         return tokenId;
     }
 
     function getAuthor(address user) public view returns (QuestionData[] memory) {
-        return authors[user];
+        uint256[] memory created = authors[user];
+
+        QuestionData[] memory ret = new QuestionData[](created.length);
+        for (uint256 i = 0; i < created.length; i++) {
+            ret[i] = questions[created[i]];
+        }
+        return ret;
     }
 
     struct QuestionData {
