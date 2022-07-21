@@ -1,10 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
@@ -13,26 +9,25 @@ import "./modifiers/OnlyAPI.sol";
 contract BountyQuestion is Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
-    Counters.Counter private _tokenIdCounter;
+    Counters.Counter private _questionIdCounter;
 
-    // This maps the author to the list of token IDs they have created
+    // This maps the author to the list of question IDs they have created
     mapping(address => uint256[]) public authors;
 
-    // This maps the token ID to the question data
+    // This maps the question ID to the question data
     mapping(uint256 => QuestionData) public questions;
 
     constructor() {
-        _tokenIdCounter.increment();
+        _questionIdCounter.increment();
     }
 
     function createQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        uint256 questionId = _questionIdCounter.current();
+        _questionIdCounter.increment();
 
-        questions[tokenId] = QuestionData({tokenId: tokenId, url: uri});
-        // QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
-        authors[author].push(tokenId);
-        return tokenId;
+        questions[questionId] = QuestionData({questionId: questionId, url: uri});
+        authors[author].push(questionId);
+        return questionId;
     }
 
     function getAuthor(address user) public view returns (QuestionData[] memory) {
@@ -46,7 +41,7 @@ contract BountyQuestion is Ownable, OnlyApi {
     }
 
     struct QuestionData {
-        uint256 tokenId;
+        uint256 questionId;
         string url;
     }
 }
