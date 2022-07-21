@@ -21,7 +21,7 @@ contract BountyQuestion is Ownable, OnlyApi {
         _questionIdCounter.increment();
     }
 
-    function createQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
+    function mintQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
