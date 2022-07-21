@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Core EVM contracts for MetricsDao",
   "scripts": {
-    "test": "npx hardhat clean && npx hardhat test && forge test",
+    "test": "npx hardhat test && forge test",
+    "ctest": "npx hardhat clean && npx hardhat test && forge test",
     "setup": "npm i && forge install && forge build && forge test -vv",
     "test:contracts": "forge test -vv",
     "prepare": "husky install"
