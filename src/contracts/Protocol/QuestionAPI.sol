@@ -7,6 +7,7 @@ import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
 import "./modifiers/NFTLocked.sol";
+import "./Vault.sol";
 
 // TODO a lot of talk about "admins" -> solve that
 contract QuestionAPI is Ownable, NFTLocked {
@@ -19,12 +20,14 @@ contract QuestionAPI is Ownable, NFTLocked {
         address bountyQuestion,
         address questionStateController,
         address claimController,
-        address costController
+        address costController,
+        address vault
     ) {
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
+        _vault = Vault(vault);
     }
 
     // TODO admin-only quesiton state "BAD" which basically ends the lifecycle
@@ -49,6 +52,9 @@ contract QuestionAPI is Ownable, NFTLocked {
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
+
+        // Lock Metric for the question
+        _vault.lockMetric(questionId, _msg.sender(), 1e18);
 
         return questionId;
     }
