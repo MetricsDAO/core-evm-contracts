@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./QuestionStateController.sol";
 
 contract Vault is Ownable {
     uint256 public depositsCount;
@@ -13,8 +14,9 @@ contract Vault is Ownable {
     // mapping(uint256 => lockedMetric) question;
     LockStates public currentState;
 
-    constructor(address metricTokenAddress) {
+    constructor(address metricTokenAddress, address questionStateController) {
         setMetricToken(metricTokenAddress);
+        _questionStateController = IQuestionStateController(questionStateController);
     }
 
     function lockMetric(
@@ -39,10 +41,9 @@ contract Vault is Ownable {
 
     function withdrawMetric(uint256 _id) external {
         if (!(msg.sender == lockedMetric[_id].withdrawer)) revert NotTheWithdrawer();
-        if (!(lockAttributes.currentState == deposited)) revert NoMetricDeposited();
-        //TODO: question can be both published and deposotied
-        if (!(lockAttributes.currentState == published)) revert QuestionNotPublished();
-        if (lockAttributes.currentState == withdrawn) revert NoMetricToWithdraw();
+        if (!(lockAttributes.currentState == DEPOSITED)) revert NoMetricDeposited();
+        if (!(_questionStateController.getState(questionId) == PUBLISHED)) revert QuestionNotPublished();
+        if (lockAttributes.currentState == WITHDRAWN) revert NoMetricToWithdraw();
 
         lockedMetric[_id].state = setWithdrawn();
 
@@ -74,10 +75,6 @@ contract Vault is Ownable {
 
     function setDeposited() public {
         currentState = LockStates.DEPOSITED;
-    }
-
-    function setPublished() public {
-        currentState = LockStates.PUBLISHED;
     }
 
     function setSlashed() public {
@@ -128,7 +125,6 @@ contract Vault is Ownable {
         UNINT,
         WITHDRAWN,
         DEPOSITED,
-        PUBLISHED,
         SLASHED
     }
 }
