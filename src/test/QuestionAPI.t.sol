@@ -26,6 +26,7 @@ contract QuestionAPITest is Test {
     ClaimController _claimController;
     ActionCostController _costController;
     QuestionStateController _questionStateController;
+    Vault _vault;
     NFT _mockAuthNFT;
 
     function setUp() public {
@@ -40,12 +41,14 @@ contract QuestionAPITest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
+        _vault = new Vault(address(_metricToken), address(_questionStateController));
         _costController = new ActionCostController(address(_metricToken));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController)
+            address(_costController),
+            address(_vault)
         );
 
         _claimController.setQuestionApi(address(_questionAPI));

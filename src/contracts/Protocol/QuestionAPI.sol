@@ -15,6 +15,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
+    Vault private _vault;
 
     constructor(
         address bountyQuestion,
@@ -54,7 +55,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         _claimController.initializeQuestion(questionId, claimLimit);
 
         // Lock Metric for the question
-        _vault.lockMetric(questionId, _msg.sender(), 1e18);
+        _vault.lockMetric(_msgSender(), questionId, 1e18);
 
         return questionId;
     }

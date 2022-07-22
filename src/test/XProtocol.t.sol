@@ -24,6 +24,7 @@ contract XProtocolTest is Test {
     ClaimController _claimController;
     ActionCostController _costController;
     QuestionStateController _questionStateController;
+    Vault _vault;
 
     function setUp() public {
         // Labeling
@@ -38,11 +39,13 @@ contract XProtocolTest is Test {
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
         _costController = new ActionCostController(address(_xMetric));
+        _vault = new Vault(address(_metricToken), address(_questionStateController));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController)
+            address(_costController),
+            address(_vault)
         );
 
         _claimController.setQuestionApi(address(_questionAPI));
@@ -67,7 +70,8 @@ contract XProtocolTest is Test {
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController)
+            address(_costController),
+            address(_vault)
         );
 
         _claimController.setQuestionApi(address(_questionAPI));

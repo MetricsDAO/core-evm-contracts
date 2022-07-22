@@ -5,16 +5,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./QuestionStateController.sol";
+import "./interfaces/IQuestionStateController.sol";
 
 contract Vault is Ownable {
+    IERC20 private _metric;
     uint256 public depositsCount;
     mapping(address => uint256[]) public depositsByWithdrawers;
     mapping(uint256 => lockAttributes) public lockedMetric;
-    mapping(address => mapping(address => uint256)) public walletMetricBalance;
-    LockStates public currentState;
+    LockStates currentState;
+    IQuestionStateController private _questionStateController;
 
     constructor(address metricTokenAddress, address questionStateController) {
-        setMetricToken(metricTokenAddress);
+        _metric = IERC20(metricTokenAddress);
         _questionStateController = IQuestionStateController(questionStateController);
     }
 
@@ -23,46 +25,45 @@ contract Vault is Ownable {
         uint256 _amount,
         uint256 questionId
     ) external {
-        _metric.safeTransferFrom(msg.sender, address(this), _amount);
+        SafeERC20.safeTransferFrom(_metric, msg.sender, address(this), _amount);
 
-        walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
+        // walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
 
         lockedMetric[questionId].withdrawer = _withdrawer;
         lockedMetric[questionId].amount = _amount;
 
-        lockedMetric[questionId].state = setDeposited();
+        setDeposited();
 
-        depositsByMetricAddress[address(_metric)].push(questionId);
-        depositsByWithdrawers[_withdrawer].push(QuestionId);
+        depositsByWithdrawers[_withdrawer].push(questionId);
     }
 
     function withdrawMetric(uint256 questionId) external {
         if (!(msg.sender == lockedMetric[questionId].withdrawer)) revert NotTheWithdrawer();
-        if (!(lockAttributes.currentState == DEPOSITED)) revert NoMetricDeposited();
-        if (!(_questionStateController.getState(questionId) == PUBLISHED)) revert QuestionNotPublished();
-        if (lockAttributes.currentState == WITHDRAWN) revert NoMetricToWithdraw();
+        // if (!(lockAttributes[questionId].state == LockStates.DEPOSITED)) revert NoMetricDeposited();
+        if (!(_questionStateController.getState(questionId) == 3)) revert QuestionNotPublished();
+        // if (lockAttributes.state == LockStates.WITHDRAWN) revert NoMetricToWithdraw();
 
-        lockedMetric[questionId].state = setWithdrawn();
+        setWithdrawn();
 
-        walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
-            msg.sender
-        ].sub(lockedMetric[questionId].amount);
+        // walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
+        //     msg.sender
+        // ].sub(lockedMetric[questionId].amount);
 
         emit Withdraw(msg.sender, lockedMetric[questionId].amount);
-        lockedMetric[questionId].metric.safeTransfer(msg.sender, lockedMetric[questionId].amount);
+        SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount);
     }
 
     function slashMetric(uint256 questionId) external onlyOwner {
-        if (!(lockAttributes.currentState == slashed)) revert AlreadySlashed();
-        walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
-            msg.sender
-        ].sub(lockedMetric[questionId].amount.div(2));
+        // if (!(lockAttributes.state == LockStates.SLASHED)) revert AlreadySlashed();
+        // walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
+        //     msg.sender
+        // ].sub(lockedMetric[questionId].amount.div(2));
 
-        lockedMetric[questionId].state = setSlashed();
+        setSlashed();
 
-        emit slash(msg.sender, questionId);
-        lockedMetric[questionId].metric.safeTransfer(address(0x4fafb87de15cff7448bd0658112f4e4b0d53332c), lockedMetric[questionId].amount.div(2));
-        lockedMetric[questionId].metric.safeTransfer(msg.sender, lockedMetric[questionId].amount.div(2));
+        emit Slash(msg.sender, questionId);
+        SafeERC20.safeTransferFrom(_metric, address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
+        SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount / 2);
     }
 
     //------------------------------------------------------ Setters
@@ -80,23 +81,19 @@ contract Vault is Ownable {
 
     //------------------------------------------------------ Getters
 
-    function getDepositsByMetricAddress(address questionId) external view returns (uint256[] memory) {
-        return depositsByMetricAddress[questionId];
-    }
-
-    function getDepositsByWithdrawer(address _metric, address _withdrawer) external view returns (uint256) {
-        return walletMetricBalance[_metric][_withdrawer];
-    }
+    // function getDepositsByWithdrawer(address _withdrawer) external view returns (uint256) {
+    //     return walletMetricBalance[_metric][_withdrawer];
+    // }
 
     function getVaultsByWithdrawer(address _withdrawer) external view returns (uint256[] memory) {
         return depositsByWithdrawers[_withdrawer];
     }
 
-    function getVaultById(uint256 questionId) external view returns (Items memory) {
+    function getVaultById(uint256 questionId) external view returns (lockAttributes memory) {
         return lockedMetric[questionId];
     }
 
-    function getMetricTotalLockedBalance(address _metric) external view returns (uint256) {
+    function getMetricTotalLockedBalance() external view returns (uint256) {
         return IERC20(_metric).balanceOf(address(this));
     }
 
@@ -123,5 +120,15 @@ contract Vault is Ownable {
         WITHDRAWN,
         DEPOSITED,
         SLASHED
+    }
+
+    enum STATE {
+        UNINIT,
+        VOTING,
+        PUBLISHED,
+        IN_GRADING,
+        COMPLETED,
+        CANCELLED,
+        BAD
     }
 }

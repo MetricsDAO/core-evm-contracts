@@ -4,16 +4,25 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "../contracts/Protocol/Vault.sol";
 import "../contracts/MetricToken.sol";
+import "@contracts/Protocol/QuestionAPI.sol";
+import "@contracts/Protocol/ActionCostController.sol";
+import "@contracts/Protocol/ClaimController.sol";
 
-/// @notice Translation of https://github.com/MetricsDAO/core-evm-contracts/blob/main/test/chef-test.js to foundry
 contract vaultTest is Test {
     // Accounts
-    address owner = address(0x152314518);
-    address Alice = address(0xa);
-    address Bob = address(0xb);
+    address owner = address(0x0a);
+    address Alice = address(0x0b);
+    address Bob = address(0x0c);
 
-    MetricToken metricToken;
-    Vault vault;
+    MetricToken _metricToken;
+    Vault _vault;
+    QuestionAPI _questionAPI;
+    ClaimController _claimController;
+    BountyQuestion _bountyQuestion;
+    ActionCostController _costController;
+    QuestionStateController _questionStateController;
+
+    // NFT _mockAuthNFT;
 
     function setUp() public {
         // Label addresses
@@ -21,18 +30,36 @@ contract vaultTest is Test {
         vm.label(Alice, "Alice");
         vm.label(Bob, "Bob");
 
-        // Deploy METRIC & Vault
         vm.startPrank(owner);
-        metricToken = new MetricToken();
-        vault = new Vault(address(metricToken));
+        // _mockAuthNFT = new NFT("Auth", "Auth");
+        _metricToken = new MetricToken();
+        _bountyQuestion = new BountyQuestion();
+        _questionStateController = new QuestionStateController();
+        _costController = new ActionCostController(address(_metricToken));
+        _questionAPI = new QuestionAPI(
+            address(_bountyQuestion),
+            address(_questionStateController),
+            address(_claimController),
+            address(_costController),
+            address(_vault)
+        );
+        _costController.setQuestionApi(address(_questionAPI));
+        _questionStateController.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setQuestionApi(address(_questionAPI));
 
-        vm.label(address(metricToken), "METRIC");
-        vm.label(address(vault), "vault");
+        _metricToken.transfer(owner, 100e18);
+
+        // _mockAuthNFT.mintTo(manager);
 
         vm.stopPrank();
     }
 
+    // ---------------------- General functionality testing
+
     function test_lockMetric() public {
-        console.log("Test locking Metric.");
+        console.log("Should lock Metric.");
+
+        vm.startPrank(owner);
+        assertEq(_metricToken.balanceOf(owner), 100e18);
     }
 }
