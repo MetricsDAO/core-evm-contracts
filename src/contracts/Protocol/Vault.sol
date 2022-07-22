@@ -13,7 +13,7 @@ contract Vault is Ownable {
     mapping(address => uint256[]) public depositsByWithdrawers;
     mapping(uint256 => lockAttributes) public lockedMetric;
 
-    Status public status;
+    STATUS public status;
     IQuestionStateController private _questionStateController;
 
     constructor(address metricTokenAddress, address questionStateController) {
@@ -31,7 +31,7 @@ contract Vault is Ownable {
         lockedMetric[questionId].withdrawer = _withdrawer;
         lockedMetric[questionId].amount = _amount;
 
-        lockedMetric[questionId].status = Status.DEPOSITED;
+        lockedMetric[questionId].status = STATUS.DEPOSITED;
 
         depositsByWithdrawers[_withdrawer].push(questionId);
     }
@@ -41,16 +41,16 @@ contract Vault is Ownable {
         if (lockedMetric[questionId].amount == 0) revert NoMetricDeposited();
         if (!(_questionStateController.getState(questionId) == 3)) revert QuestionNotPublished();
 
-        lockedMetric[questionId].status = Status.WITHDRAWN;
+        lockedMetric[questionId].status = STATUS.WITHDRAWN;
 
         emit Withdraw(msg.sender, lockedMetric[questionId].amount);
         SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount);
     }
 
     function slashMetric(uint256 questionId) external onlyOwner {
-        if (!(lockedMetric[questionId].status == Status.SLASHED)) revert AlreadySlashed();
+        if (!(lockedMetric[questionId].status == STATUS.SLASHED)) revert AlreadySlashed();
 
-        lockedMetric[questionId].status = Status.SLASHED;
+        lockedMetric[questionId].status = STATUS.SLASHED;
 
         emit Slash(msg.sender, questionId);
         SafeERC20.safeTransferFrom(_metric, address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
@@ -85,10 +85,10 @@ contract Vault is Ownable {
     struct lockAttributes {
         address withdrawer;
         uint256 amount;
-        Status status;
+        STATUS status;
     }
     //------------------------------------------------------ Enums
-    enum Status {
+    enum STATUS {
         UNINT,
         WITHDRAWN,
         DEPOSITED,
