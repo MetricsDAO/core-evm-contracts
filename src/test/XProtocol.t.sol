@@ -38,7 +38,7 @@ contract XProtocolTest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _costController = new ActionCostController(address(_xMetric));
+        _costController = new ActionCostController(address(_metricToken), address(_vault));
         _vault = new Vault(address(_metricToken), address(_questionStateController));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
@@ -65,7 +65,7 @@ contract XProtocolTest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _costController = new ActionCostController(address(_metricToken));
+        _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),

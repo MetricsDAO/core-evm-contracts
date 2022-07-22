@@ -7,4 +7,6 @@ interface IActionCostController {
     function setCreateCost(uint256 _cost) external;
 
     function getLockedPerUser(address _user) external view returns (uint256);
+
+    function lockUserMetric(address _user, uint256 questionId) external;
 }

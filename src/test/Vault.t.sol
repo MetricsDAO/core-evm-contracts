@@ -35,7 +35,7 @@ contract vaultTest is Test {
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _questionStateController = new QuestionStateController();
-        _costController = new ActionCostController(address(_metricToken));
+        _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
@@ -60,6 +60,15 @@ contract vaultTest is Test {
         console.log("Should lock Metric.");
 
         vm.startPrank(owner);
-        assertEq(_metricToken.balanceOf(owner), 100e18);
+        // Create a question and see that it is created and balance is updated.
+        _metricToken.approve(address(_costController), 100e18);
+        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_metricToken.balanceOf(owner), 99e18);
+
+        // Assert that the question is now a VOTING and has the correct data (claim limit).
+        assertEq(_questionStateController.getState(questionIdOne), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_claimController.getClaimLimit(questionIdOne), 25);
+
+        vm.stopPrank();
     }
 }

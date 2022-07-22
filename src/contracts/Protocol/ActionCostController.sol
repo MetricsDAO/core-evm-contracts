@@ -7,19 +7,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IActionCostController.sol";
 import "./modifiers/OnlyAPI.sol";
 import "../MetricToken.sol";
+import "./Vault.sol";
 
 // TODO we probably want a CostController or something to ensure user locks enough metric
 // ^^ price per action, each one is editable
 // Basically the QuestionAPI will request the price from this controler and ensure
 contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     IERC20 private metric;
-
+    Vault private vault;
     uint256 public createCost;
 
     mapping(address => uint256) lockedPerUser;
 
-    constructor(address _metric) {
+    constructor(address _metric, address _vault) {
         metric = IERC20(_metric);
+        vault = Vault(_vault);
         createCost = 1e18;
     }
 
@@ -30,10 +32,14 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     * @param _user The address of the user who wants to pay for creating a question.
     */
     function payForCreateQuestion(address _user) external onlyApi {
-        // TODO where do we want to store locked metric?
         lockedPerUser[_user] += createCost;
         // Why safeERC20?
         SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
+    }
+
+    function lockUserMetric(address _user, uint256 questionId) external onlyApi {
+        // Lock Metric for the question
+        vault.lockMetric(_user, questionId, createCost);
     }
 
     // ------------------------------- Getter
