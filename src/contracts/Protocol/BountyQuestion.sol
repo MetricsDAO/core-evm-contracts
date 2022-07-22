@@ -25,7 +25,7 @@ contract BountyQuestion is Ownable, OnlyApi {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        questions[questionId] = QuestionData({questionId: questionId, url: uri});
+        questions[questionId] = QuestionData({tokenId: questionId, url: uri});
         authors[author].push(questionId);
         return questionId;
     }
@@ -41,7 +41,7 @@ contract BountyQuestion is Ownable, OnlyApi {
     }
 
     struct QuestionData {
-        uint256 questionId;
+        uint256 tokenId;
         string url;
     }
 }
