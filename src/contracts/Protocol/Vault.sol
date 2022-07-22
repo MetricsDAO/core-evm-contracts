@@ -31,7 +31,7 @@ contract Vault is Ownable {
         lockedMetric[questionId].withdrawer = _withdrawer;
         lockedMetric[questionId].amount = _amount;
 
-        setDeposited();
+        lockedMetric[questionId].status = Status.DEPOSITED;
 
         depositsByWithdrawers[_withdrawer].push(questionId);
     }
@@ -41,7 +41,7 @@ contract Vault is Ownable {
         if (lockedMetric[questionId].amount == 0) revert NoMetricDeposited();
         if (!(_questionStateController.getState(questionId) == 3)) revert QuestionNotPublished();
 
-        setWithdrawn();
+        lockedMetric[questionId].status = Status.WITHDRAWN;
 
         emit Withdraw(msg.sender, lockedMetric[questionId].amount);
         SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount);
@@ -50,24 +50,11 @@ contract Vault is Ownable {
     function slashMetric(uint256 questionId) external onlyOwner {
         if (!(lockedMetric[questionId].status == Status.SLASHED)) revert AlreadySlashed();
 
-        setSlashed();
+        lockedMetric[questionId].status = Status.SLASHED;
 
         emit Slash(msg.sender, questionId);
         SafeERC20.safeTransferFrom(_metric, address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
         SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount / 2);
-    }
-
-    //------------------------------------------------------ Setters
-    function setWithdrawn() public {
-        status = Status.WITHDRAWN;
-    }
-
-    function setDeposited() public {
-        status = Status.DEPOSITED;
-    }
-
-    function setSlashed() public {
-        status = Status.SLASHED;
     }
 
     //------------------------------------------------------ Getters
