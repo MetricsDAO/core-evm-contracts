@@ -12,7 +12,8 @@ contract Vault is Ownable {
     uint256 public depositsCount;
     mapping(address => uint256[]) public depositsByWithdrawers;
     mapping(uint256 => lockAttributes) public lockedMetric;
-    LockStates currentState;
+
+    Status public status;
     IQuestionStateController private _questionStateController;
 
     constructor(address metricTokenAddress, address questionStateController) {
@@ -27,8 +28,6 @@ contract Vault is Ownable {
     ) external {
         SafeERC20.safeTransferFrom(_metric, msg.sender, address(this), _amount);
 
-        // walletMetricBalance[address(_metric)][msg.sender] = walletMetricBalance[address(_metric)][msg.sender].add(_amount);
-
         lockedMetric[questionId].withdrawer = _withdrawer;
         lockedMetric[questionId].amount = _amount;
 
@@ -39,25 +38,17 @@ contract Vault is Ownable {
 
     function withdrawMetric(uint256 questionId) external {
         if (!(msg.sender == lockedMetric[questionId].withdrawer)) revert NotTheWithdrawer();
-        // if (!(lockAttributes[questionId].state == LockStates.DEPOSITED)) revert NoMetricDeposited();
+        if (lockedMetric[questionId].amount == 0) revert NoMetricDeposited();
         if (!(_questionStateController.getState(questionId) == 3)) revert QuestionNotPublished();
-        // if (lockAttributes.state == LockStates.WITHDRAWN) revert NoMetricToWithdraw();
 
         setWithdrawn();
-
-        // walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
-        //     msg.sender
-        // ].sub(lockedMetric[questionId].amount);
 
         emit Withdraw(msg.sender, lockedMetric[questionId].amount);
         SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount);
     }
 
     function slashMetric(uint256 questionId) external onlyOwner {
-        // if (!(lockAttributes.state == LockStates.SLASHED)) revert AlreadySlashed();
-        // walletMetricBalance[address(lockedMetric[questionId].metric)][msg.sender] = walletMetricBalance[address(lockedMetric[questionId].metric)][
-        //     msg.sender
-        // ].sub(lockedMetric[questionId].amount.div(2));
+        if (!(lockedMetric[questionId].status == Status.SLASHED)) revert AlreadySlashed();
 
         setSlashed();
 
@@ -68,23 +59,18 @@ contract Vault is Ownable {
 
     //------------------------------------------------------ Setters
     function setWithdrawn() public {
-        currentState = LockStates.WITHDRAWN;
+        status = Status.WITHDRAWN;
     }
 
     function setDeposited() public {
-        currentState = LockStates.DEPOSITED;
+        status = Status.DEPOSITED;
     }
 
     function setSlashed() public {
-        currentState = LockStates.SLASHED;
+        status = Status.SLASHED;
     }
 
     //------------------------------------------------------ Getters
-
-    // function getDepositsByWithdrawer(address _withdrawer) external view returns (uint256) {
-    //     return walletMetricBalance[_metric][_withdrawer];
-    // }
-
     function getVaultsByWithdrawer(address _withdrawer) external view returns (uint256[] memory) {
         return depositsByWithdrawers[_withdrawer];
     }
@@ -112,23 +98,14 @@ contract Vault is Ownable {
     struct lockAttributes {
         address withdrawer;
         uint256 amount;
-        LockStates state;
+        Status status;
     }
     //------------------------------------------------------ Enums
-    enum LockStates {
+    enum Status {
         UNINT,
         WITHDRAWN,
         DEPOSITED,
-        SLASHED
-    }
-
-    enum STATE {
-        UNINIT,
-        VOTING,
         PUBLISHED,
-        IN_GRADING,
-        COMPLETED,
-        CANCELLED,
-        BAD
+        SLASHED
     }
 }
