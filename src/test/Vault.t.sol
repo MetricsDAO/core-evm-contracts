@@ -40,8 +40,7 @@ contract vaultTest is Test {
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController),
-            address(_vault)
+            address(_costController)
         );
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));

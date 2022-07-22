@@ -44,8 +44,7 @@ contract XProtocolTest is Test {
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController),
-            address(_vault)
+            address(_costController)
         );
 
         _claimController.setQuestionApi(address(_questionAPI));
@@ -70,8 +69,7 @@ contract XProtocolTest is Test {
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController),
-            address(_vault)
+            address(_costController)
         );
 
         _claimController.setQuestionApi(address(_questionAPI));

@@ -15,20 +15,17 @@ contract QuestionAPI is Ownable, NFTLocked {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
-    Vault private _vault;
 
     constructor(
         address bountyQuestion,
         address questionStateController,
         address claimController,
-        address costController,
-        address vault
+        address costController
     ) {
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
-        _vault = Vault(vault);
     }
 
     // TODO admin-only quesiton state "BAD" which basically ends the lifecycle
@@ -53,9 +50,6 @@ contract QuestionAPI is Ownable, NFTLocked {
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
-
-        // Lock Metric for the question
-        _vault.lockMetric(_msgSender(), questionId, 1e18);
 
         return questionId;
     }
