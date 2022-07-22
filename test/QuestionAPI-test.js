@@ -23,10 +23,8 @@ describe("Question API Contract", function () {
     UNINIT: 0,
     VOTING: 1,
     PUBLISHED: 2,
-    IN_GRADING: 3,
-    COMPLETED: 4,
-    CANCELLED: 5,
-    BAD: 6,
+    COMPLETED: 3,
+    DISQUALIFIED: 4,
   };
 
   beforeEach(async function () {

@@ -229,7 +229,7 @@ contract QuestionAPITest is Test {
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
 
-        assertEq(questionState, 6);
+        assertEq(questionState, uint256(IQuestionStateController.STATE.DISQUALIFIED));
         vm.stopPrank();
     }
 
@@ -242,7 +242,7 @@ contract QuestionAPITest is Test {
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(badQuestion);
 
-        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.BAD));
+        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.DISQUALIFIED));
     }
 
     function test_ProgramManagerCreateChallenge() public {

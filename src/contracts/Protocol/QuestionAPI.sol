@@ -87,7 +87,7 @@ contract QuestionAPI is Ownable, NFTLocked {
      * We can manipulate this very easily -- think of a way to make it secure
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
-        _questionStateController.voteFor(msg.sender, questionId, amount);
+        _questionStateController.voteFor(_msgSender(), questionId, amount);
     }
 
     /**
@@ -112,7 +112,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     }
 
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
-        _questionStateController.setBadState(questionId);
+        _questionStateController.setDisqualifiedState(questionId);
     }
 
     //------------------------------------------------------ Errors
