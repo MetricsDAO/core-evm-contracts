@@ -7,6 +7,7 @@ import "../contracts/MetricToken.sol";
 import "@contracts/Protocol/QuestionAPI.sol";
 import "@contracts/Protocol/ActionCostController.sol";
 import "@contracts/Protocol/ClaimController.sol";
+import "@contracts/Protocol/Vault.sol";
 import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 contract vaultTest is Test {
@@ -36,7 +37,9 @@ contract vaultTest is Test {
         _mockAuthNFT = new NFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
+        _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
+        _vault = new Vault(address(_metricToken), address(_questionStateController));
         _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
@@ -44,6 +47,8 @@ contract vaultTest is Test {
             address(_claimController),
             address(_costController)
         );
+
+        _claimController.setQuestionApi(address(_questionAPI));
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
@@ -62,8 +67,8 @@ contract vaultTest is Test {
 
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
-        _metricToken.approve(address(_costController), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        _metricToken.approve(address(_vault), 100e18);
+        _questionAPI.createQuestion("ipfs://XYZ", 25);
         vm.stopPrank();
     }
 }

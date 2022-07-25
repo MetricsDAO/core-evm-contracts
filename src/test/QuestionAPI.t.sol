@@ -9,6 +9,7 @@ import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/QuestionStateController.sol";
 import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
+import "@contracts/Protocol/Vault.sol";
 import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 contract QuestionAPITest is Test {
@@ -75,7 +76,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -111,7 +112,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -121,7 +122,7 @@ contract QuestionAPITest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other);
+        _costController.payForCreateQuestion(other, questionId);
 
         vm.stopPrank();
     }
@@ -132,7 +133,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -163,7 +164,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -198,7 +199,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -226,7 +227,7 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestion() public {
         vm.startPrank(owner);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
@@ -237,7 +238,7 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestionTwo() public {
         vm.startPrank(other);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         vm.stopPrank();
 
@@ -275,6 +276,5 @@ contract QuestionAPITest is Test {
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
         _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
-
     // --------------------- Testing for access controlls
 }
