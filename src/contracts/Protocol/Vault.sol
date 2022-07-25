@@ -11,7 +11,6 @@ import "./interfaces/IQuestionStateController.sol";
 // TODO index events?
 // TODO implement check effect interaction patterns
 // TODO add onlyCostController modifier, locking metric with a public/external function allows anyone to manipulate someone elses locked metric and allows us to lock metric for expired questions
-// TODO set msg.sender to _user/withdrawer, currently msg.sender is set to cost controller -- current withdraw function voids all locked metric as msg.sender can never equal the withdrawer
 
 contract Vault is Ownable {
     IERC20 private _metric;
@@ -33,6 +32,11 @@ contract Vault is Ownable {
         uint256 _questionId
     ) external {
         //Checks
+        if (lockedMetric[_questionId].status = STATUS.DEPOSITED) revert MetricAlreadyDeposited();
+        if (lockedMetric[questionId].status = STATUS.WITHDRAWN) revert MetricAlreadyWithdrawn();
+        if (lockedMetric[questionId].status = STATUS.SLASHED) revert AlreadySlashed();
+        if (lockedMetric[questionId].status = STATUS.PUBLISHED) revert QuestionPublished();
+
         // Effects
         lockedMetric[_questionId].withdrawer = _withdrawer;
         lockedMetric[_questionId].amount += _amount;
@@ -87,6 +91,9 @@ contract Vault is Ownable {
     error NotTheWithdrawer();
     error NoMetricToWithdraw();
     error NoMetricDeposited();
+    error MetricAlreadyDeposited();
+    error MetricAlreadyWithdrawn();
+    error QuestionPublished();
     error QuestionNotPublished();
     error AlreadySlashed();
 
