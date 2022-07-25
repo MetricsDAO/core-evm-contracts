@@ -57,7 +57,7 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     function slashMetric(address _user, uint256 questionId) external onlyOwner {
-        if (!(lockedMetric[questionId].status == STATUS.SLASHED)) revert AlreadySlashed();
+        if (lockedMetric[questionId].status == STATUS.SLASHED) revert AlreadySlashed();
 
         lockedMetric[questionId].status = STATUS.SLASHED;
 

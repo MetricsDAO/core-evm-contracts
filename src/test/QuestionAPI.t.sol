@@ -55,6 +55,7 @@ contract QuestionAPITest is Test {
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
+        _vault.setCostController(address(_costController));
 
         _metricToken.transfer(other, 100e18);
 

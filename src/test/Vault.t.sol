@@ -17,6 +17,7 @@ contract vaultTest is Test {
     address owner = address(0x0a);
     address other = address(0x0b);
     address manager = address(0x0c);
+    address treasury = address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c);
 
     MetricToken _metricToken;
     Vault _vault;
@@ -60,6 +61,12 @@ contract vaultTest is Test {
         _mockAuthNFT.mintTo(manager);
 
         vm.stopPrank();
+
+        //Approve Transfers
+        vm.startPrank(address(_vault));
+        _metricToken.approve(address(other), _metricToken.balanceOf(address(_vault)));
+        _metricToken.approve(address(treasury), _metricToken.balanceOf(address(_vault)));
+        vm.stopPrank();
     }
 
     // ---------------------- General functionality testing
@@ -77,7 +84,7 @@ contract vaultTest is Test {
 
     function test_lockMetricForSecondQuestion() public {
         //Test additional deposit
-        console.log("Should have double locked Metric with second deposit.");
+        console.log("Should have double the locked Metric with second deposit.");
         vm.startPrank(other);
         // Create 1st question
         _metricToken.approve(address(_vault), 100e18);
@@ -88,6 +95,38 @@ contract vaultTest is Test {
         assertEq(_vault.getMetricTotalLockedBalance(), 200e16);
         vm.stopPrank();
     }
-    //function test_withdrawMetric() public {}
-    //function test_slashMetric() public {}
+
+    function test_withdrawMetric() public {
+        console.log("Should withdraw Metric");
+        vm.startPrank(other);
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        //withdraw Metric
+        _vault.withdrawMetric(other, questionId);
+        assertEq(_vault.getMetricTotalLockedBalance(), 0);
+        vm.stopPrank();
+    }
+
+    function test_slashMetric() public {
+        console.log("Should slash question when appropriate");
+        vm.startPrank(other);
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        vm.stopPrank();
+        //approve Metric transfer for vault
+        vm.startPrank(address(_vault));
+        _metricToken.approve(address(other), _metricToken.balanceOf(address(_vault)));
+        _metricToken.approve(address(treasury), _metricToken.balanceOf(address(_vault)));
+        vm.stopPrank();
+        //slash Metric
+        vm.startPrank(owner);
+        _vault.slashMetric(other, questionId);
+        vm.stopPrank();
+        //check user Metric balance
+        //assertEq(_metricToken.balanceOf(other), 0.5e18);
+        //check treasury Metric balance
+        //assertEq(_metricToken.balanceOf(other), 0.5e18);
+    }
 }
