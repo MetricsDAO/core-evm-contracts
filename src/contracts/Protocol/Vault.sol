@@ -12,7 +12,7 @@ import "./interfaces/IQuestionStateController.sol";
 // TODO standardize to _msgSender() (would only be modifier i think, which we could move to modifiers/)
 // TODO remove SafeERC20
 // TODO implement check effect interaction patterns
-// Todo add onlyCostController modifier, locking metric with a public/external function allows anyone to manipulate someone elses locked metric and allows us to lock metric for expired questions
+// TODO add onlyCostController modifier, locking metric with a public/external function allows anyone to manipulate someone elses locked metric and allows us to lock metric for expired questions
 // TODO set msg.sender to _user/withdrawer, currently msg.sender is set to cost controller -- current withdraw function voids all locked metric as msg.sender can never equal the withdrawer
 
 contract Vault is Ownable {
@@ -55,7 +55,7 @@ contract Vault is Ownable {
         lockedMetric[questionId].status = STATUS.WITHDRAWN;
 
         emit Withdraw(msg.sender, lockedMetric[questionId].amount);
-        SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount);
+        _metric.transferFrom(address(this), msg.sender, lockedMetric[questionId].amount);
     }
 
     function slashMetric(uint256 questionId) external onlyOwner {
@@ -64,8 +64,8 @@ contract Vault is Ownable {
         lockedMetric[questionId].status = STATUS.SLASHED;
 
         emit Slash(msg.sender, questionId);
-        SafeERC20.safeTransferFrom(_metric, address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
-        SafeERC20.safeTransferFrom(_metric, address(this), msg.sender, lockedMetric[questionId].amount / 2);
+        _metric.transferFrom(address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
+        _metric.transferFrom(address(this), msg.sender, lockedMetric[questionId].amount / 2);
     }
 
     //------------------------------------------------------ Getters
