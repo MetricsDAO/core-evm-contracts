@@ -220,7 +220,7 @@ describe("Question API Contract", function () {
       // expect(allquestionsByState.length).to.equal(3);
     });
 
-    it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
+    it("should set up a new way to get all questions by state", async () => {
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
 
@@ -229,6 +229,9 @@ describe("Question API Contract", function () {
         .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 5);
       await questionIDtx1.wait();
 
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://", 5);
+      await questionIDtx2.wait();
+
       const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
 
       const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
@@ -236,13 +239,14 @@ describe("Question API Contract", function () {
       await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
       await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"));
 
-      const latestQuestion = await questionAPI.currentQuestionId();
+      // can upvote your own question
+      await questionAPI.connect(xmetricaddr1).upvoteQuestion(latestQuestionID, utils.parseEther("6"));
 
-      console.log("latestQuestion", latestQuestion);
+      const latestQuestion = await questionAPI.currentQuestionId();
 
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
 
-      console.log("allquestionsByState", allquestionsByState);
+      expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
     });
   });
 });
