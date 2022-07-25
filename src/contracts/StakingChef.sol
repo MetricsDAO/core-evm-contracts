@@ -100,7 +100,6 @@ contract StakingChef is Chef {
 
         stake.lifetimeEarnings = stake.lifetimeEarnings + claimable;
         stake.claimable = stake.claimable + claimable;
-        emit Claim(_msgSender(), stake, claimable);
     }
 
     //------------------------------------------------------Getters
