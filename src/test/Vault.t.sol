@@ -53,6 +53,8 @@ contract vaultTest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
 
+        _vault.setCostController(address(_costController));
+
         _metricToken.transfer(other, 100e18);
 
         _mockAuthNFT.mintTo(manager);
@@ -69,6 +71,23 @@ contract vaultTest is Test {
         // Create a question and see that it is created and balance is updated.
         _metricToken.approve(address(_vault), 100e18);
         _questionAPI.createQuestion("ipfs://XYZ", 25);
+        assertEq(_vault.getMetricTotalLockedBalance(), 100e16);
         vm.stopPrank();
     }
+
+    function test_lockMetricForSecondQuestion() public {
+        //Test additional deposit
+        console.log("Should have double locked Metric with second deposit.");
+        vm.startPrank(other);
+        // Create 1st question
+        _metricToken.approve(address(_vault), 100e18);
+        _questionAPI.createQuestion("ipfs://XYZ", 25);
+        // Create 2nd question
+        _metricToken.approve(address(_vault), 100e18);
+        _questionAPI.createQuestion("ipfs://XYZ/1", 26);
+        assertEq(_vault.getMetricTotalLockedBalance(), 200e16);
+        vm.stopPrank();
+    }
+    //function test_withdrawMetric() public {}
+    //function test_slashMetric() public {}
 }

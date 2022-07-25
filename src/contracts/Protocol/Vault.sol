@@ -8,9 +8,6 @@ import "./QuestionStateController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./modifiers/OnlyCostController.sol";
 
-// TODO remove constructor arguments -- instead setters?
-// TODO index events?
-
 contract Vault is Ownable, OnlyCostController {
     IERC20 private _metric;
     uint256 public depositsCount;
