@@ -33,14 +33,14 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     * @param _user The address of the user who wants to pay for creating a question.
     */
     function payForCreateQuestion(address _user, uint256 _questionId) external onlyApi {
-        // Can probably remove this just like the getLockedPerUser getter
+        // Do we want this?
         lockedPerUser[_user] += createCost;
         // Why safeERC20?
         vault.lockMetric(_user, createCost, _questionId);
     }
 
     // ------------------------------- Getter
-    // We have this in vault too -- do we need this?
+    // Do we want this?
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
     }
