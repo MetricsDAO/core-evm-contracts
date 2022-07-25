@@ -20,9 +20,10 @@ interface IQuestionStateController {
     function setBadState(uint256 questionId) external;
 
     enum STATE {
+        // TODO this where it becomes a challenge, can be claimed and answered
         UNINIT,
         VOTING,
-        PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered
+        PUBLISHED,
         IN_GRADING,
         COMPLETED,
         CANCELLED,

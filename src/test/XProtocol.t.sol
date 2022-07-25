@@ -8,6 +8,7 @@ import "@contracts/Xmetric.sol";
 import "@contracts/Protocol/QuestionAPI.sol";
 import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/QuestionStateController.sol";
+import "@contracts/Protocol/Vault.sol";
 import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
 
@@ -38,8 +39,8 @@ contract XProtocolTest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _costController = new ActionCostController(address(_metricToken), address(_vault));
-        _vault = new Vault(address(_metricToken), address(_questionStateController));
+        _vault = new Vault(address(_xMetric), address(_questionStateController));
+        _costController = new ActionCostController(address(_xMetric), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
@@ -52,7 +53,7 @@ contract XProtocolTest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
 
-        _xMetric.setTransactor(address(_costController), true);
+        _xMetric.setTransactor(address(_vault), true);
         _xMetric.transfer(other, 100e18);
 
         vm.stopPrank();
@@ -64,6 +65,7 @@ contract XProtocolTest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
+        _vault = new Vault(address(_metricToken), address(_questionStateController));
         _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
@@ -90,7 +92,7 @@ contract XProtocolTest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -100,7 +102,7 @@ contract XProtocolTest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other);
+        _costController.payForCreateQuestion(other, questionId);
 
         vm.stopPrank();
     }
@@ -112,7 +114,7 @@ contract XProtocolTest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_xMetric.balanceOf(other), 100e18);
-        _xMetric.approve(address(_costController), 100e18);
+        _xMetric.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_xMetric.balanceOf(other), 99e18);
 
@@ -122,10 +124,9 @@ contract XProtocolTest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other);
+        _costController.payForCreateQuestion(other, questionId);
 
         vm.stopPrank();
     }
-
     // --------------------- Testing for access controlls
 }

@@ -45,10 +45,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         hasVoted[_user][questionId] = true;
         questionIndex[_user][questionId] = votes[questionId].votes.length - 1;
 
-        votes[questionId].totalVoteCount += amount;
-
+        votes[questionId].totalVoteCount += amount; // TODO Lock tokens for voting include safeTransferFrom
         // Interactions
-        // TODO Lock tokens for voting include safeTransferFrom
     }
 
     function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
@@ -60,10 +58,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 amount = votes[questionId].votes[index].amount;
 
         votes[questionId].votes[index].amount = 0;
-        votes[questionId].totalVoteCount -= amount;
-
+        votes[questionId].totalVoteCount -= amount; // TODO Unlock tokens for voting
         // Interactions
-        // TODO Unlock tokens for voting
     }
 
     function setBadState(uint256 questionId) public onlyApi {

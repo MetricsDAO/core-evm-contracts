@@ -19,6 +19,7 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
 
     mapping(address => uint256) lockedPerUser;
 
+    // TODO remove constructor arguments -- instead setters?
     constructor(address _metric, address _vault) {
         metric = IERC20(_metric);
         vault = Vault(_vault);
@@ -31,18 +32,15 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
             the contract.
     * @param _user The address of the user who wants to pay for creating a question.
     */
-    function payForCreateQuestion(address _user) external onlyApi {
+    function payForCreateQuestion(address _user, uint256 _questionId) external onlyApi {
+        // Do we want this?
         lockedPerUser[_user] += createCost;
         // Why safeERC20?
-        SafeERC20.safeTransferFrom(metric, _user, address(this), createCost);
-    }
-
-    function lockUserMetric(address _user, uint256 questionId) external onlyApi {
-        // Lock Metric for the question
-        vault.lockMetric(_user, questionId, createCost);
+        vault.lockMetric(_user, createCost, _questionId);
     }
 
     // ------------------------------- Getter
+    // Do we want this?
     function getLockedPerUser(address _user) public view returns (uint256) {
         return lockedPerUser[_user];
     }

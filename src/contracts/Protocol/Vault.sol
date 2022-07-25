@@ -7,6 +7,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./QuestionStateController.sol";
 import "./interfaces/IQuestionStateController.sol";
 
+// TODO remove constructor arguments -- instead setters?
+// TODO index events?
+// TODO standardize to _msgSender() (would only be modifier i think, which we could move to modifiers/)
+// TODO remove SafeERC20
+// TODO implement check effect interaction patterns
+// Todo add onlyCostController modifier, locking metric with a public/external function allows anyone to manipulate someone elses locked metric and allows us to lock metric for expired questions
+// TODO set msg.sender to _user/withdrawer, currently msg.sender is set to cost controller -- current withdraw function voids all locked metric as msg.sender can never equal the withdrawer
+
 contract Vault is Ownable {
     IERC20 private _metric;
     uint256 public depositsCount;
@@ -24,16 +32,19 @@ contract Vault is Ownable {
     function lockMetric(
         address _withdrawer,
         uint256 _amount,
-        uint256 questionId
+        uint256 _questionId
     ) external {
-        SafeERC20.safeTransferFrom(_metric, msg.sender, address(this), _amount);
+        //Checks
+        // Effects
+        lockedMetric[_questionId].withdrawer = _withdrawer;
+        lockedMetric[_questionId].amount += _amount;
 
-        lockedMetric[questionId].withdrawer = _withdrawer;
-        lockedMetric[questionId].amount = _amount;
+        lockedMetric[_questionId].status = STATUS.DEPOSITED;
 
-        lockedMetric[questionId].status = STATUS.DEPOSITED;
+        depositsByWithdrawers[_withdrawer].push(_questionId);
 
-        depositsByWithdrawers[_withdrawer].push(questionId);
+        // Interactions
+        _metric.transferFrom(_withdrawer, address(this), _amount);
     }
 
     function withdrawMetric(uint256 questionId) external {
@@ -87,6 +98,7 @@ contract Vault is Ownable {
         uint256 amount;
         STATUS status;
     }
+
     //------------------------------------------------------ Enums
     enum STATUS {
         UNINT,

@@ -7,7 +7,6 @@ import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
 import "./modifiers/NFTLocked.sol";
-import "./Vault.sol";
 
 // TODO a lot of talk about "admins" -> solve that
 contract QuestionAPI is Ownable, NFTLocked {
@@ -41,11 +40,11 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @return The question id
      */
     function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
-        // Pay to create a question
-        _costController.payForCreateQuestion(_msgSender());
-
         // Mint a new question
         uint256 questionId = _question.safeMint(_msgSender(), uri);
+
+        // Pay to create a question
+        _costController.payForCreateQuestion(_msgSender(), questionId);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
