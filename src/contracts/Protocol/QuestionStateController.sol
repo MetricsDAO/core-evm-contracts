@@ -72,8 +72,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // TODO Unlock tokens for voting
     }
 
-    function setBadState(uint256 questionId) public onlyApi {
-        state[questionId] = STATE.BAD;
+    function setDisqualifiedState(uint256 questionId) public onlyApi {
+        state[questionId] = STATE.DISQUALIFIED;
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
