@@ -6,13 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./QuestionStateController.sol";
 import "./interfaces/IQuestionStateController.sol";
+import "./modifiers/OnlyCostController.sol";
 
 // TODO remove constructor arguments -- instead setters?
 // TODO index events?
-// TODO implement check effect interaction patterns
-// TODO add onlyCostController modifier, locking metric with a public/external function allows anyone to manipulate someone elses locked metric and allows us to lock metric for expired questions
 
-contract Vault is Ownable {
+contract Vault is Ownable, OnlyCostController {
     IERC20 private _metric;
     uint256 public depositsCount;
     mapping(address => uint256[]) public depositsByWithdrawers;
@@ -30,12 +29,12 @@ contract Vault is Ownable {
         address _withdrawer,
         uint256 _amount,
         uint256 _questionId
-    ) external {
+    ) external onlyCostController {
         //Checks
-        if (lockedMetric[_questionId].status = STATUS.DEPOSITED) revert MetricAlreadyDeposited();
-        if (lockedMetric[questionId].status = STATUS.WITHDRAWN) revert MetricAlreadyWithdrawn();
-        if (lockedMetric[questionId].status = STATUS.SLASHED) revert AlreadySlashed();
-        if (lockedMetric[questionId].status = STATUS.PUBLISHED) revert QuestionPublished();
+        if (lockedMetric[_questionId].status == STATUS.DEPOSITED) revert MetricAlreadyDeposited();
+        if (lockedMetric[_questionId].status == STATUS.WITHDRAWN) revert MetricAlreadyWithdrawn();
+        if (lockedMetric[_questionId].status == STATUS.SLASHED) revert AlreadySlashed();
+        if (lockedMetric[_questionId].status == STATUS.PUBLISHED) revert QuestionPublished();
 
         // Effects
         lockedMetric[_questionId].withdrawer = _withdrawer;
@@ -60,14 +59,14 @@ contract Vault is Ownable {
         _metric.transferFrom(address(this), _withdrawer, lockedMetric[questionId].amount);
     }
 
-    function slashMetric(uint256 questionId) external onlyOwner {
+    function slashMetric(address _user, uint256 questionId) external onlyOwner {
         if (!(lockedMetric[questionId].status == STATUS.SLASHED)) revert AlreadySlashed();
 
         lockedMetric[questionId].status = STATUS.SLASHED;
 
         emit Slash(_msgSender(), questionId);
         _metric.transferFrom(address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
-        _metric.transferFrom(address(this), _withdrawer, lockedMetric[questionId].amount / 2);
+        _metric.transferFrom(address(this), _user, lockedMetric[questionId].amount / 2);
     }
 
     //------------------------------------------------------ Getters
@@ -118,7 +117,7 @@ contract Vault is Ownable {
         _questionStateController = IQuestionStateController(questionStateController);
     }
 
-    function setMetric(address _metric) public onlyOwner {
-        metric = IERC20(_metric);
+    function setMetric(address metric) public onlyOwner {
+        _metric = IERC20(metric);
     }
 }
