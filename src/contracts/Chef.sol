@@ -32,6 +32,7 @@ abstract contract Chef is Ownable {
     }
 
     function setMetricToken(address metricTokenAddress) public virtual onlyOwner {
+        if (metricTokenAddress == address(0x00)) revert InvalidAddress();
         metric = MetricToken(metricTokenAddress);
     }
 
@@ -91,6 +92,7 @@ abstract contract Chef is Ownable {
 
     function accumulatedMetricDividedByShares(uint256 accumulatedWithPrecision) public view returns (uint256) {
         if (getTotalAllocationShares() == 0) revert InvalidShareAmount();
+        if (accumulatedWithPrecision == 0) return 0;
         return accumulatedWithPrecision / getTotalAllocationShares();
     }
 
@@ -116,6 +118,7 @@ abstract contract Chef is Ownable {
     error CannotRenounce();
     error InvalidShareAmount();
     error RewardsNotActive();
+    error InvalidAddress();
 
     //------------------------------------------------------Events
     event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);
