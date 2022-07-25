@@ -13,7 +13,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(address => mapping(uint256 => bool)) public hasVoted;
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
-    mapping(STATE => QuestionData[]) public questionByState;
+    mapping(STATE => mapping(uint256 => QuestionData)) public questionByState;
 
     //TODO mapping     mapping(STATE => uint256[]) public questionState;
 
@@ -25,8 +25,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      */
     function initializeQuestion(uint256 questionId, string calldata uri) public onlyApi {
         state[questionId] = STATE.VOTING;
-        QuestionData memory _question = QuestionData({questionId: questionId, url: uri, totalVotes: getTotalVotes(questionId)});
-        questionByState[STATE.VOTING].push(_question);
+        QuestionData memory _question = QuestionData({url: uri, totalVotes: 0});
+        questionByState[STATE.VOTING][questionId] = _question;
     }
 
     function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
@@ -53,6 +53,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
         votes[questionId].totalVoteCount += amount;
 
+        QuestionData storage question = questionByState[STATE.VOTING][questionId];
+        question.totalVotes += amount;
         // Interactions
         // TODO Lock tokens for voting include safeTransferFrom
     }
@@ -92,8 +94,14 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return votes[questionId].totalVoteCount;
     }
 
-    function getQuestionsByState(STATE currentState) public view returns (QuestionData[] memory) {
-        return questionByState[currentState];
+    function getQuestionsByState(STATE currentState, uint256 currentQuestionId) public view returns (QuestionData[] memory) {
+        QuestionData[] memory arr = new QuestionData[](currentQuestionId);
+        uint256 j = 0;
+        for (uint256 i = currentQuestionId; i >= 1; i--) {
+            arr[j] = questionByState[currentState][i];
+            j++;
+        }
+        return arr;
     }
 
     //------------------------------------------------------ Errors
@@ -118,7 +126,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     }
 
     struct QuestionData {
-        uint256 questionId;
         string url;
         uint256 totalVotes;
     }
