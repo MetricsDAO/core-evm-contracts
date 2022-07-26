@@ -19,11 +19,13 @@ abstract contract Chef is Ownable {
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner {
-        if (!isOn) {
+        require(isOn != _rewardsActive, "Rewards already toggled");
+        if (isOn) {
+            _setLastRewardBlock();
+        } else {
             setLifetimeShareValue();
         }
         _rewardsActive = isOn;
-        _setLastRewardBlock();
     }
 
     function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
