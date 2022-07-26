@@ -15,8 +15,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     mapping(uint256 => QuestionData) public questionByState;
 
-    uint256 public offset = 1000;
-
     //TODO mapping     mapping(STATE => uint256[]) public questionState;
 
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
@@ -79,10 +77,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         question.questionState = STATE.DISQUALIFIED;
     }
 
-    function setOffset(uint256 newOffset) public onlyApi {
-        offset = newOffset;
-    }
-
     // TODO batch voting and batch operations and look into arrays as parameters security risk
 
     //------------------------------------------------------ View Functions
@@ -99,7 +93,11 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return votes[questionId].totalVoteCount;
     }
 
-    function getQuestionsByState(STATE currentState, uint256 currentQuestionId) public view returns (QuestionData[] memory) {
+    function getQuestionsByState(
+        STATE currentState,
+        uint256 currentQuestionId,
+        uint256 offset
+    ) public view returns (QuestionData[] memory) {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;

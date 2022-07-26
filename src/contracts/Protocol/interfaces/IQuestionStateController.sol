@@ -19,8 +19,6 @@ interface IQuestionStateController {
 
     function setDisqualifiedState(uint256 questionId) external;
 
-    function setOffset(uint256 newOffset) external;
-
     enum STATE {
         // TODO this where it becomes a challenge, can be claimed and answered
         UNINIT,

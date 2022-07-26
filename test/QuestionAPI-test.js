@@ -262,7 +262,7 @@ describe("Question API Contract", function () {
 
       await questionAPI.disqualifyQuestion(new BN(3));
 
-      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
 
       expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
     });
@@ -296,12 +296,10 @@ describe("Question API Contract", function () {
 
       const latestQuestion = await questionAPI.currentQuestionId();
 
-      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
       expect(allquestionsByState.length).to.equal(8);
 
-      await questionAPI.setOffsetForQuestionState(new BN(4));
-
-      const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
+      const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
       expect(allquestionsByStateAgain.length).to.equal(5);
     });
   });
