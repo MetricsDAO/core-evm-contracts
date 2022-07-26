@@ -19,7 +19,7 @@ abstract contract Chef is Ownable {
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner {
-        require(isOn != _rewardsActive, "Rewards already toggled");
+        if (isOn == _rewardsActive) revert RewardsAlreadyToggled();
         if (isOn) {
             _setLastRewardBlock();
         } else {
@@ -124,6 +124,7 @@ abstract contract Chef is Ownable {
     error InvalidShareAmount();
     error RewardsNotActive();
     error InvalidAddress();
+    error RewardsAlreadyToggled();
 
     //------------------------------------------------------Events
     event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);
