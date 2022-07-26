@@ -229,6 +229,9 @@ describe("Question API Contract", function () {
         .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 5);
       await questionIDtx1.wait();
 
+      const questionIDtxbad = await questionAPI.connect(xmetricaddr1).createQuestion("badquestion", 12);
+      await questionIDtxbad.wait();
+
       const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://", 5);
       await questionIDtx2.wait();
 
@@ -243,6 +246,8 @@ describe("Question API Contract", function () {
       await questionAPI.connect(xmetricaddr1).upvoteQuestion(latestQuestionID, utils.parseEther("6"));
 
       const latestQuestion = await questionAPI.currentQuestionId();
+
+      await questionAPI.disqualifyQuestion(new BN(3));
 
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
 
