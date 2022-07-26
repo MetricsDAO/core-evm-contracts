@@ -40,7 +40,7 @@ contract vaultTest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _vault = new Vault(address(_metricToken), address(_questionStateController));
+        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
         _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
@@ -83,27 +83,33 @@ contract vaultTest is Test {
     }
 
     function test_lockMetricForSecondQuestion() public {
-        //Test additional deposit
         console.log("Should have double the locked Metric with second deposit.");
+
         vm.startPrank(other);
         // Create 1st question
         _metricToken.approve(address(_vault), 100e18);
         _questionAPI.createQuestion("ipfs://XYZ", 25);
+
         // Create 2nd question
-        _metricToken.approve(address(_vault), 100e18);
         _questionAPI.createQuestion("ipfs://XYZ/1", 26);
         assertEq(_vault.getMetricTotalLockedBalance(), 200e16);
+
         vm.stopPrank();
     }
 
     function test_withdrawMetric() public {
         console.log("Should withdraw Metric");
         vm.startPrank(other);
+
         // Create question
         _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Publish question
+        _questionAPI.publishQuestion(questionId);
+
         //withdraw Metric
-        _vault.withdrawMetric(other, questionId);
+        _vault.withdrawMetric(questionId);
         assertEq(_vault.getMetricTotalLockedBalance(), 0);
         vm.stopPrank();
     }
@@ -115,18 +121,126 @@ contract vaultTest is Test {
         _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         vm.stopPrank();
-        //approve Metric transfer for vault
-        vm.startPrank(address(_vault));
-        _metricToken.approve(address(other), _metricToken.balanceOf(address(_vault)));
-        _metricToken.approve(address(treasury), _metricToken.balanceOf(address(_vault)));
-        vm.stopPrank();
+
         //slash Metric
         vm.startPrank(owner);
-        _vault.slashMetric(other, questionId);
+        _vault.slashMetric(questionId);
         vm.stopPrank();
-        //check user Metric balance
-        //assertEq(_metricToken.balanceOf(other), 0.5e18);
-        //check treasury Metric balance
-        //assertEq(_metricToken.balanceOf(other), 0.5e18);
+
+        // Check that Metric is slashed
+        assertEq(_metricToken.balanceOf(other), 99.5e18);
+        // Check treasury Metric balance
+        assertEq(_metricToken.balanceOf(treasury), 0.5e18);
+    }
+
+    // ---------------------- Access control testing
+    function test_onlyOwnerCanSlashMetric() public {
+        console.log("Only owner should be able to slash a question");
+
+        vm.startPrank(other);
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        //slash Metric
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.slashMetric(questionId);
+        vm.stopPrank();
+    }
+
+    function test_cannotSlashSameQuestionTwice() public {
+        console.log("We can only slash a question once.");
+
+        vm.startPrank(other);
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        // Slash
+        _vault.slashMetric(questionId);
+
+        // Slash again
+        vm.expectRevert(Vault.AlreadySlashed.selector);
+        _vault.slashMetric(questionId);
+        vm.stopPrank();
+    }
+
+    function test_onlyOwnerCanSetSensitiveAddresses() public {
+        console.log("Only owner should be able to set sensitive addresses");
+
+        vm.startPrank(other);
+        // Attempt to set sensitive addresses
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setQuestionStateController(address(0x1));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setTreasury(address(0x1));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setMetric(address(0x1));
+        vm.stopPrank();
+
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        _vault.setQuestionStateController(address(0x1));
+        _vault.setTreasury(address(0x1));
+        _vault.setMetric(address(0x1));
+
+        assertEq(address(_vault.questionStateController()), address(0x1));
+        assertEq(_vault.treasury(), address(0x1));
+        assertEq(address(_vault.metric()), address(0x1));
+    }
+
+    function test_sensitiveAddressesCannotBeSetToNullAddress() public {
+        console.log("Sensitive addresses cannot be set to null.");
+
+        vm.startPrank(owner);
+        vm.expectRevert(Vault.InvalidAddress.selector);
+        _vault.setQuestionStateController(address(0x0));
+
+        // This should be allowed as at some point the treasury might wannt to burn tokens or something.
+        _vault.setTreasury(address(0x0));
+
+        vm.expectRevert(Vault.InvalidAddress.selector);
+        _vault.setMetric(address(0x0));
+        vm.stopPrank();
+    }
+
+    function test_cannotWithdrawUnpublishedQuestion() public {
+        console.log("Should not withdraw Metric");
+        vm.startPrank(other);
+
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        //withdraw Metric
+        vm.expectRevert(Vault.QuestionNotPublished.selector);
+        _vault.withdrawMetric(questionId);
+        vm.stopPrank();
+    }
+
+    function test_cannotWithdrawSameQuestionTwice() public {
+        console.log("Should not withdraw Metric twice");
+        vm.startPrank(other);
+
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Publish question
+        _questionAPI.publishQuestion(questionId);
+
+        // Withdraw Metric
+        _vault.withdrawMetric(questionId);
+
+        // Withdraw again
+        vm.expectRevert(Vault.NoMetricToWithdraw.selector);
+        _vault.withdrawMetric(questionId);
+
+        vm.stopPrank();
     }
 }
