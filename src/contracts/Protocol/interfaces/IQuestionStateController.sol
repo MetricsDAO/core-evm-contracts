@@ -22,6 +22,7 @@ interface IQuestionStateController {
     function setOffset(uint256 newOffset) external;
 
     enum STATE {
+        // TODO this where it becomes a challenge, can be claimed and answered
         UNINIT,
         VOTING,
         PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered
