@@ -1,7 +1,7 @@
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
 
   const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
@@ -27,9 +27,15 @@ module.exports = async (hre) => {
     log: true,
   });
 
+  const vault = await deploy("Vault", {
+    from: deployer,
+    args: [whichMetricAddress, questionStateController.address, treasury],
+    log: true,
+  });
+
   const actionCostController = await deploy("ActionCostController", {
     from: deployer,
-    args: [whichMetricAddress],
+    args: [whichMetricAddress, vault.address],
     log: true,
   });
 
@@ -81,7 +87,17 @@ module.exports = async (hre) => {
       await hre.run("verify:verify", {
         address: questionAPI.address,
         constructorArguments: [bountyQuestion.address, claimController.address, questionStateController.address, actionCostController.address],
-        contract: "src/contracts/StakingChef.sol:StakingChef",
+        contract: "src/contracts/Protocol/QuestionAPI.sol:QuestionAPI",
+      });
+    } catch (error) {
+      console.log("error:", error.message);
+    }
+
+    try {
+      await hre.run("verify:verify", {
+        address: vault.address,
+        constructorArguments: [whichMetricAddress, questionStateController.address, treasury],
+        contract: "src/contracts/Protocol/Vault.sol:Vault",
       });
     } catch (error) {
       console.log("error:", error.message);
@@ -89,4 +105,4 @@ module.exports = async (hre) => {
   }
 };
 module.exports.tags = ["QuestionAPI"];
-module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "ClaimController", "ActionCostController"];
+module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "Vault", "ClaimController", "ActionCostController"];
