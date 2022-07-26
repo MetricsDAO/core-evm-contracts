@@ -19,11 +19,13 @@ abstract contract Chef is Ownable {
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner {
-        if (!isOn) {
+        if (isOn == _rewardsActive) revert RewardsAlreadyToggled();
+        if (isOn) {
+            _setLastRewardBlock();
+        } else {
             setLifetimeShareValue();
         }
         _rewardsActive = isOn;
-        _setLastRewardBlock();
     }
 
     function setMetricPerBlock(uint256 metricAmount) public virtual onlyOwner {
@@ -122,6 +124,7 @@ abstract contract Chef is Ownable {
     error InvalidShareAmount();
     error RewardsNotActive();
     error InvalidAddress();
+    error RewardsAlreadyToggled();
 
     //------------------------------------------------------Events
     event Harvest(address indexed harvester, uint256 agIndex, uint256 amount);

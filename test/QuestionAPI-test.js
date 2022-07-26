@@ -11,12 +11,14 @@ describe("Question API Contract", function () {
   let claimController;
   let questionStateController;
   let costController;
+  let vault;
 
   let owner;
   let metricaddr1;
   let xmetricaddr1;
   let xmetricaddr2;
   let xmetricaddr3;
+  let treasury;
   let addrs;
 
   const questionState = {
@@ -28,7 +30,7 @@ describe("Question API Contract", function () {
   };
 
   beforeEach(async function () {
-    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, ...addrs] = await ethers.getSigners();
+    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, treasury, ...addrs] = await ethers.getSigners();
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
     // deploy Metric
@@ -51,9 +53,14 @@ describe("Question API Contract", function () {
     const stateContract = await ethers.getContractFactory("QuestionStateController");
     questionStateController = await stateContract.deploy();
 
-    // deploy Cost Controller with xMetric
+    const VaultContract = await ethers.getContractFactory("Vault");
+    vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
+
+    // deploy Cost Controller
     const costContract = await ethers.getContractFactory("ActionCostController");
-    costController = await costContract.deploy(xmetric.address);
+    costController = await costContract.deploy(xmetric.address, vault.address);
+
+    await vault.setCostController(costController.address);
 
     // deploy Factory
     const factoryContract = await ethers.getContractFactory("QuestionAPI");
@@ -70,6 +77,7 @@ describe("Question API Contract", function () {
     costController.setQuestionApi(questionAPI.address);
 
     await xmetric.setTransactor(costController.address, true);
+    await xmetric.setTransactor(vault.address, true);
 
     await xmetric.transfer(xmetricaddr2.address, utils.parseEther("20"));
 
@@ -97,6 +105,7 @@ describe("Question API Contract", function () {
   describe("Creating questions", function () {
     it("the factory should create questions", async function () {
       // create question
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 10);
       await questionIDtx.wait();
@@ -122,6 +131,8 @@ describe("Question API Contract", function () {
 
       // create question
       const limit = 10;
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", limit);
       await questionIDtx.wait();
 
@@ -138,6 +149,8 @@ describe("Question API Contract", function () {
       // question state should be uninit
       const state = await questionStateController.state(0);
       expect(state).to.equal(new BN(0));
+
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -158,6 +171,8 @@ describe("Question API Contract", function () {
       let votes = await questionStateController.getVotes(0);
       expect(votes.length).to.equal(new BN(0));
       // // create question
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
       // // question state should now be VOTING state
@@ -202,6 +217,8 @@ describe("Question API Contract", function () {
     });
 
     it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
 
