@@ -84,8 +84,8 @@ describe("Question API Contract", function () {
     await xmetric.transfer(xmetricaddr3.address, utils.parseEther("1000")); // https://www.youtube.com/watch?v=oTZETtLCZZ0
 
     await metric.transfer(metricaddr1.address, BN(2000));
-    await xmetric.transfer(xmetricaddr1.address, utils.parseEther("10"));
-    await xmetric.connect(xmetricaddr1).approve(costController.address, utils.parseEther("5"));
+    await xmetric.transfer(xmetricaddr1.address, utils.parseEther("40"));
+    await xmetric.connect(xmetricaddr1).approve(vault.address, utils.parseEther("30"));
   });
 
   describe("Deployment", function () {
@@ -98,7 +98,7 @@ describe("Question API Contract", function () {
       const xmetricaddr1Balance = await xmetric.balanceOf(xmetricaddr1.address);
 
       expect(metricaddr1Balance).to.equal("2000");
-      expect(xmetricaddr1Balance).to.equal("10000000000000000000");
+      expect(xmetricaddr1Balance).to.equal("40000000000000000000");
     });
   });
 
@@ -131,7 +131,6 @@ describe("Question API Contract", function () {
 
       // create question
       const limit = 10;
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", limit);
       await questionIDtx.wait();
@@ -232,9 +231,76 @@ describe("Question API Contract", function () {
 
       const latestQuestion = await questionAPI.currentQuestionId();
       expect(latestQuestion).to.equal(BN(3));
+    });
 
-      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING));
-      expect(allquestionsByState.length).to.equal(3);
+    it("should set up a new way to get all questions by state", async () => {
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
+      await questionIDtx.wait();
+
+      const questionIDtx1 = await questionAPI
+        .connect(xmetricaddr1)
+        .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 5);
+      await questionIDtx1.wait();
+
+      const questionIDtxbad = await questionAPI.connect(xmetricaddr1).createQuestion("badquestion", 12);
+      await questionIDtxbad.wait();
+
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://", 5);
+      await questionIDtx2.wait();
+
+      const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
+
+      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
+
+      await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"));
+
+      // can upvote your own question
+      await questionAPI.connect(xmetricaddr1).upvoteQuestion(latestQuestionID, utils.parseEther("6"));
+
+      const latestQuestion = await questionAPI.currentQuestionId();
+
+      await questionAPI.disqualifyQuestion(new BN(3));
+
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
+
+      expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
+    });
+
+    it("should get latest based on offset", async () => {
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 1);
+      await questionIDtx.wait();
+
+      const questionIDtx1 = await questionAPI
+        .connect(xmetricaddr1)
+        .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 1);
+      await questionIDtx1.wait();
+
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://sixthtolast", 1);
+      await questionIDtx2.wait();
+
+      const questionIDtx3 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fifthtolast", 1);
+      await questionIDtx3.wait();
+
+      const questionIDtx4 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fourthtolast", 1);
+      await questionIDtx4.wait();
+
+      const questionIDtx5 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://thirdtolast", 1);
+      await questionIDtx5.wait();
+
+      const questionIDtx6 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://secondtoLast", 1);
+      await questionIDtx6.wait();
+
+      const questionIDtx7 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://last", 1);
+      await questionIDtx7.wait();
+
+      const latestQuestion = await questionAPI.currentQuestionId();
+
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
+      expect(allquestionsByState.length).to.equal(8);
+
+      const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
+      expect(allquestionsByStateAgain.length).to.equal(5);
     });
   });
 });
