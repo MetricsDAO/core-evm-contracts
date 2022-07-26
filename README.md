@@ -32,7 +32,7 @@ With that abstraction, oversimplified, we can:
 
 1.  every block, tag X $metric as UNLOCKED within the Alloctor. These need to be calculated on-demand, as the code will not be executed every block.
 
-2.  then get that amount of UNLOCKED metric at a given time, and distribute amongst shareholders based on their shares/total shares -- if it's push distribution, send it also - if it's poll distribution, lock it up and let it stack.
+2.  then get that amount of UNLOCKED metric at a given time, and distribute amongst shareholders based on their shares/total shares -- if it's push distribution, send it also - if it's pull distribution, lock it up and let it stack.
 
 ---
 
@@ -56,7 +56,7 @@ So in sushi:
 1.  Every `x` blocks, calculate minted Sushi Tokens for each LP contract based on their (shares / total shares)
 2.  Then, do the math to figure out how many rewards each LP token is worth (based on the total amount of LP tokens staked)
 3.  Then, when a user requests their rewards, their claimable amount is based on how many tokens they have staked - and from the previous step, we know how many rewards each LP token gets.
-4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
+4.  Historical withdrawals are tracked through "lifetimeEarnings" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 This contract is a bit more simplified. Basically there are no LP tokens - so those values are tracked at the top level.
 
@@ -70,7 +70,7 @@ This contract is a bit more simplified. Basically there are no LP tokens - so th
 1.  Every `x` blocks, calculate METRIC Tokens for each AG based on their (shares / total shares)
 2.  Then, do the math to figure out how many METRIC tokens will be distributed in total
 3.  Then, when a user requests their rewards, their claimable amount is based on how many shares they have - and from the previous step, we know how many rewards each AG group gets.
-4.  Historical withdrawals are tracked through "rewardDebt" - so subtract the amount of rewards they have already claimed from their total earned rewards.
+4.  Historical withdrawals are tracked through "lifetimeEarnings" - so subtract the amount of rewards they have already claimed from their total earned rewards.
 
 ---
 
@@ -140,6 +140,10 @@ To run locally `npx hardhat --network localhost deploy`
 
 When running you're own hardhat node/local blockchain you can use --tags to deploy a contract when initialising  
 `npx hardhat node --tags TopChef`
+
+For development you can run `npx hardhat node` that will run all scripts in deploy folder
+
+After deploying Question API you should run script setQuestionApi script in scripts folder
 
 to deploy to a specific network and to deploy a specific contract you'll need to run something like this
 `npx hardhat --network ${networkname} deploy --tags QuestionAPI`

@@ -35,7 +35,7 @@ module.exports = async (hre) => {
 
   const questionAPI = await deploy("QuestionAPI", {
     from: deployer,
-    args: [bountyQuestion.address, claimController.address, questionStateController.address, actionCostController.address],
+    args: [bountyQuestion.address, questionStateController.address, claimController.address, actionCostController.address],
     log: true,
   });
 
@@ -70,7 +70,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: actionCostController.address,
-        constructorArguments: [matricAddress],
+        constructorArguments: [whichMetricAddress],
         contract: "src/contracts/Protocol/QuestionStateController.sol:QuestionStateController",
       });
     } catch (error) {
@@ -89,4 +89,4 @@ module.exports = async (hre) => {
   }
 };
 module.exports.tags = ["QuestionAPI"];
-module.exports.dependencies = ["BountyQuestion", "ClaimController", "QuestionStateController", "ActionCostController"];
+module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "ClaimController", "ActionCostController"];

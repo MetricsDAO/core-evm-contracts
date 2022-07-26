@@ -13,14 +13,20 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(address => mapping(uint256 => bool)) public hasVoted;
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
+    mapping(STATE => QuestionData[]) public questionByState;
+
+    //TODO mapping     mapping(STATE => uint256[]) public questionState;
+
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
 
     /**
      * @notice Initializes a question to draft.
      * @param questionId The id of the question
      */
-    function initializeQuestion(uint256 questionId) public onlyApi {
+    function initializeQuestion(uint256 questionId, string calldata uri) public onlyApi {
         state[questionId] = STATE.VOTING;
+        QuestionData memory _question = QuestionData({questionId: questionId, url: uri, totalVotes: getTotalVotes(questionId)});
+        questionByState[STATE.VOTING].push(_question);
     }
 
     function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
@@ -62,8 +68,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // Interactions
     }
 
-    function setBadState(uint256 questionId) public onlyApi {
-        state[questionId] = STATE.BAD;
+    function setDisqualifiedState(uint256 questionId) public onlyApi {
+        state[questionId] = STATE.DISQUALIFIED;
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
@@ -80,6 +86,10 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
         return votes[questionId].totalVoteCount;
+    }
+
+    function getQuestionsByState(STATE currentState) public view returns (QuestionData[] memory) {
+        return questionByState[currentState];
     }
 
     //------------------------------------------------------ Errors
@@ -101,5 +111,11 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     struct Vote {
         address voter;
         uint256 amount;
+    }
+
+    struct QuestionData {
+        uint256 questionId;
+        string url;
+        uint256 totalVotes;
     }
 }

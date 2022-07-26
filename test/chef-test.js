@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { utils } = require("ethers");
 const { ethers, network } = require("hardhat");
-const { mineBlocks, BN } = require("./utils");
+const { mineBlocks, BN, add } = require("./utils");
 
 describe("Allocator Contract", async function () {
   let topChef;
@@ -48,7 +48,7 @@ describe("Allocator Contract", async function () {
       expect(0).to.equal(alloc);
 
       // add our first allocation group
-      await topChef.addAllocationGroup(allocationGroup1.address, 20, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 20);
 
       // check that it was added
       groups = await topChef.getAllocationGroups();
@@ -57,7 +57,7 @@ describe("Allocator Contract", async function () {
       expect(20).to.equal(alloc);
 
       // add our second allocation group
-      await topChef.addAllocationGroup(allocationGroup2.address, 30, true);
+      await topChef.addAllocationGroup(allocationGroup2.address, 30);
 
       // check that it was added
       groups = await topChef.getAllocationGroups();
@@ -66,21 +66,21 @@ describe("Allocator Contract", async function () {
       expect(50).to.equal(alloc);
 
       // re-adding the first one should fail
-      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50, true)).to.be.revertedWith("DuplicateAddress()");
+      await expect(topChef.addAllocationGroup(allocationGroup1.address, 50)).to.be.revertedWith("DuplicateAddress()");
     });
 
     it("Should update edited AGs", async function () {
       await topChef.toggleRewards(true);
       // add two allocation groups
-      await topChef.addAllocationGroup(allocationGroup1.address, 20, true);
-      await topChef.addAllocationGroup(allocationGroup2.address, 30, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 20);
+      await topChef.addAllocationGroup(allocationGroup2.address, 30);
 
       // check that they were added
       let alloc = await topChef.getTotalAllocationShares();
       expect(50).to.equal(alloc);
 
       // edit the first one
-      await topChef.updateAllocationGroup(allocationGroup1.address, 0, 30, true);
+      await topChef.updateAllocationGroup(allocationGroup1.address, 0, 30);
       alloc = await topChef.getTotalAllocationShares();
       expect(60).to.equal(alloc);
     });
@@ -88,8 +88,8 @@ describe("Allocator Contract", async function () {
     it("Should support deleting AGs", async function () {
       await topChef.toggleRewards(true);
       // add two allocation groups
-      await topChef.addAllocationGroup(allocationGroup1.address, 20, true);
-      await topChef.addAllocationGroup(allocationGroup2.address, 30, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 20);
+      await topChef.addAllocationGroup(allocationGroup2.address, 30);
 
       // remove the first one
       await topChef.removeAllocationGroup(0);
@@ -100,12 +100,26 @@ describe("Allocator Contract", async function () {
       const groups = await topChef.getAllocationGroups();
       expect(30).to.equal(groups[0].shares);
     });
+
+    it("Removing an AG with pending rewards should claim them", async function () {
+      await topChef.toggleRewards(true);
+
+      // add two allocation groups
+      await topChef.addAllocationGroup(allocationGroup1.address, 20);
+
+      // remove the first one and ensure they got their rewards
+
+      const pendingBalance = await topChef.connect(allocationGroup1).viewPendingRewards(0);
+      await topChef.removeAllocationGroup(0);
+      const actualBalance = await metric.balanceOf(allocationGroup1.address);
+      expect(actualBalance).to.equal(add(pendingBalance, ethers.utils.parseEther("4")));
+    });
   });
 
   describe("Pending Rewards", function () {
     it("Should track pending rewards", async function () {
       // add an allocation group
-      await topChef.addAllocationGroup(allocationGroup1.address, 20, false);
+      await topChef.addAllocationGroup(allocationGroup1.address, 20);
 
       await topChef.toggleRewards(true);
 
@@ -131,10 +145,10 @@ describe("Allocator Contract", async function () {
 
     it("Should track pending rewards with multiple groups", async function () {
       // add an allocation group
-      await topChef.addAllocationGroup(allocationGroup1.address, 1, false);
+      await topChef.addAllocationGroup(allocationGroup1.address, 1);
 
       // add an allocation group
-      await topChef.addAllocationGroup(allocationGroup2.address, 3, false);
+      await topChef.addAllocationGroup(allocationGroup2.address, 3);
 
       await topChef.toggleRewards(true);
 
@@ -162,7 +176,7 @@ describe("Allocator Contract", async function () {
       // start at block 1
       await topChef.toggleRewards(true);
       // block 2
-      await topChef.addAllocationGroup(allocationGroup1.address, 1, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 1);
 
       // block 3
       await topChef.updateAccumulatedAllocations();
@@ -179,7 +193,7 @@ describe("Allocator Contract", async function () {
       // start at block 1
       await topChef.toggleRewards(true);
       // block 2
-      await topChef.addAllocationGroup(allocationGroup1.address, 1, false);
+      await topChef.addAllocationGroup(allocationGroup1.address, 1);
 
       // block 3
       await topChef.updateAccumulatedAllocations();
@@ -206,9 +220,9 @@ describe("Allocator Contract", async function () {
     });
 
     it("Should Harvest All for multiple groups", async function () {
-      await topChef.addAllocationGroup(allocationGroup1.address, 1, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 1);
 
-      await topChef.addAllocationGroup(allocationGroup2.address, 3, true);
+      await topChef.addAllocationGroup(allocationGroup2.address, 3);
 
       await topChef.toggleRewards(true);
 
@@ -229,7 +243,7 @@ describe("Allocator Contract", async function () {
 
     it("will over time update single allocation group with lots of metric", async function () {
       await topChef.toggleRewards(true);
-      await topChef.addAllocationGroup(allocationGroup1.address, 40, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 40);
       await mineBlocks(100);
 
       await topChef.connect(allocationGroup1).claim(0);
@@ -241,7 +255,7 @@ describe("Allocator Contract", async function () {
   });
   describe("Maintain AGs over time ", function () {
     it("Should handle adding an AG after intial startup", async function () {
-      await topChef.addAllocationGroup(allocationGroup1.address, 1, true);
+      await topChef.addAllocationGroup(allocationGroup1.address, 1);
       await topChef.toggleRewards(true);
 
       // block 5
@@ -258,7 +272,7 @@ describe("Allocator Contract", async function () {
       const balance1 = await metric.balanceOf(allocationGroup1.address);
       expect(balance1).to.equal(utils.parseEther("28"));
 
-      await topChef.addAllocationGroup(allocationGroup2.address, 3, true);
+      await topChef.addAllocationGroup(allocationGroup2.address, 3);
       await topChef.connect(allocationGroup2).claim(1);
 
       const balance2 = await metric.balanceOf(allocationGroup2.address);

@@ -59,14 +59,14 @@ contract topChefTest is Test {
 
         // Add first group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 20, true);
+        topChef.addAllocationGroup(groupOne, 20);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 1);
         assertEq(topChef.getTotalAllocationShares(), 20);
 
         // Add second group
-        topChef.addAllocationGroup(groupTwo, 30, true);
+        topChef.addAllocationGroup(groupTwo, 30);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 2);
@@ -74,7 +74,7 @@ contract topChefTest is Test {
 
         // Readding first one should fail
         vm.expectRevert(Chef.DuplicateAddress.selector);
-        topChef.addAllocationGroup(groupOne, 20, true);
+        topChef.addAllocationGroup(groupOne, 20);
 
         vm.stopPrank();
     }
@@ -83,21 +83,21 @@ contract topChefTest is Test {
         console.log("Should add and track added ags.");
         // Add first group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 20, true);
+        topChef.addAllocationGroup(groupOne, 20);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 1);
         assertEq(topChef.getTotalAllocationShares(), 20);
 
         // Add second group
-        topChef.addAllocationGroup(groupTwo, 30, true);
+        topChef.addAllocationGroup(groupTwo, 30);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 2);
         assertEq(topChef.getTotalAllocationShares(), 50);
 
         // Edit first one
-        topChef.updateAllocationGroup(groupOne, 0, 30, true);
+        topChef.updateAllocationGroup(groupOne, 0, 30);
 
         // Check that it was updated
         assertEq(topChef.getTotalAllocationShares(), 60);
@@ -109,14 +109,14 @@ contract topChefTest is Test {
         console.log("Should support deleting AGs.");
 
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 20, true);
+        topChef.addAllocationGroup(groupOne, 20);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 1);
         assertEq(topChef.getTotalAllocationShares(), 20);
 
         // Add second group
-        topChef.addAllocationGroup(groupTwo, 30, true);
+        topChef.addAllocationGroup(groupTwo, 30);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 2);
@@ -128,11 +128,11 @@ contract topChefTest is Test {
     }
 
     function test_MonitorPendingRewardsSingleGroup() public {
-        console.log('Should track pending rewards.');
+        console.log("Should track pending rewards.");
 
         // Add a group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 20, true);
+        topChef.addAllocationGroup(groupOne, 20);
 
         assertEq(topChef.viewPendingHarvest(0), 0);
 
@@ -153,12 +153,12 @@ contract topChefTest is Test {
     }
 
     function test_MonitorPendingRewardsMultipleGroups() public {
-        console.log('Should track pending rewards with multiple groups.');
+        console.log("Should track pending rewards with multiple groups.");
 
         // Add two groups
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 1, false);
-        topChef.addAllocationGroup(groupTwo, 3, false);
+        topChef.addAllocationGroup(groupOne, 1);
+        topChef.addAllocationGroup(groupTwo, 3);
 
         // Should initialize to 0
         assertEq(topChef.viewPendingHarvest(0), 0);
@@ -174,11 +174,11 @@ contract topChefTest is Test {
     }
 
     function test_Harvesting() public {
-        console.log('Should transfer earned rewards.');
+        console.log("Should transfer earned rewards.");
 
         // Add a group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 1, true);
+        topChef.addAllocationGroup(groupOne, 1);
 
         // Mine 2 blocks
         vm.roll(block.number + 2);
@@ -194,13 +194,13 @@ contract topChefTest is Test {
     }
 
     function test_ClaimableRewards() public {
-        console.log('Should track claimable rewards.');
+        console.log("Should track claimable rewards.");
 
         // Add a group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 1, false);
+        topChef.addAllocationGroup(groupOne, 1);
 
-         // Mine 2 blocks
+        // Mine 2 blocks
         vm.roll(block.number + 2);
         topChef.updateAccumulatedAllocations();
         vm.stopPrank();
@@ -217,7 +217,7 @@ contract topChefTest is Test {
         topChef.updateAccumulatedAllocations();
 
         uint256 pReward = topChef.viewPendingRewards(0);
-        
+
         vm.prank(groupOne);
         topChef.claim(0);
 
@@ -225,13 +225,13 @@ contract topChefTest is Test {
     }
 
     function test_MaintainAGsOverTime() public {
-        console.log('Should handle adding an AG after intial startup.');
+        console.log("Should handle adding an AG after intial startup.");
 
-         // Add a group
+        // Add a group
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 1, true);
+        topChef.addAllocationGroup(groupOne, 1);
 
-         // Mine 2 blocks
+        // Mine 2 blocks
         vm.roll(block.number + 2);
         topChef.updateAccumulatedAllocations();
         vm.stopPrank();
@@ -242,7 +242,7 @@ contract topChefTest is Test {
         assertEq(metricToken.balanceOf(groupOne), 8e18);
 
         vm.prank(owner);
-        topChef.addAllocationGroup(groupTwo, 1, false);
+        topChef.addAllocationGroup(groupTwo, 1);
 
         // Mine 2 blocks
         vm.roll(block.number + 1);
@@ -258,14 +258,14 @@ contract topChefTest is Test {
         console.log("Should Harvest All for multiple groups.");
 
         vm.startPrank(owner);
-        topChef.addAllocationGroup(groupOne, 1, true);
+        topChef.addAllocationGroup(groupOne, 1);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 1);
         assertEq(topChef.getTotalAllocationShares(), 1);
 
         // Add second group
-        topChef.addAllocationGroup(groupTwo, 3, true);
+        topChef.addAllocationGroup(groupTwo, 3);
 
         // Check that it was added
         assertEq(topChef.getAllocationGroups().length, 2);
@@ -291,7 +291,7 @@ contract topChefTest is Test {
         topChef.toggleRewards(false);
 
         vm.prank(owner);
-        vm.expectRevert(TopChef.RewardsInactive.selector);
+        vm.expectRevert(Chef.RewardsNotActive.selector);
         topChef.harvest(0);
     }
 }
