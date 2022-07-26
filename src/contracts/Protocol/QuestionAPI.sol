@@ -96,6 +96,12 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.unvoteFor(_msgSender(), questionId);
     }
 
+    function publishQuestion(uint256 questionId) public {
+        uint256 someBenchmark = 1;
+        if (someBenchmark != 1) revert NotAtBenchmark();
+        _questionStateController.publish(questionId);
+    }
+
     // TODO lock metric
     function claimQuestion(uint256 questionId) public {
         // TODO it sucks to do an int state check here, and I don't want a getter for every state
@@ -115,6 +121,7 @@ contract QuestionAPI is Ownable, NFTLocked {
 
     //------------------------------------------------------ Errors
     error ClaimsNotOpen();
+    error NotAtBenchmark();
 
     //------------------------------------------------------ Proxy
 

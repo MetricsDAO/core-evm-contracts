@@ -9,19 +9,34 @@ import "./interfaces/IQuestionStateController.sol";
 import "./modifiers/OnlyCostController.sol";
 
 contract Vault is Ownable, OnlyCostController {
-    IERC20 private _metric;
+    IERC20 public metric;
+    IQuestionStateController public questionStateController;
+
+    address public treasury;
+
     uint256 public depositsCount;
+
     mapping(address => uint256[]) public depositsByWithdrawers;
     mapping(uint256 => lockAttributes) public lockedMetric;
 
     STATUS public status;
-    IQuestionStateController private _questionStateController;
 
-    constructor(address metricTokenAddress, address questionStateController) {
-        _metric = IERC20(metricTokenAddress);
-        _questionStateController = IQuestionStateController(questionStateController);
+    constructor(
+        address _metricTokenAddress,
+        address _questionStateController,
+        address _treasury
+    ) {
+        metric = IERC20(_metricTokenAddress);
+        questionStateController = IQuestionStateController(_questionStateController);
+        treasury = _treasury;
     }
 
+    /**
+     * @notice Locks METRIC for creating a question
+     * @param _withdrawer The address of the user locking the METRIC
+     * @param _amount The amount of METRIC to lock
+     * @param _questionId The question id
+     */
     function lockMetric(
         address _withdrawer,
         uint256 _amount,
@@ -39,28 +54,46 @@ contract Vault is Ownable, OnlyCostController {
         depositsByWithdrawers[_withdrawer].push(_questionId);
 
         // Interactions
-        _metric.transferFrom(_withdrawer, address(this), _amount);
+        metric.transferFrom(_withdrawer, address(this), _amount);
     }
 
-    function withdrawMetric(address _withdrawer, uint256 questionId) external {
-        if (!(_withdrawer == lockedMetric[questionId].withdrawer)) revert NotTheWithdrawer();
-        if (lockedMetric[questionId].amount == 0) revert NoMetricDeposited();
-        if (!(_questionStateController.getState(questionId) == 3)) revert QuestionNotPublished();
+    /**
+     * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
+     * @param _questionId The question id
+     */
+    function withdrawMetric(uint256 _questionId) external {
+        // Checks
+        if (_msgSender() != lockedMetric[_questionId].withdrawer) revert NotTheWithdrawer();
+        if (lockedMetric[_questionId].amount == 0) revert NoMetricToWithdraw();
+        if (questionStateController.getState(_questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
 
-        lockedMetric[questionId].status = STATUS.WITHDRAWN;
+        // Effects
+        uint256 toWithdraw = lockedMetric[_questionId].amount;
 
-        emit Withdraw(_withdrawer, lockedMetric[questionId].amount);
-        _metric.transferFrom(address(this), _withdrawer, lockedMetric[questionId].amount);
+        lockedMetric[_questionId].status = STATUS.WITHDRAWN;
+        lockedMetric[_questionId].amount = 0;
+
+        // Interactions
+        emit Withdraw(_msgSender(), toWithdraw);
+        metric.transfer(_msgSender(), toWithdraw);
     }
 
-    function slashMetric(address _user, uint256 questionId) external onlyOwner {
-        if (lockedMetric[questionId].status == STATUS.SLASHED) revert AlreadySlashed();
+    /**
+     * @notice Allows onlyOwner to slash a question -- halfing the METRIC locked for the question.
+     * @param _questionId The question id
+     */
+    function slashMetric(uint256 _questionId) external onlyOwner {
+        if (lockedMetric[_questionId].status == STATUS.SLASHED) revert AlreadySlashed();
 
-        lockedMetric[questionId].status = STATUS.SLASHED;
+        lockedMetric[_questionId].status = STATUS.SLASHED;
 
-        emit Slash(_msgSender(), questionId);
-        _metric.transferFrom(address(this), address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c), lockedMetric[questionId].amount / 2);
-        _metric.transferFrom(address(this), _user, lockedMetric[questionId].amount / 2);
+        emit Slash(lockedMetric[_questionId].withdrawer, _questionId);
+
+        // Send half to treasury
+        metric.transfer(treasury, lockedMetric[_questionId].amount / 2);
+
+        // Return half to user
+        metric.transfer(lockedMetric[_questionId].withdrawer, lockedMetric[_questionId].amount / 2);
     }
 
     //------------------------------------------------------ Getters
@@ -68,24 +101,31 @@ contract Vault is Ownable, OnlyCostController {
         return depositsByWithdrawers[_withdrawer];
     }
 
-    function getVaultById(uint256 questionId) external view returns (lockAttributes memory) {
-        return lockedMetric[questionId];
+    function getVaultById(uint256 _questionId) external view returns (lockAttributes memory) {
+        return lockedMetric[_questionId];
     }
 
     function getMetricTotalLockedBalance() external view returns (uint256) {
-        return IERC20(_metric).balanceOf(address(this));
+        return metric.balanceOf(address(this));
     }
 
     //------------------------------------------------------ Events
-    event Withdraw(address withdrawer, uint256 amount);
-    event Slash(address withdrawer, uint256 questionId);
+    event Withdraw(address indexed withdrawer, uint256 indexed amount);
+    event Slash(address indexed withdrawer, uint256 indexed questionId);
 
     //------------------------------------------------------ Errors
     error NotTheWithdrawer();
     error NoMetricToWithdraw();
+<<<<<<< HEAD
     error NoMetricDeposited();
     error AlreadySlashed();
     error QuestionHasInvalidStatus();
+=======
+    error QuestionHasInvalidStatus();
+    error QuestionNotPublished();
+    error AlreadySlashed();
+    error InvalidAddress();
+>>>>>>> c62b2733d4871dcf473c08ed3a672f2ac3049e2c
 
     //------------------------------------------------------ Structs
     struct lockAttributes {
@@ -104,11 +144,17 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     //------------------------------------------------------ Admin functions
-    function setQuestionStateController(address questionStateController) external onlyOwner {
-        _questionStateController = IQuestionStateController(questionStateController);
+    function setQuestionStateController(address _questionStateController) public onlyOwner {
+        if (_questionStateController == address(0)) revert InvalidAddress();
+        questionStateController = IQuestionStateController(_questionStateController);
     }
 
-    function setMetric(address metric) public onlyOwner {
-        _metric = IERC20(metric);
+    function setTreasury(address _treasury) public onlyOwner {
+        treasury = _treasury;
+    }
+
+    function setMetric(address _metric) public onlyOwner {
+        if (_metric == address(0)) revert InvalidAddress();
+        metric = IERC20(_metric);
     }
 }
