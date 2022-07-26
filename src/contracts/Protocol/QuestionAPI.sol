@@ -115,6 +115,10 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.setDisqualifiedState(questionId);
     }
 
+    function setOffsetForQuestionState(uint256 newOffset) public onlyOwner {
+        _questionStateController.setOffset(newOffset);
+    }
+
     //------------------------------------------------------ Errors
     error ClaimsNotOpen();
 

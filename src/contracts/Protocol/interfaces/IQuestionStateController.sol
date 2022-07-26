@@ -19,6 +19,8 @@ interface IQuestionStateController {
 
     function setDisqualifiedState(uint256 questionId) external;
 
+    function setOffset(uint256 newOffset) external;
+
     enum STATE {
         UNINIT,
         VOTING,

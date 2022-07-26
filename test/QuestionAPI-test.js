@@ -77,7 +77,7 @@ describe("Question API Contract", function () {
 
     await metric.transfer(metricaddr1.address, BN(2000));
     await xmetric.transfer(xmetricaddr1.address, utils.parseEther("10"));
-    await xmetric.connect(xmetricaddr1).approve(costController.address, utils.parseEther("5"));
+    await xmetric.connect(xmetricaddr1).approve(costController.address, utils.parseEther("15"));
   });
 
   describe("Deployment", function () {
@@ -252,6 +252,44 @@ describe("Question API Contract", function () {
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
 
       expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
+    });
+
+    it("should get latest based on offset", async () => {
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 1);
+      await questionIDtx.wait();
+
+      const questionIDtx1 = await questionAPI
+        .connect(xmetricaddr1)
+        .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 1);
+      await questionIDtx1.wait();
+
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://sixthtolast", 1);
+      await questionIDtx2.wait();
+
+      const questionIDtx3 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fifthtolast", 1);
+      await questionIDtx3.wait();
+
+      const questionIDtx4 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fourthtolast", 1);
+      await questionIDtx4.wait();
+
+      const questionIDtx5 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://thirdtolast", 1);
+      await questionIDtx5.wait();
+
+      const questionIDtx6 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://secondtoLast", 1);
+      await questionIDtx6.wait();
+
+      const questionIDtx7 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://last", 1);
+      await questionIDtx7.wait();
+
+      const latestQuestion = await questionAPI.currentQuestionId();
+
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
+      expect(allquestionsByState.length).to.equal(8);
+
+      await questionAPI.setOffsetForQuestionState(new BN(4));
+
+      const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion);
+      expect(allquestionsByStateAgain.length).to.equal(5);
     });
   });
 });
