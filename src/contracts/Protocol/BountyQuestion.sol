@@ -1,71 +1,43 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
 
-// TODO remove ERC721 stuff here
-// TODO introduce a Challenge data model
-// Question -> Challenge is many -> one mapping
-// auto-transition from question -> challenge on:
-//   Voting threshold -> do we want manual approval? -> yes
-//   Admin approval (Messari group wants to write their own challenges)
-// TODO ability for author to unlock and "kill" their question -> reimburse voters
-
-// philosphy -> start out gated and the protocol can evolve in the same way the dao does
-
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable, OnlyApi {
+contract BountyQuestion is Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
-    Counters.Counter private _tokenIdCounter;
-    mapping(address => QuestionData[]) public authors; // TODO if we want questions to be transferable, then owner != author
-    mapping(uint256 => uint256) private _createdAt;
+    Counters.Counter private _questionIdCounter;
 
-    constructor() ERC721("MetricsDAO Question", "MDQ") {
-        _tokenIdCounter.increment();
+    // This maps the author to the list of question IDs they have created
+    mapping(address => uint256[]) public authors;
+
+    // This maps the question ID to the question data
+    mapping(uint256 => QuestionData) public questions;
+
+    constructor() {
+        _questionIdCounter.increment();
     }
 
-    // working standard metadata format:  Title, Description, Program
-    function safeMint(address to, string calldata uri) public onlyApi returns (uint256) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
-        QuestionData memory _question = QuestionData({tokenId: tokenId, url: uri});
-        authors[to].push(_question);
-        return tokenId;
-    }
+    function mintQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
+        uint256 questionId = _questionIdCounter.current();
+        _questionIdCounter.increment();
 
-    //------------------------------------------------------ Solidity Overrides
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        questions[questionId] = QuestionData({tokenId: questionId, url: uri});
+        authors[author].push(questionId);
+        return questionId;
     }
 
     function getAuthor(address user) public view returns (QuestionData[] memory) {
-        return authors[user];
+        uint256[] memory created = authors[user];
+
+        QuestionData[] memory ret = new QuestionData[](created.length);
+        for (uint256 i = 0; i < created.length; i++) {
+            ret[i] = questions[created[i]];
+        }
+        return ret;
     }
 
     struct QuestionData {

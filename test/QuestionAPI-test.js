@@ -11,26 +11,26 @@ describe("Question API Contract", function () {
   let claimController;
   let questionStateController;
   let costController;
+  let vault;
 
   let owner;
   let metricaddr1;
   let xmetricaddr1;
   let xmetricaddr2;
   let xmetricaddr3;
+  let treasury;
   let addrs;
 
   const questionState = {
     UNINIT: 0,
     VOTING: 1,
     PUBLISHED: 2,
-    IN_GRADING: 3,
-    COMPLETED: 4,
-    CANCELLED: 5,
-    BAD: 6,
+    COMPLETED: 3,
+    DISQUALIFIED: 4,
   };
 
   beforeEach(async function () {
-    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, ...addrs] = await ethers.getSigners();
+    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, treasury, ...addrs] = await ethers.getSigners();
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
     // deploy Metric
@@ -53,9 +53,14 @@ describe("Question API Contract", function () {
     const stateContract = await ethers.getContractFactory("QuestionStateController");
     questionStateController = await stateContract.deploy();
 
-    // deploy Cost Controller with xMetric
+    const VaultContract = await ethers.getContractFactory("Vault");
+    vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
+
+    // deploy Cost Controller
     const costContract = await ethers.getContractFactory("ActionCostController");
-    costController = await costContract.deploy(xmetric.address);
+    costController = await costContract.deploy(xmetric.address, vault.address);
+
+    await vault.setCostController(costController.address);
 
     // deploy Factory
     const factoryContract = await ethers.getContractFactory("QuestionAPI");
@@ -72,14 +77,15 @@ describe("Question API Contract", function () {
     costController.setQuestionApi(questionAPI.address);
 
     await xmetric.setTransactor(costController.address, true);
+    await xmetric.setTransactor(vault.address, true);
 
     await xmetric.transfer(xmetricaddr2.address, utils.parseEther("20"));
 
     await xmetric.transfer(xmetricaddr3.address, utils.parseEther("1000")); // https://www.youtube.com/watch?v=oTZETtLCZZ0
 
     await metric.transfer(metricaddr1.address, BN(2000));
-    await xmetric.transfer(xmetricaddr1.address, utils.parseEther("10"));
-    await xmetric.connect(xmetricaddr1).approve(costController.address, utils.parseEther("5"));
+    await xmetric.transfer(xmetricaddr1.address, utils.parseEther("40"));
+    await xmetric.connect(xmetricaddr1).approve(vault.address, utils.parseEther("30"));
   });
 
   describe("Deployment", function () {
@@ -92,13 +98,14 @@ describe("Question API Contract", function () {
       const xmetricaddr1Balance = await xmetric.balanceOf(xmetricaddr1.address);
 
       expect(metricaddr1Balance).to.equal("2000");
-      expect(xmetricaddr1Balance).to.equal("10000000000000000000");
+      expect(xmetricaddr1Balance).to.equal("40000000000000000000");
     });
   });
 
   describe("Creating questions", function () {
     it("the factory should create questions", async function () {
       // create question
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 10);
       await questionIDtx.wait();
@@ -124,6 +131,7 @@ describe("Question API Contract", function () {
 
       // create question
       const limit = 10;
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", limit);
       await questionIDtx.wait();
 
@@ -140,6 +148,8 @@ describe("Question API Contract", function () {
       // question state should be uninit
       const state = await questionStateController.state(0);
       expect(state).to.equal(new BN(0));
+
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -160,6 +170,8 @@ describe("Question API Contract", function () {
       let votes = await questionStateController.getVotes(0);
       expect(votes.length).to.equal(new BN(0));
       // // create question
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
       // // question state should now be VOTING state
@@ -204,6 +216,8 @@ describe("Question API Contract", function () {
     });
 
     it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
 
@@ -217,9 +231,76 @@ describe("Question API Contract", function () {
 
       const latestQuestion = await questionAPI.currentQuestionId();
       expect(latestQuestion).to.equal(BN(3));
+    });
 
-      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING));
-      expect(allquestionsByState.length).to.equal(3);
+    it("should set up a new way to get all questions by state", async () => {
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
+      await questionIDtx.wait();
+
+      const questionIDtx1 = await questionAPI
+        .connect(xmetricaddr1)
+        .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 5);
+      await questionIDtx1.wait();
+
+      const questionIDtxbad = await questionAPI.connect(xmetricaddr1).createQuestion("badquestion", 12);
+      await questionIDtxbad.wait();
+
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://", 5);
+      await questionIDtx2.wait();
+
+      const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
+
+      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
+
+      await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"));
+
+      // can upvote your own question
+      await questionAPI.connect(xmetricaddr1).upvoteQuestion(latestQuestionID, utils.parseEther("6"));
+
+      const latestQuestion = await questionAPI.currentQuestionId();
+
+      await questionAPI.disqualifyQuestion(new BN(3));
+
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
+
+      expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
+    });
+
+    it("should get latest based on offset", async () => {
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 1);
+      await questionIDtx.wait();
+
+      const questionIDtx1 = await questionAPI
+        .connect(xmetricaddr1)
+        .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 1);
+      await questionIDtx1.wait();
+
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://sixthtolast", 1);
+      await questionIDtx2.wait();
+
+      const questionIDtx3 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fifthtolast", 1);
+      await questionIDtx3.wait();
+
+      const questionIDtx4 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://fourthtolast", 1);
+      await questionIDtx4.wait();
+
+      const questionIDtx5 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://thirdtolast", 1);
+      await questionIDtx5.wait();
+
+      const questionIDtx6 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://secondtoLast", 1);
+      await questionIDtx6.wait();
+
+      const questionIDtx7 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://last", 1);
+      await questionIDtx7.wait();
+
+      const latestQuestion = await questionAPI.currentQuestionId();
+
+      const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
+      expect(allquestionsByState.length).to.equal(8);
+
+      const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
+      expect(allquestionsByStateAgain.length).to.equal(5);
     });
   });
 });

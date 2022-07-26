@@ -10,6 +10,7 @@ describe("xMETRIC", async function () {
   let alice;
   let frank;
   let judy;
+  let treasury;
   let signers;
   let questionAPI;
   let bountyQuestion;
@@ -28,7 +29,7 @@ describe("xMETRIC", async function () {
     const xMetricContract = await ethers.getContractFactory("Xmetric");
     xMetric = await xMetricContract.deploy();
 
-    [owner, bob, alice, judy, frank] = signers;
+    [owner, bob, alice, judy, frank, treasury] = signers;
 
     await xMetric.transfer(bob.address, BN(2000).div(10));
     await xMetric.transfer(judy.address, BN(questionAPIAllocation));
@@ -45,9 +46,12 @@ describe("xMETRIC", async function () {
     const stateContract = await ethers.getContractFactory("QuestionStateController");
     questionStateController = await stateContract.deploy();
 
+    const VaultContract = await ethers.getContractFactory("Vault");
+    const vault = await VaultContract.deploy(xMetric.address, questionStateController.address, treasury.address);
+
     // deploy Cost Controller
     const costContract = await ethers.getContractFactory("ActionCostController");
-    costController = await costContract.deploy(xMetric.address);
+    costController = await costContract.deploy(xMetric.address, vault.address);
 
     // deploy Factory
     const factoryContract = await ethers.getContractFactory("QuestionAPI");

@@ -9,6 +9,7 @@ import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/QuestionStateController.sol";
 import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
+import "@contracts/Protocol/Vault.sol";
 import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 contract QuestionAPITest is Test {
@@ -19,6 +20,7 @@ contract QuestionAPITest is Test {
     address owner = address(0x0a);
     address other = address(0x0b);
     address manager = address(0x0c);
+    address treasury = address(0x0d);
 
     MetricToken _metricToken;
     QuestionAPI _questionAPI;
@@ -26,6 +28,7 @@ contract QuestionAPITest is Test {
     ClaimController _claimController;
     ActionCostController _costController;
     QuestionStateController _questionStateController;
+    Vault _vault;
     NFT _mockAuthNFT;
 
     function setUp() public {
@@ -40,7 +43,8 @@ contract QuestionAPITest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _costController = new ActionCostController(address(_metricToken));
+        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
+        _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
@@ -52,6 +56,7 @@ contract QuestionAPITest is Test {
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
+        _vault.setCostController(address(_costController));
 
         _metricToken.transfer(other, 100e18);
 
@@ -73,7 +78,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -109,7 +114,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -119,7 +124,7 @@ contract QuestionAPITest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other);
+        _costController.payForCreateQuestion(other, questionId);
 
         vm.stopPrank();
     }
@@ -130,7 +135,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -161,7 +166,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -196,7 +201,7 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -224,25 +229,25 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestion() public {
         vm.startPrank(owner);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
 
-        assertEq(questionState, 6);
+        assertEq(questionState, uint256(IQuestionStateController.STATE.DISQUALIFIED));
         vm.stopPrank();
     }
 
     function test_DisqualifyQuestionTwo() public {
         vm.startPrank(other);
-        _metricToken.approve(address(_costController), 100e18);
+        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         vm.stopPrank();
 
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(badQuestion);
 
-        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.BAD));
+        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.DISQUALIFIED));
     }
 
     function test_ProgramManagerCreateChallenge() public {
@@ -273,6 +278,5 @@ contract QuestionAPITest is Test {
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
         _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
-
     // --------------------- Testing for access controlls
 }

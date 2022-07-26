@@ -10,13 +10,13 @@ contract TopChef is Chef {
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
-        toggleRewards(false); // locking contract initially
     }
 
     //------------------------------------------------------Manage Allocation Groups
 
     function addAllocationGroup(address newAddress, uint256 newShares) external onlyOwner nonDuplicated(newAddress) {
         // Checks
+        if (newAddress == address(0x00)) revert InvalidAddress();
         if (newShares <= 0) revert SharesNotGreaterThanZero();
         if (areRewardsActive() && getTotalAllocationShares() > 0) {
             updateAccumulatedAllocations();
@@ -44,6 +44,7 @@ contract TopChef is Chef {
     ) public activeRewards validIndex(agIndex) onlyOwner {
         // Checks (modifier)
         if (shares <= 0) revert SharesNotGreaterThanZero();
+        if (groupAddress == address(0x00)) revert InvalidAddress();
 
         // Effects
         harvest(agIndex);

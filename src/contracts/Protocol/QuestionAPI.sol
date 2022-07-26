@@ -42,11 +42,11 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @return The question id
      */
     function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
-        // Pay to create a question
-        _costController.payForCreateQuestion(_msgSender());
-
         // Mint a new question
-        uint256 questionId = _question.safeMint(_msgSender(), uri);
+        uint256 questionId = _question.mintQuestion(_msgSender(), uri);
+
+        // Pay to create a question
+        _costController.payForCreateQuestion(_msgSender(), questionId);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId, uri);
@@ -67,7 +67,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         // keep as questionId or should be challengeId?
 
         // Mint a new question
-        uint256 questionId = _question.safeMint(_msgSender(), uri);
+        uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId, uri);
@@ -87,7 +87,7 @@ contract QuestionAPI is Ownable, NFTLocked {
      * We can manipulate this very easily -- think of a way to make it secure
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
-        _questionStateController.voteFor(msg.sender, questionId, amount);
+        _questionStateController.voteFor(_msgSender(), questionId, amount);
     }
 
     /**
@@ -96,6 +96,12 @@ contract QuestionAPI is Ownable, NFTLocked {
      */
     function unvoteQuestion(uint256 questionId) public {
         _questionStateController.unvoteFor(_msgSender(), questionId);
+    }
+
+    function publishQuestion(uint256 questionId) public {
+        uint256 someBenchmark = 1;
+        if (someBenchmark != 1) revert NotAtBenchmark();
+        _questionStateController.publish(questionId);
     }
 
     // TODO lock metric
@@ -112,11 +118,12 @@ contract QuestionAPI is Ownable, NFTLocked {
     }
 
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
-        _questionStateController.setBadState(questionId);
+        _questionStateController.setDisqualifiedState(questionId);
     }
 
     //------------------------------------------------------ Errors
     error ClaimsNotOpen();
+    error NotAtBenchmark();
 
     //------------------------------------------------------ Proxy
 
