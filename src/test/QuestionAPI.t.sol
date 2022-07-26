@@ -20,6 +20,7 @@ contract QuestionAPITest is Test {
     address owner = address(0x0a);
     address other = address(0x0b);
     address manager = address(0x0c);
+    address treasury = address(0x0d);
 
     MetricToken _metricToken;
     QuestionAPI _questionAPI;
@@ -42,7 +43,7 @@ contract QuestionAPITest is Test {
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
         _questionStateController = new QuestionStateController();
-        _vault = new Vault(address(_metricToken), address(_questionStateController));
+        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
         _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
