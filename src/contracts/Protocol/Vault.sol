@@ -28,10 +28,7 @@ contract Vault is Ownable, OnlyCostController {
         uint256 _questionId
     ) external onlyCostController {
         //Checks
-        if (lockedMetric[_questionId].status == STATUS.DEPOSITED) revert MetricAlreadyDeposited();
-        if (lockedMetric[_questionId].status == STATUS.WITHDRAWN) revert MetricAlreadyWithdrawn();
-        if (lockedMetric[_questionId].status == STATUS.SLASHED) revert AlreadySlashed();
-        if (lockedMetric[_questionId].status == STATUS.PUBLISHED) revert QuestionPublished();
+        if (lockedMetric[_questionId].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
 
         // Effects
         lockedMetric[_questionId].withdrawer = _withdrawer;
@@ -87,11 +84,8 @@ contract Vault is Ownable, OnlyCostController {
     error NotTheWithdrawer();
     error NoMetricToWithdraw();
     error NoMetricDeposited();
-    error MetricAlreadyDeposited();
-    error MetricAlreadyWithdrawn();
-    error QuestionPublished();
-    error QuestionNotPublished();
     error AlreadySlashed();
+    error QuestionHasInvalidStatus();
 
     //------------------------------------------------------ Structs
     struct lockAttributes {
