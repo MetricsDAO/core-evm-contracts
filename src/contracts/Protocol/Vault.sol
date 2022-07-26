@@ -116,16 +116,10 @@ contract Vault is Ownable, OnlyCostController {
     //------------------------------------------------------ Errors
     error NotTheWithdrawer();
     error NoMetricToWithdraw();
-<<<<<<< HEAD
-    error NoMetricDeposited();
-    error AlreadySlashed();
-    error QuestionHasInvalidStatus();
-=======
     error QuestionHasInvalidStatus();
     error QuestionNotPublished();
     error AlreadySlashed();
     error InvalidAddress();
->>>>>>> c62b2733d4871dcf473c08ed3a672f2ac3049e2c
 
     //------------------------------------------------------ Structs
     struct lockAttributes {
