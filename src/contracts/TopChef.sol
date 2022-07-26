@@ -10,7 +10,6 @@ contract TopChef is Chef {
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
-        toggleRewards(false); // locking contract initially
     }
 
     //------------------------------------------------------Manage Allocation Groups
