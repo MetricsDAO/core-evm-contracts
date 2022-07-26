@@ -9,7 +9,7 @@ abstract contract Chef is Ownable {
     // This constant is used to remove the last 6 digits of METRIC to account for rounding issues
     uint256 public constant ACC_METRIC_PRECISION = 1e12;
 
-    bool private _rewardsActive;
+    bool private _rewardsActive = false;
     uint256 private _lastRewardBlock;
     uint256 private _lifetimeShareValue;
     uint256 private _totalAllocShares;
@@ -19,6 +19,9 @@ abstract contract Chef is Ownable {
     //------------------------------------------------------Setters
 
     function toggleRewards(bool isOn) public onlyOwner {
+        if (!isOn) {
+            setLifetimeShareValue();
+        }
         _rewardsActive = isOn;
         _setLastRewardBlock();
     }
@@ -91,7 +94,7 @@ abstract contract Chef is Ownable {
     }
 
     function accumulatedMetricDividedByShares(uint256 accumulatedWithPrecision) public view returns (uint256) {
-        if (getTotalAllocationShares() == 0) revert InvalidShareAmount();
+        if (getTotalAllocationShares() == 0) return 0;
         if (accumulatedWithPrecision == 0) return 0;
         return accumulatedWithPrecision / getTotalAllocationShares();
     }

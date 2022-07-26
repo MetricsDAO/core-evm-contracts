@@ -10,7 +10,6 @@ contract StakingChef is Chef {
     constructor(address metricTokenAddress) {
         setMetricToken(metricTokenAddress);
         setMetricPerBlock(4);
-        toggleRewards(false);
     }
 
     // --------------------------------------------------------------------- staking functions
