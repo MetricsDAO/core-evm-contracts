@@ -21,6 +21,7 @@ contract claimControllerTest is Test {
 
     uint256 questionId1;
     uint256 questionId2;
+    uint256 questionId3;
 
     MetricToken _metricToken;
     Vault _vault;
@@ -77,6 +78,7 @@ contract claimControllerTest is Test {
         _metricToken.approve(address(_vault), 200e18);
         questionId1 = _questionAPI.createQuestion("ipfs://XYZ", 25);
         questionId2 = _questionAPI.createQuestion("ipfs://XYZ", 15);
+        questionId3 = _questionAPI.createQuestion("ipfs://XYZ", 0);
 
         // Publish questions
         _questionAPI.publishQuestion(questionId1);
@@ -142,15 +144,6 @@ contract claimControllerTest is Test {
     function test_claimLimit() public {
         console.log("claim limit can not be exceeded");
         vm.startPrank(owner);
-        //create question
-        uint256 questionId3 = _questionAPI.createQuestion("ipfs://XYZ", 1);
-        //approve Metric
-        _metricToken.approve(address(_vault), _metricToken.balanceOf(owner));
-        _claimController.claim(questionId3);
-        vm.stopPrank();
-
-        //TODO shouldn't be other
-        vm.startPrank(other);
         vm.expectRevert(ClaimController.ClaimLimitReached.selector);
         _claimController.claim(questionId3);
     }
