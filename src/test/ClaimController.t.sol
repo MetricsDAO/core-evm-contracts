@@ -19,6 +19,9 @@ contract claimControllerTest is Test {
     address manager = address(0x0c);
     address treasury = address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c);
 
+    uint256 questionId1;
+    uint256 questionId2;
+
     MetricToken _metricToken;
     Vault _vault;
     QuestionAPI _questionAPI;
@@ -67,11 +70,42 @@ contract claimControllerTest is Test {
         _metricToken.approve(address(other), _metricToken.balanceOf(address(_vault)));
         _metricToken.approve(address(treasury), _metricToken.balanceOf(address(_vault)));
         vm.stopPrank();
+
+        //Create questions
+        vm.startPrank(other);
+        // Create a question to be initialized
+        _metricToken.approve(address(_vault), 200e18);
+        questionId1 = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        questionId2 = _questionAPI.createQuestion("ipfs://XYZ", 15);
+
+        // Publish questions
+        _questionAPI.publishQuestion(questionId1);
+        _questionAPI.publishQuestion(questionId2);
+        vm.stopPrank();
     }
 
     // ---------------------- General functionality testing
     function test_initializeQuestion() public {
         console.log("Question should be initialized");
+
+        vm.startPrank(other);
+        //Check question initialization
+        assertEq(_claimController.getClaimLimit(questionId1), 25);
+        vm.stopPrank();
+    }
+
+    function test_initializeMultipleQuestions() public {
+        console.log("It should initialize multiple questions");
+
+        vm.startPrank(other);
+        //Check question initialization
+        assertEq(_claimController.getClaimLimit(questionId1), 25);
+        assertEq(_claimController.getClaimLimit(questionId2), 15);
+        vm.stopPrank();
+    }
+
+    function test_claim() public {
+        console.log("owner should be able to claim");
 
         vm.startPrank(other);
         // Create a question to be initialized
@@ -80,9 +114,22 @@ contract claimControllerTest is Test {
 
         // Publish question
         _questionAPI.publishQuestion(questionId);
-
-        //Check question initialization
-        assertEq(_claimController.getClaimLimit(questionId), 25);
         vm.stopPrank();
+
+        vm.startPrank(owner);
+        //Should this be called through _questionApi.claimQuestion()?
+        _claimController.claim(questionId);
+        address[] memory claims = _claimController.getClaims(questionId);
+        assertEq(claims.length, 1);
+
+        console.log("owner should not be able to claim same question > 1x");
+        //claim same question for second time
+        _claimController.claim(questionId);
+        assertEq(claims.length, 1);
+        vm.stopPrank();
+    }
+
+    function test_answer() public {
+        console.log("owner should be able to answer");
     }
 }
