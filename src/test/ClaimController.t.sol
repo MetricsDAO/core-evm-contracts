@@ -127,9 +127,14 @@ contract claimControllerTest is Test {
 
     function test_canNotClaimTwice() public {
         console.log("owner should not be able to claim same question > 1x");
-        //claim same question for second time
+        vm.startPrank(owner);
+        //TODO currently a question can be claimed > once
         //TODO claim should revert if user tries to claim again
-        _claimController.claim(questionId);
+        //claim question
+        _claimController.claim(questionId1);
+        //claim same question for second time
+        _claimController.claim(questionId1);
+        address[] memory claims = _claimController.getClaims(questionId1);
         assertEq(claims.length, 1);
         vm.stopPrank();
     }
@@ -144,8 +149,8 @@ contract claimControllerTest is Test {
         _claimController.claim(questionId3);
         vm.stopPrank();
 
-        //TODO shouldn't be manager
-        vm.startPrank(manager);
+        //TODO shouldn't be other
+        vm.startPrank(other);
         vm.expectRevert(ClaimController.ClaimLimitReached.selector);
         _claimController.claim(questionId3);
     }
