@@ -124,16 +124,43 @@ contract claimControllerTest is Test {
 
         console.log("owner should not be able to claim same question > 1x");
         //claim same question for second time
+        //TODO claim should revert if user tries to claim again
         _claimController.claim(questionId);
         assertEq(claims.length, 1);
         vm.stopPrank();
     }
 
+    function test_claimLimit() public {
+        console.log("claim limit can not be exceeded");
+        vm.startPrank(owner);
+        //create question
+        uint256 questionId3 = _questionAPI.createQuestion("ipfs://XYZ", 1);
+        //approve Metric
+        _metricToken.approve(address(_vault), _metricToken.balanceOf(owner));
+        _claimController.claim(questionId3);
+        vm.stopPrank();
+
+        //TODO shouldn't be manager
+        vm.startPrank(manager);
+        vm.expectRevert(ClaimController.ClaimLimitReached.selector);
+        _claimController.claim(questionId3);
+    }
+
     function test_answer() public {
         console.log("owner should be able to answer");
         vm.startPrank(owner);
+        //TODO verify owner can't answer thier own question
         //TODO call from question API
         _claimController.claim(questionId1);
+        _claimController.answer(questionId1, "ipfs://XYZ/answer");
+        //_claimController.getAnswers(questionId1);
+        vm.stopPrank();
+    }
+
+    function test_answerClaims() public {
+        console.log("Should revert when question has not been claimed");
+        vm.startPrank(owner);
+        vm.expectRevert(ClaimController.NeedClaimToAnswer.selector);
         _claimController.answer(questionId1, "ipfs://XYZ/answer");
         vm.stopPrank();
     }
