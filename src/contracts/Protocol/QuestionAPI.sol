@@ -3,20 +3,49 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BountyQuestion.sol";
+
+// Interfaces
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
+
+// Modifiers
 import "./modifiers/NFTLocked.sol";
 
-// TODO a lot of talk about "admins" -> solve that
+/**
+ * @title MetricsDAO question API
+ * @author MetricsDAO team
+ * @notice This contract is an API for MetricsDAO that allows for interacting with questions & challenges.
+ */
+
 contract QuestionAPI is Ownable, NFTLocked {
     BountyQuestion private _question;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
 
+    /// @notice Keeps track of the id of the most recent question created.
     uint256 public currentQuestionId;
 
+    //------------------------------------------------------ ERRORS
+
+    /// @notice Throw if analysts tries to claim a question that is not published.
+    error ClaimsNotOpen();
+    /// @notice Throw if a question has not reached the benchmark for being published (yet).
+    error NotAtBenchmark();
+    /// @notice Throw if address is equal to address(0).
+    error InvalidAddress();
+
+    //------------------------------------------------------ EVENTS
+
+    //------------------------------------------------------ CONSTRUCTOR
+    /**
+     * @notice Constructor sets the question state controller, claim controller, and action cost controller.
+     * @param bountyQuestion BountyQuestion contract instance.
+     * @param questionStateController The question state controller address.
+     * @param claimController The claim controller address.
+     * @param costController The action cost controller address.
+     */
     constructor(
         address bountyQuestion,
         address questionStateController,
@@ -29,16 +58,12 @@ contract QuestionAPI is Ownable, NFTLocked {
         _costController = IActionCostController(costController);
     }
 
-    // TODO admin-only quesiton state "BAD" which basically ends the lifecycle
-    // TODO add "unvote"
-
-    // TODO lock metric
-    // uint8?
+    //------------------------------------------------------ FUNCTIONS
 
     /**
-     * @notice Creates a question
-     * @param uri The IPFS hash of the question
-     * @param claimLimit The limit for the amount of people that can claim the question
+     * @notice Creates a question.
+     * @param uri The IPFS hash of the question.
+     * @param claimLimit The limit for the amount of people that can claim the question.
      * @return The question id
      */
     function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
@@ -51,6 +76,8 @@ contract QuestionAPI is Ownable, NFTLocked {
         // Initialize the question
         _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
+
+        // Update the current question id
         currentQuestionId = questionId;
         return questionId;
     }
@@ -62,10 +89,6 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @return questionId The question id
      */
     function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
-        // Pay to create a question
-        // _costController.payForCreateChallenge(msg.sender); ? Not sure if we want this -- doubt it
-        // keep as questionId or should be challengeId?
-
         // Mint a new question
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
@@ -73,73 +96,106 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
 
-        // Publish the question (make it a challenge)
+        // Publish the question
         _questionStateController.publish(questionId);
 
         return questionId;
     }
 
-    // TODO lock metric
     /**
-     * @notice Upvotes a question
-     * @param questionId The questionId of the question to upvote
-     * @param amount Metric amount to put behind the vote
-     * We can manipulate this very easily -- think of a way to make it secure
+     * @notice Upvotes a question.
+     * @param questionId The questionId of the question to upvote.
+     * @param amount Metric amount to put behind the vote.
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
         _questionStateController.voteFor(_msgSender(), questionId, amount);
     }
 
     /**
-     * @notice Unvotes a question
-     * @param questionId The questionId of the question to upvote
+     * @notice Unvotes a question.
+     * @param questionId The questionId of the question to upvote.
      */
     function unvoteQuestion(uint256 questionId) public {
         _questionStateController.unvoteFor(_msgSender(), questionId);
     }
 
+    /**
+     * @notice Publishes a question and allows it to be claimed and receive answers.
+     * @param questionId The questionId of the question to publish
+     */
     function publishQuestion(uint256 questionId) public {
         uint256 someBenchmark = 1;
+        // Check that benchmark is met
         if (someBenchmark != 1) revert NotAtBenchmark();
+
+        // Publish the question
         _questionStateController.publish(questionId);
     }
 
-    // TODO lock metric
+    /**
+     * @notice Allows anm analyst to claim a question and submit an answer before the dealine.
+     * @param questionId The questionId of the question to disqualify
+     */
     function claimQuestion(uint256 questionId) public {
-        // TODO it sucks to do an int state check here, and I don't want a getter for every state
+        // Check if the question is published and is therefore claimable
         if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
 
+        // Claim the question
         _claimController.claim(questionId);
     }
 
-    // TODO lock metric
+    /**
+     * @notice Allows a claimed question to be answered by an analyst.
+     * @param questionId The questionId of the question to answer.
+     * @param answerURL THE IPFS hash of the answer.
+     */
     function answerQuestion(uint256 questionId, string calldata answerURL) public {
         _claimController.answer(questionId, answerURL);
     }
 
+    /**
+     * @notice Allows the owner to disqualify a question.
+     * @param questionId The questionId of the question to disqualify.
+     */
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
         _questionStateController.setDisqualifiedState(questionId);
     }
 
-    //------------------------------------------------------ Errors
-    error ClaimsNotOpen();
-    error NotAtBenchmark();
+    //------------------------------------------------------ OWNER FUNCTIONS
 
-    //------------------------------------------------------ Proxy
-
+    /**
+     * @notice Allows the owner to set the BountyQuestion contract address.
+     * @param newQuestion The address of the new BountyQuestion contract.
+     */
     function setQuestionProxy(address newQuestion) public onlyOwner {
+        if (newQuestion == address(0)) revert InvalidAddress();
         _question = BountyQuestion(newQuestion);
     }
 
+    /**
+     * @notice Allows the owner to set the QuestionStateController contract address.
+     * @param newQuestion The address of the new BountyQuestion contract.
+     */
     function setQuestionStateController(address newQuestion) public onlyOwner {
+        if (newQuestion == address(0)) revert InvalidAddress();
         _questionStateController = IQuestionStateController(newQuestion);
     }
 
+    /**
+     * @notice Allows the owner to set the ClaimController contract address.
+     * @param newQuestion The address of the new ClaimController contract.
+     */
     function setClaimController(address newQuestion) public onlyOwner {
+        if (newQuestion == address(0)) revert InvalidAddress();
         _claimController = IClaimController(newQuestion);
     }
 
+    /**
+     * @notice Allows the owner to set the CostController contract address.
+     * @param newCost The address of the new CostController contract.
+     */
     function setCostController(address newCost) public onlyOwner {
+        if (newCost == address(0)) revert InvalidAddress();
         _costController = IActionCostController(newCost);
     }
 }
