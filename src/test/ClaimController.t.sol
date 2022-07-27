@@ -131,5 +131,10 @@ contract claimControllerTest is Test {
 
     function test_answer() public {
         console.log("owner should be able to answer");
+        vm.startPrank(owner);
+        //TODO call from question API
+        _claimController.claim(questionId1);
+        _claimController.answer(questionId1, "ipfs://XYZ/answer");
+        vm.stopPrank();
     }
 }
