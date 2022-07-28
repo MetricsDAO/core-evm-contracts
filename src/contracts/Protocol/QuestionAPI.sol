@@ -141,7 +141,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
 
         // Claim the question
-        _claimController.claim(questionId);
+        _claimController.claim(_msgSender(), questionId);
     }
 
     /**
@@ -150,7 +150,7 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @param answerURL THE IPFS hash of the answer.
      */
     function answerQuestion(uint256 questionId, string calldata answerURL) public {
-        _claimController.answer(questionId, answerURL);
+        _claimController.answer(_msgSender(), questionId, answerURL);
     }
 
     /**

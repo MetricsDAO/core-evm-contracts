@@ -19,6 +19,7 @@ contract QuestionAPITest is Test {
     // Accounts
     address owner = address(0x0a);
     address other = address(0x0b);
+    address other2 = address(0x0e);
     address manager = address(0x0c);
     address treasury = address(0x0d);
 
@@ -59,6 +60,7 @@ contract QuestionAPITest is Test {
         _vault.setCostController(address(_costController));
 
         _metricToken.transfer(other, 100e18);
+        _metricToken.transfer(other2, 100e18);
 
         _mockAuthNFT.mintTo(manager);
 
@@ -69,7 +71,7 @@ contract QuestionAPITest is Test {
 
     function test_InitialMint() public {
         console.log("Should correctly distribute initial mint");
-        assertEq(_metricToken.balanceOf(owner), 1000000000e18 - 100e18);
+        assertEq(_metricToken.balanceOf(owner), 1000000000e18 - 200e18);
     }
 
     function test_CreateTwoQuestionsWithChangingActionCost() public {
@@ -277,6 +279,107 @@ contract QuestionAPITest is Test {
         vm.prank(other);
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
         _questionAPI.createChallenge("ipfs://XYZ", 25);
+    }
+
+    function test_ClaimQuestion() public {
+        console.log("A user should should be able to claim a challenge.");
+
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Publish the question
+        _questionAPI.publishQuestion(questionId);
+
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+
+        // Verify the right user has claimed the question
+        assertEq(_claimController.getClaims(questionId)[0], other);
+        vm.stopPrank();
+    }
+
+    function test_CannotClaimQuestionThatIsNotPublished() public {
+        console.log("A user shouldnt be able to claim an unpublished question");
+
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Attempt claim
+        vm.expectRevert(QuestionAPI.ClaimsNotOpen.selector);
+        _questionAPI.claimQuestion(questionId);
+        vm.stopPrank();
+    }
+
+    function test_CannotClaimMoreThanTheClaimLimit() public {
+        console.log("A user shouldnt be able to claim a question that has reached its limit");
+
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 1);
+
+        // Publish the question
+        _questionAPI.publishQuestion(questionId);
+
+        // Attempt claim
+        _questionAPI.claimQuestion(questionId);
+
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        _metricToken.approve(address(_vault), 100e18);
+
+        // Attempt claim again
+        vm.expectRevert(ClaimController.ClaimLimitReached.selector);
+        _questionAPI.claimQuestion(questionId);
+    }
+
+    function test_UserCannotClaimQuestionMultipleTimes() public {
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        // Publish the question
+        _questionAPI.publishQuestion(questionId);
+
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+
+        // Same user tries to claim again
+        vm.expectRevert(ClaimController.AlreadyClaimed.selector);
+        _questionAPI.claimQuestion(questionId);
+
+        vm.stopPrank();
+    }
+
+    function test_verifyClaimingAccounting() public {
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        // Publish the question
+        _questionAPI.publishQuestion(questionId);
+
+        // Verify that everything is updated correctly
+        _claimController.getClaimDataForUser(questionId, other);
+
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+
+        // Verify that everything is updated correctly
+        _claimController.getClaimDataForUser(questionId, other);
+
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        _metricToken.approve(address(_vault), 100e18);
+
+        _claimController.getClaimDataForUser(questionId, other2);
+        _questionAPI.claimQuestion(questionId);
+
+        // Verify that everything is updated correctly
+        _claimController.getClaimDataForUser(questionId, other2);
     }
     // --------------------- Testing for access controlls
 }
