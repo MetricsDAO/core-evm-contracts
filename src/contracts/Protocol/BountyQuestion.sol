@@ -25,7 +25,7 @@ contract BountyQuestion is Ownable, OnlyApi {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        questions[questionId] = QuestionData({tokenId: questionId, url: uri});
+        questions[questionId] = QuestionData({author: author, tokenId: questionId, url: uri});
         authors[author].push(questionId);
         return questionId;
     }
@@ -40,7 +40,16 @@ contract BountyQuestion is Ownable, OnlyApi {
         return ret;
     }
 
+    function getAuthorOfQuestion(uint256 questionId) public view returns (address) {
+        return questions[questionId].author;
+    }
+
+    function getMostRecentQuestion() public view returns (uint256) {
+        return _questionIdCounter.current();
+    }
+
     struct QuestionData {
+        address author;
         uint256 tokenId;
         string url;
     }
