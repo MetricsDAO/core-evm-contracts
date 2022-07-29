@@ -40,8 +40,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 amount
     ) public onlyApi onlyState(STATE.VOTING, questionId) {
         // Checks
-        // TODO check if creator can upvote their own ?
-        // TODO limit the max amount of token they can use?
         if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
 
         // Effects

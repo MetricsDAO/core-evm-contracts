@@ -2,13 +2,53 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+// Interfaces
 import "./interfaces/IClaimController.sol";
+
+// Modifiers
 import "./modifiers/OnlyAPI.sol";
 
 contract ClaimController is Ownable, IClaimController, OnlyApi {
+    /// @notice Keeps track of claim limits per question
     mapping(uint256 => uint256) public claimLimits;
+
+    /// @notice maps answers to the question they belong to
     mapping(uint256 => mapping(address => Answer)) public answers;
+
+    /// @notice maps all claimers to a question
     mapping(uint256 => address[]) public claims;
+
+    //------------------------------------------------------ ERRORS
+
+    /// @notice Throw if user tries to claim a question that is past its limit
+    error ClaimLimitReached();
+
+    /// @notice Throw if a analyst tries to answer a question that it has not claimed
+    error NeedClaimToAnswer();
+
+    /// @notice Throw if analyst tries to claim a question multiple times
+    error AlreadyClaimed();
+
+    //------------------------------------------------------ STRUCTS
+
+    struct Answer {
+        STATE state;
+        address author;
+        string answerURL;
+        uint256 finalGrade;
+        string scoringMetaDataURI; // store heuristics and such on ipfs
+    }
+
+    // ------------------------------------------------------ ENUMS
+
+    enum STATE {
+        UNINT,
+        CLAIMED,
+        ANSWERED
+    }
+
+    // ------------------------------------------------------ FUNCTIONS
 
     /**
      * @notice Initializes a question to receive claims
@@ -19,20 +59,23 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         claimLimits[questionId] = claimLimit;
     }
 
-    function claim(uint256 questionId) public onlyOwner {
+    function claim(address user, uint256 questionId) public onlyApi {
         if (claims[questionId].length >= claimLimits[questionId]) revert ClaimLimitReached();
+        if (answers[questionId][user].author == user) revert AlreadyClaimed();
 
-        claims[questionId].push(_msgSender());
-        Answer memory _answer = Answer({state: STATE.CLAIMED, author: _msgSender(), answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
-        answers[questionId][_msgSender()] = _answer;
+        claims[questionId].push(user);
+        Answer memory _answer = Answer({state: STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
+        answers[questionId][user] = _answer;
     }
 
-    function answer(uint256 questionId, string calldata answerURL) public onlyOwner {
-        if (answers[questionId][_msgSender()].state != STATE.CLAIMED) revert NeedClaimToAnswer();
-        answers[questionId][_msgSender()].answerURL = answerURL;
+    function answer(
+        address user,
+        uint256 questionId,
+        string calldata answerURL
+    ) public onlyOwner {
+        if (answers[questionId][user].state != STATE.CLAIMED) revert NeedClaimToAnswer();
+        answers[questionId][user].answerURL = answerURL;
     }
-
-    //------------------------------------------------------ View Functions
 
     function getClaims(uint256 questionId) public view returns (address[] memory _claims) {
         return claims[questionId];
@@ -42,25 +85,7 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         return claimLimits[questionId];
     }
 
-    //------------------------------------------------------ Errors
-    error ClaimLimitReached();
-    error NeedClaimToAnswer();
-
-    //------------------------------------------------------ Structs
-
-    struct Answer {
-        STATE state;
-        address author;
-        string answerURL;
-        // uint256 grade; //4 heuristics per question, multiple people review, and then aggregate is calculated
-        // TODO let's prototype a demo of this
-        uint256 finalGrade;
-        string scoringMetaDataURI; // store heuristics and such on ipfs
-    }
-
-    enum STATE {
-        UNINT,
-        CLAIMED,
-        ANSWERED
+    function getClaimDataForUser(uint256 questionId, address user) public view returns (Answer memory _answer) {
+        return answers[questionId][user];
     }
 }
