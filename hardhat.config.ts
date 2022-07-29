@@ -66,6 +66,9 @@ const config: HardhatUserConfig = {
     deployer: {
       default: 0,
     },
+    treasury: {
+      default: 1,
+    },
   },
 };
 
