@@ -39,7 +39,7 @@ contract QuestionAPITest is Test {
     event ChallengeCreated(uint256 indexed questionId, address indexed challengeCreator);
 
     /// @notice Emitted when a question is published.
-    event QuestionPublished(uint256 indexed questionId);
+    event QuestionPublished(uint256 indexed questionId, address indexed publisher);
 
     /// @notice Emitted when a question is claimed.
     event QuestionClaimed(uint256 indexed questionId, address indexed claimant);
@@ -48,7 +48,7 @@ contract QuestionAPITest is Test {
     event QuestionAnswered(uint256 indexed questionId, address indexed answerer);
 
     /// @notice Emitted when a question is disqualified.
-    event QuestionDisqualified(uint256 indexed questionId);
+    event QuestionDisqualified(uint256 indexed questionId, address indexed disqualifier);
 
     /// @notice Emitted when a question is upvoted.
     event QuestionUpvoted(uint256 indexed questionId, address indexed voter);
@@ -429,7 +429,7 @@ contract QuestionAPITest is Test {
 
         // Publish the question
         vm.expectEmit(true, true, false, false);
-        emit QuestionPublished(questionId);
+        emit QuestionPublished(questionId, address(other));
         _questionAPI.publishQuestion(questionId);
 
         // Claim the question
@@ -452,7 +452,7 @@ contract QuestionAPITest is Test {
 
         // Disqualify question
         vm.expectEmit(true, false, false, false);
-        emit QuestionDisqualified(questionId);
+        emit QuestionDisqualified(questionId, address(owner));
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(questionId);
     }

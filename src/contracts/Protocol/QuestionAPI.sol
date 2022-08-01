@@ -45,7 +45,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     event ChallengeCreated(uint256 indexed questionId, address indexed challengeCreator);
 
     /// @notice Emitted when a question is published.
-    event QuestionPublished(uint256 indexed questionId);
+    event QuestionPublished(uint256 indexed questionId, address indexed publisher);
 
     /// @notice Emitted when a question is claimed.
     event QuestionClaimed(uint256 indexed questionId, address indexed claimant);
@@ -54,7 +54,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     event QuestionAnswered(uint256 indexed questionId, address indexed answerer);
 
     /// @notice Emitted when a question is disqualified.
-    event QuestionDisqualified(uint256 indexed questionId);
+    event QuestionDisqualified(uint256 indexed questionId, address indexed disqualifier);
 
     /// @notice Emitted when a question is upvoted.
     event QuestionUpvoted(uint256 indexed questionId, address indexed voter);
@@ -164,7 +164,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         // Publish the question
         _questionStateController.publish(questionId);
 
-        emit QuestionPublished(questionId);
+        emit QuestionPublished(questionId, _msgSender());
     }
 
     /**
@@ -199,7 +199,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
         _questionStateController.setDisqualifiedState(questionId);
 
-        emit QuestionDisqualified(questionId);
+        emit QuestionDisqualified(questionId, _msgSender());
     }
 
     //------------------------------------------------------ OWNER FUNCTIONS
