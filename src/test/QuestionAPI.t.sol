@@ -33,6 +33,30 @@ contract QuestionAPITest is Test {
     Vault _vault;
     NFT _mockAuthNFT;
 
+    /// @notice Emitted when a question is created.
+    event QuestionCreated(uint256 indexed questionId, address indexed creator);
+
+    /// @notice Emitted when a challenge is created.
+    event ChallengeCreated(uint256 indexed questionId, address indexed challengeCreator);
+
+    /// @notice Emitted when a question is published.
+    event QuestionPublished(uint256 indexed questionId, address indexed publisher);
+
+    /// @notice Emitted when a question is claimed.
+    event QuestionClaimed(uint256 indexed questionId, address indexed claimant);
+
+    /// @notice Emitted when a question is answered.
+    event QuestionAnswered(uint256 indexed questionId, address indexed answerer);
+
+    /// @notice Emitted when a question is disqualified.
+    event QuestionDisqualified(uint256 indexed questionId, address indexed disqualifier);
+
+    /// @notice Emitted when a question is upvoted.
+    event QuestionUpvoted(uint256 indexed questionId, address indexed voter);
+
+    /// @notice Emitted when a question is unvoted.
+    event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
+
     function setUp() public {
         // Labeling
         vm.label(owner, "Owner");
@@ -412,6 +436,57 @@ contract QuestionAPITest is Test {
 
         // Verify that everything is updated correctly
         _claimController.getClaimDataForUser(questionId, other2);
+    }
+
+    function test_VerifyEventsEmitted() public {
+        console.log("All events should be emitted correctly.");
+
+        vm.startPrank(other);
+        _metricToken.approve(address(_vault), 100e18);
+
+        // Create a question
+        vm.expectEmit(true, true, false, true);
+        emit QuestionCreated(1, address(other));
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        // Upvote a question
+        vm.expectEmit(true, true, false, false);
+        emit QuestionUpvoted(1, address(other));
+        _questionAPI.upvoteQuestion(questionId, 5e18);
+
+        // Unvote a question
+        vm.expectEmit(true, true, false, false);
+        emit QuestionUnvoted(1, address(other));
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Publish the question
+        vm.expectEmit(true, true, false, false);
+        emit QuestionPublished(questionId, address(other));
+        _questionAPI.publishQuestion(questionId);
+
+        // Claim the question
+        vm.expectEmit(true, true, false, false);
+        emit QuestionClaimed(questionId, address(other));
+        _questionAPI.claimQuestion(questionId);
+
+        // Question answered
+        vm.stopPrank();
+
+        // Add manager
+        vm.prank(owner);
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFT));
+
+        // Create challenge
+        vm.expectEmit(true, true, false, false);
+        emit ChallengeCreated(2, address(manager));
+        vm.prank(manager);
+        _questionAPI.createChallenge("ipfs://XYZ", 5);
+
+        // Disqualify question
+        vm.expectEmit(true, false, false, false);
+        emit QuestionDisqualified(questionId, address(owner));
+        vm.prank(owner);
+        _questionAPI.disqualifyQuestion(questionId);
     }
     // --------------------- Testing for access controlls
 }
