@@ -264,6 +264,9 @@ describe("Question API Contract", function () {
     });
 
     it("should get latest based on offset", async () => {
+      const allquestionsbyLength = 8;
+      const allquestionsbyLengthAgain = 5;
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 1);
       await questionIDtx.wait();
 
@@ -293,10 +296,10 @@ describe("Question API Contract", function () {
       const latestQuestion = await bountyQuestion.getMostRecentQuestion();
 
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
-      expect(allquestionsByState.length - 1).to.equal(8);
+      expect(allquestionsByState.length).to.equal(allquestionsbyLength);
 
       const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
-      expect(allquestionsByStateAgain.length - 1).to.equal(5);
+      expect(allquestionsByStateAgain.length).to.equal(allquestionsbyLengthAgain);
     });
   });
 });
