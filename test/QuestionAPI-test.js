@@ -226,11 +226,10 @@ describe("Question API Contract", function () {
         .createQuestion("https://ipfs.io/ipfs/Qma89pKr7G8CpMeWa1rS7SRWLyqmyAheihoZMovQXkWoid", 5);
       await questionIDtx1.wait();
 
-      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://", 5);
-      await questionIDtx2.wait();
+      const questionIDtx2 = await questionAPI.connect(xmetricaddr1).callStatic.createQuestion("ipfs://", 5);
 
-      const latestQuestion = await questionAPI.currentQuestionId();
-      expect(latestQuestion).to.equal(BN(3));
+      expect(questionIDtx2).to.equal(3);
+
     });
 
     it("should set up a new way to get all questions by state", async () => {
@@ -253,12 +252,9 @@ describe("Question API Contract", function () {
       const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
 
       await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
-      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"));
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("7"));
 
-      // can upvote your own question
-      await questionAPI.connect(xmetricaddr1).upvoteQuestion(latestQuestionID, utils.parseEther("6"));
-
-      const latestQuestion = await questionAPI.currentQuestionId();
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
 
       await questionAPI.disqualifyQuestion(new BN(3));
 
@@ -268,6 +264,9 @@ describe("Question API Contract", function () {
     });
 
     it("should get latest based on offset", async () => {
+      const allquestionsbyLength = 8;
+      const allquestionsbyLengthAgain = 5;
+
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 1);
       await questionIDtx.wait();
 
@@ -294,13 +293,13 @@ describe("Question API Contract", function () {
       const questionIDtx7 = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs://last", 1);
       await questionIDtx7.wait();
 
-      const latestQuestion = await questionAPI.currentQuestionId();
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
 
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
-      expect(allquestionsByState.length).to.equal(8);
+      expect(allquestionsByState.length).to.equal(allquestionsbyLength);
 
       const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
-      expect(allquestionsByStateAgain.length).to.equal(5);
+      expect(allquestionsByStateAgain.length).to.equal(allquestionsbyLengthAgain);
     });
   });
 });

@@ -24,9 +24,6 @@ contract QuestionAPI is Ownable, NFTLocked {
     IClaimController private _claimController;
     IActionCostController private _costController;
 
-    /// @notice Keeps track of the id of the most recent question created.
-    uint256 public currentQuestionId;
-
     //------------------------------------------------------ ERRORS
 
     /// @notice Throw if analysts tries to claim a question that is not published.
@@ -35,6 +32,8 @@ contract QuestionAPI is Ownable, NFTLocked {
     error NotAtBenchmark();
     /// @notice Throw if address is equal to address(0).
     error InvalidAddress();
+    /// @notice Throw if user tries to vote for own question
+    error CannotVoteForOwnQuestion();
 
     //------------------------------------------------------ EVENTS
 
@@ -63,6 +62,7 @@ contract QuestionAPI is Ownable, NFTLocked {
     event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
 
     //------------------------------------------------------ CONSTRUCTOR
+
     /**
      * @notice Constructor sets the question state controller, claim controller, and action cost controller.
      * @param bountyQuestion BountyQuestion contract instance.
@@ -101,11 +101,8 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
 
-        // Update the current question id
-        currentQuestionId = questionId;
-
         emit QuestionCreated(questionId, _msgSender());
-
+        
         return questionId;
     }
 
@@ -137,6 +134,7 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @param amount Metric amount to put behind the vote.
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
+        if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotVoteForOwnQuestion();
         _questionStateController.voteFor(_msgSender(), questionId, amount);
 
         emit QuestionUpvoted(questionId, _msgSender());
