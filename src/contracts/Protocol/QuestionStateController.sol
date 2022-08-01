@@ -99,6 +99,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;
+        currentQuestionId -= 1;
         if (currentQuestionId > offset) {
             limit = currentQuestionId - offset;
             sizeOfArray = (currentQuestionId - offset) + 1;
