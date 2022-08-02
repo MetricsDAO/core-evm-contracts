@@ -150,8 +150,10 @@ contract Vault is Ownable, OnlyCostController {
             metric.transfer(_msgSender(), toWithdraw);
 
             emit Withdraw(_msgSender(), toWithdraw);
-        } else if (stage == 2) {} else {
-            revert InvalidStage();
+        } else if (stage == 1) {
+            // if (submissionPeriod == active) revert SubmissionPeriodActive();
+        } else {
+            // if (reviewPeriod == active) revert ReviewPeriodActive();
         }
     }
 
