@@ -114,58 +114,58 @@ contract vaultTest is Test {
         vm.stopPrank();
     }
 
-    function test_slashMetric() public {
-        console.log("Should slash question when appropriate");
-        vm.startPrank(other);
-        // Create question
-        _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
-        vm.stopPrank();
+    // function test_slashMetric() public {
+    //     console.log("Should slash question when appropriate");
+    //     vm.startPrank(other);
+    //     // Create question
+    //     _metricToken.approve(address(_vault), 100e18);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     vm.stopPrank();
 
-        //slash Metric
-        vm.startPrank(owner);
-        _vault.slashMetric(questionId);
-        vm.stopPrank();
+    //     //slash Metric
+    //     vm.startPrank(owner);
+    //     _vault.slashMetric(questionId);
+    //     vm.stopPrank();
 
-        // Check that Metric is slashed
-        assertEq(_metricToken.balanceOf(other), 99.5e18);
-        // Check treasury Metric balance
-        assertEq(_metricToken.balanceOf(treasury), 0.5e18);
-    }
+    //     // Check that Metric is slashed
+    //     assertEq(_metricToken.balanceOf(other), 99.5e18);
+    //     // Check treasury Metric balance
+    //     assertEq(_metricToken.balanceOf(treasury), 0.5e18);
+    // }
 
-    // ---------------------- Access control testing
-    function test_onlyOwnerCanSlashMetric() public {
-        console.log("Only owner should be able to slash a question");
+    // // ---------------------- Access control testing
+    // function test_onlyOwnerCanSlashMetric() public {
+    //     console.log("Only owner should be able to slash a question");
 
-        vm.startPrank(other);
-        // Create question
-        _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     vm.startPrank(other);
+    //     // Create question
+    //     _metricToken.approve(address(_vault), 100e18);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
 
-        //slash Metric
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.slashMetric(questionId);
-        vm.stopPrank();
-    }
+    //     //slash Metric
+    //     vm.expectRevert("Ownable: caller is not the owner");
+    //     _vault.slashMetric(questionId);
+    //     vm.stopPrank();
+    // }
 
-    function test_cannotSlashSameQuestionTwice() public {
-        console.log("We can only slash a question once.");
+    // function test_cannotSlashSameQuestionTwice() public {
+    //     console.log("We can only slash a question once.");
 
-        vm.startPrank(other);
-        // Create question
-        _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
-        vm.stopPrank();
+    //     vm.startPrank(other);
+    //     // Create question
+    //     _metricToken.approve(address(_vault), 100e18);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     vm.stopPrank();
 
-        vm.startPrank(owner);
-        // Slash
-        _vault.slashMetric(questionId);
+    //     vm.startPrank(owner);
+    //     // Slash
+    //     _vault.slashMetric(questionId);
 
-        // Slash again
-        vm.expectRevert(Vault.AlreadySlashed.selector);
-        _vault.slashMetric(questionId);
-        vm.stopPrank();
-    }
+    //     // Slash again
+    //     vm.expectRevert(Vault.AlreadySlashed.selector);
+    //     _vault.slashMetric(questionId);
+    //     vm.stopPrank();
+    // }
 
     function test_onlyOwnerCanSetSensitiveAddresses() public {
         console.log("Only owner should be able to set sensitive addresses");
