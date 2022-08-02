@@ -24,9 +24,6 @@ contract QuestionAPI is Ownable, NFTLocked {
     IClaimController private _claimController;
     IActionCostController private _costController;
 
-    /// @notice Keeps track of the id of the most recent question created.
-    uint256 public currentQuestionId;
-
     //------------------------------------------------------ ERRORS
 
     /// @notice Throw if analysts tries to claim a question that is not published.
@@ -35,10 +32,37 @@ contract QuestionAPI is Ownable, NFTLocked {
     error NotAtBenchmark();
     /// @notice Throw if address is equal to address(0).
     error InvalidAddress();
+    /// @notice Throw if user tries to vote for own question
+    error CannotVoteForOwnQuestion();
 
     //------------------------------------------------------ EVENTS
 
+    /// @notice Emitted when a question is created.
+    event QuestionCreated(uint256 indexed questionId, address indexed creator);
+
+    /// @notice Emitted when a challenge is created.
+    event ChallengeCreated(uint256 indexed questionId, address indexed challengeCreator);
+
+    /// @notice Emitted when a question is published.
+    event QuestionPublished(uint256 indexed questionId, address indexed publisher);
+
+    /// @notice Emitted when a question is claimed.
+    event QuestionClaimed(uint256 indexed questionId, address indexed claimant);
+
+    /// @notice Emitted when a question is answered.
+    event QuestionAnswered(uint256 indexed questionId, address indexed answerer);
+
+    /// @notice Emitted when a question is disqualified.
+    event QuestionDisqualified(uint256 indexed questionId, address indexed disqualifier);
+
+    /// @notice Emitted when a question is upvoted.
+    event QuestionUpvoted(uint256 indexed questionId, address indexed voter);
+
+    /// @notice Emitted when a question is unvoted.
+    event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
+
     //------------------------------------------------------ CONSTRUCTOR
+
     /**
      * @notice Constructor sets the question state controller, claim controller, and action cost controller.
      * @param bountyQuestion BountyQuestion contract instance.
@@ -77,8 +101,8 @@ contract QuestionAPI is Ownable, NFTLocked {
         _questionStateController.initializeQuestion(questionId, uri);
         _claimController.initializeQuestion(questionId, claimLimit);
 
-        // Update the current question id
-        currentQuestionId = questionId;
+        emit QuestionCreated(questionId, _msgSender());
+        
         return questionId;
     }
 
@@ -99,6 +123,8 @@ contract QuestionAPI is Ownable, NFTLocked {
         // Publish the question
         _questionStateController.publish(questionId);
 
+        emit ChallengeCreated(questionId, _msgSender());
+
         return questionId;
     }
 
@@ -108,7 +134,10 @@ contract QuestionAPI is Ownable, NFTLocked {
      * @param amount Metric amount to put behind the vote.
      */
     function upvoteQuestion(uint256 questionId, uint256 amount) public {
+        if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotVoteForOwnQuestion();
         _questionStateController.voteFor(_msgSender(), questionId, amount);
+
+        emit QuestionUpvoted(questionId, _msgSender());
     }
 
     /**
@@ -117,6 +146,8 @@ contract QuestionAPI is Ownable, NFTLocked {
      */
     function unvoteQuestion(uint256 questionId) public {
         _questionStateController.unvoteFor(_msgSender(), questionId);
+
+        emit QuestionUnvoted(questionId, _msgSender());
     }
 
     /**
@@ -130,6 +161,8 @@ contract QuestionAPI is Ownable, NFTLocked {
 
         // Publish the question
         _questionStateController.publish(questionId);
+
+        emit QuestionPublished(questionId, _msgSender());
     }
 
     /**
@@ -142,6 +175,8 @@ contract QuestionAPI is Ownable, NFTLocked {
 
         // Claim the question
         _claimController.claim(_msgSender(), questionId);
+
+        emit QuestionClaimed(questionId, _msgSender());
     }
 
     /**
@@ -151,6 +186,8 @@ contract QuestionAPI is Ownable, NFTLocked {
      */
     function answerQuestion(uint256 questionId, string calldata answerURL) public {
         _claimController.answer(_msgSender(), questionId, answerURL);
+
+        emit QuestionAnswered(questionId, _msgSender());
     }
 
     /**
@@ -159,6 +196,8 @@ contract QuestionAPI is Ownable, NFTLocked {
      */
     function disqualifyQuestion(uint256 questionId) public onlyOwner {
         _questionStateController.setDisqualifiedState(questionId);
+
+        emit QuestionDisqualified(questionId, _msgSender());
     }
 
     //------------------------------------------------------ OWNER FUNCTIONS
