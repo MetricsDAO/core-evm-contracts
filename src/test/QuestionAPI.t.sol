@@ -105,7 +105,7 @@ contract QuestionAPITest is Test {
         assertEq(_claimController.getClaimLimit(questionIdTwo), 15);
 
         // Assert that accounting has been done correctly
-        assertEq(_costController.getLockedPerUser(other), 10e18);
+        assertEq(_vault.getLockedPerUser(other), 10e18);
 
         vm.stopPrank();
     }

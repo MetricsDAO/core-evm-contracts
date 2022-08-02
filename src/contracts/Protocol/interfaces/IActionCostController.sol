@@ -5,6 +5,4 @@ interface IActionCostController {
     function payForCreateQuestion(address _user, uint256 questionId) external;
 
     function setCreateCost(uint256 _cost) external;
-
-    function getLockedPerUser(address _user) external view returns (uint256);
 }

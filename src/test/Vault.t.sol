@@ -109,7 +109,7 @@ contract vaultTest is Test {
         _questionAPI.publishQuestion(questionId);
 
         //withdraw Metric
-        _vault.withdrawMetric(questionId);
+        _vault.withdrawMetric(questionId, 0);
         assertEq(_vault.getMetricTotalLockedBalance(), 0);
         vm.stopPrank();
     }
@@ -219,7 +219,7 @@ contract vaultTest is Test {
 
         //withdraw Metric
         vm.expectRevert(Vault.QuestionNotPublished.selector);
-        _vault.withdrawMetric(questionId);
+        _vault.withdrawMetric(questionId, 0);
         vm.stopPrank();
     }
 
@@ -235,11 +235,11 @@ contract vaultTest is Test {
         _questionAPI.publishQuestion(questionId);
 
         // Withdraw Metric
-        _vault.withdrawMetric(questionId);
+        _vault.withdrawMetric(questionId, 0);
 
         // Withdraw again
-        vm.expectRevert(Vault.NoMetricToWithdraw.selector);
-        _vault.withdrawMetric(questionId);
+        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        _vault.withdrawMetric(questionId, 0);
 
         vm.stopPrank();
     }
