@@ -23,15 +23,21 @@ contract Vault is Ownable, OnlyCostController {
     /// @notice Keeps track of the quantity of deposits per user.
     mapping(address => uint256[]) public depositsByWithdrawers;
 
+    /// @notice Keeps track of the amount of METRIC locked per question
+    mapping(uint256 => uint256) public lockedMetricByQuestion;
+
+    /// @notice Keeps track of total amount in vault for a given user.
+    mapping(address => uint256) public totalLockedInVaults;
+
     /// @notice Keeps track of the quantity of withdrawals per user.
-    mapping(uint256 => lockAttributes) public lockedMetric;
+    mapping(uint256 => mapping(uint256 => mapping(address => lockAttributes))) public lockedMetric;
 
     //------------------------------------------------------ ERRORS
 
     /// @notice Throw if user tries to withdraw Metric from a question it does not own.
-    error NotTheWithdrawer();
-    /// @notice Throw if user tries to withdraw Metric while the amount of metric to withdraw is equal to 0.
-    error NoMetricToWithdraw();
+    error NotTheDepositor();
+    /// @notice Throw if user tries to withdraw Metric without having first deposited.
+    error NoMetricDeposited();
     /// @notice Throw if user tries to lock Metric for a question that has a different state than UNINT.
     error QuestionHasInvalidStatus();
     /// @notice Throw if user tries to claim Metric for a question that has not been published (yet).
@@ -40,11 +46,13 @@ contract Vault is Ownable, OnlyCostController {
     error AlreadySlashed();
     /// @notice Throw if address is equal to address(0).
     error InvalidAddress();
+    /// @notice Throw if user tries to lock METRIC for a stage that does not require locking.
+    error InvalidStage();
 
     //------------------------------------------------------ STRUCTS
 
     struct lockAttributes {
-        address withdrawer;
+        address user;
         uint256 amount;
         STATUS status;
     }
@@ -53,18 +61,17 @@ contract Vault is Ownable, OnlyCostController {
 
     enum STATUS {
         UNINT,
-        WITHDRAWN,
         DEPOSITED,
-        PUBLISHED,
+        WITHDRAWN,
         SLASHED
     }
 
     //------------------------------------------------------ EVENTS
 
     /// @notice Event emitted when Metric is withdrawn.
-    event Withdraw(address indexed withdrawer, uint256 indexed amount);
+    event Withdraw(address indexed user, uint256 indexed amount);
     /// @notice Event emitted when a question is slashed.
-    event Slash(address indexed withdrawer, uint256 indexed questionId);
+    event Slashed(address indexed user, uint256 indexed questionId);
 
     //------------------------------------------------------ CONSTRUCTOR
 
@@ -88,79 +95,100 @@ contract Vault is Ownable, OnlyCostController {
 
     /**
      * @notice Locks METRIC for creating a question
-     * @param withdrawer The address of the user locking the METRIC
+     * @param user The address of the user locking the METRIC
      * @param amount The amount of METRIC to lock
-     * @param questionId The question id
+     * @param questionId The question id'
+     * @param stage The stage for which METRIC is locked
      */
     function lockMetric(
-        address withdrawer,
+        address user,
         uint256 amount,
-        uint256 questionId
+        uint256 questionId,
+        uint256 stage
     ) external onlyCostController {
+        // Checks if METRIC is locked for a valid stage.
+        if (stage >= 3) revert InvalidStage();
         // Checks if there has not been a deposit yet
-        if (lockedMetric[questionId].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
+        if (lockedMetric[questionId][stage][user].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
 
         // Accounting & changes
-        lockedMetric[questionId].withdrawer = withdrawer;
-        lockedMetric[questionId].amount += amount;
+        lockedMetric[questionId][stage][user].user = user;
+        lockedMetric[questionId][stage][user].amount += amount;
 
-        lockedMetric[questionId].status = STATUS.DEPOSITED;
+        lockedMetricByQuestion[questionId] += amount;
 
-        depositsByWithdrawers[withdrawer].push(questionId);
+        lockedMetric[questionId][stage][user].status = STATUS.DEPOSITED;
+
+        totalLockedInVaults[user] += amount;
+        depositsByWithdrawers[user].push(questionId);
 
         // Transfers Metric from the user to the vault.
-        metric.transferFrom(withdrawer, address(this), amount);
+        metric.transferFrom(user, address(this), amount);
     }
 
     /**
      * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
      * @param questionId The question id
+     * @param stage The stage for which the user is withdrawing metric from a question.
      */
-    function withdrawMetric(uint256 questionId) external {
+    function withdrawMetric(uint256 questionId, uint256 stage) external {
+        // Checks if Metric is withdrawn for a valid stage.
+        if (stage >= 3) revert InvalidStage();
         // Checks that only the depositer can withdraw the metric
-        if (_msgSender() != lockedMetric[questionId].withdrawer) revert NotTheWithdrawer();
+        if (_msgSender() != lockedMetric[questionId][stage][_msgSender()].user) revert NotTheDepositor();
         // Checks that the metric to withdraw is not 0
-        if (lockedMetric[questionId].amount == 0) revert NoMetricToWithdraw();
-        // Checks that the question is published
-        if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
+        if (lockedMetric[questionId][stage][_msgSender()].status != STATUS.DEPOSITED) revert NoMetricDeposited();
 
-        // Accounting & changes
-        uint256 toWithdraw = lockedMetric[questionId].amount;
+        if (stage == 0) {
+            // Checks that the question is published
+            if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
 
-        lockedMetric[questionId].status = STATUS.WITHDRAWN;
-        lockedMetric[questionId].amount = 0;
+            // Accounting & changes
+            uint256 toWithdraw = lockedMetric[questionId][stage][_msgSender()].amount;
 
-        // Transfers Metric from the vault to the user.
-        emit Withdraw(_msgSender(), toWithdraw);
-        metric.transfer(_msgSender(), toWithdraw);
+            lockedMetric[questionId][stage][_msgSender()].status = STATUS.WITHDRAWN;
+            lockedMetric[questionId][stage][_msgSender()].amount = 0;
+
+            lockedMetricByQuestion[questionId] -= toWithdraw;
+            totalLockedInVaults[_msgSender()] -= toWithdraw;
+
+            // Transfers Metric from the vault to the user.
+            metric.transfer(_msgSender(), toWithdraw);
+
+            emit Withdraw(_msgSender(), toWithdraw);
+        } else if (stage == 1) {
+            // if (submissionPeriod == active) revert SubmissionPeriodActive();
+        } else {
+            // if (reviewPeriod == active) revert ReviewPeriodActive();
+        }
     }
 
     /**
      * @notice Allows onlyOwner to slash a question -- halfing the METRIC locked for the question.
      * @param questionId The question id
      */
-    function slashMetric(uint256 questionId) external onlyOwner {
-        // Check that the question has not been slashed yet.
-        if (lockedMetric[questionId].status == STATUS.SLASHED) revert AlreadySlashed();
+    // function slashMetric(uint256 questionId) external onlyOwner {
+    //     // Check that the question has not been slashed yet.
+    //     if (lockedMetric[questionId][0].status == STATUS.SLASHED) revert AlreadySlashed();
 
-        lockedMetric[questionId].status = STATUS.SLASHED;
+    //     lockedMetric[questionId][0].status = STATUS.SLASHED;
 
-        emit Slash(lockedMetric[questionId].withdrawer, questionId);
+    //     // Send half of the Metric to the treasury
+    //     metric.transfer(treasury, lockedMetricByQuestion[questionId] / 2);
 
-        // Send half of the Metric to the treasury
-        metric.transfer(treasury, lockedMetric[questionId].amount / 2);
+    //     // Return the other half of the Metric to the user
+    //     metric.transfer(lockedMetric[questionId][0].user, lockedMetric[questionId][0].amount / 2);
 
-        // Return the other half of the Metric to the user
-        metric.transfer(lockedMetric[questionId].withdrawer, lockedMetric[questionId].amount / 2);
-    }
+    //     emit Slashed(lockedMetric[questionId][0].user, questionId);
+    // }
 
     /**
      * @notice Gets the questions that a user has created.
-     * @param withdrawer The address of the user.
+     * @param user The address of the user.
      * @return The questions that the user has created.
      */
-    function getVaultsByWithdrawer(address withdrawer) external view returns (uint256[] memory) {
-        return depositsByWithdrawers[withdrawer];
+    function getVaultsByWithdrawer(address user) external view returns (uint256[] memory) {
+        return depositsByWithdrawers[user];
     }
 
     /**
@@ -168,8 +196,16 @@ contract Vault is Ownable, OnlyCostController {
      * @param questionId The question id.
      * @return A struct containing the attributes of the question (withdrawer, amount, status).
      */
-    function getVaultById(uint256 questionId) external view returns (lockAttributes memory) {
-        return lockedMetric[questionId];
+    function getVaultById(
+        uint256 questionId,
+        uint256 stage,
+        address user
+    ) external view returns (lockAttributes memory) {
+        return lockedMetric[questionId][stage][user];
+    }
+
+    function getLockedPerUser(address _user) public view returns (uint256) {
+        return totalLockedInVaults[_user];
     }
 
     /**
