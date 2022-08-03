@@ -68,6 +68,7 @@ const config: HardhatUserConfig = {
     },
     treasury: {
       default: 1,
+      ropsten: "0xD3603df4BC1A9df587155bc03eeb166874d6077C",
     },
   },
 };
