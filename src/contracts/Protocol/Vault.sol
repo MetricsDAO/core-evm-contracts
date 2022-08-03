@@ -192,8 +192,10 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     /**
-     * @notice Gets the information about the attributes of a question.
+     * @notice Gets the information about the vault attributes of a question.
      * @param questionId The question id.
+     * @param stage The stage of the question.
+     * @param user The address of the user.
      * @return A struct containing the attributes of the question (withdrawer, amount, status).
      */
     function getVaultById(
@@ -202,6 +204,26 @@ contract Vault is Ownable, OnlyCostController {
         address user
     ) external view returns (lockAttributes memory) {
         return lockedMetric[questionId][stage][user];
+    }
+
+    function getLockedMetricByQuestion(uint256 questionId) public view returns (uint256) {
+        return lockedMetricByQuestion[questionId];
+    }
+
+    function getUserFromProperties(
+        uint256 questionId,
+        uint256 stage,
+        address user
+    ) public view returns (address) {
+        return lockedMetric[questionId][stage][user].user;
+    }
+
+    function getAmountFromProperties(
+        uint256 questionId,
+        uint256 stage,
+        address user
+    ) public view returns (uint256) {
+        return lockedMetric[questionId][stage][user].amount;
     }
 
     function getLockedPerUser(address _user) public view returns (uint256) {

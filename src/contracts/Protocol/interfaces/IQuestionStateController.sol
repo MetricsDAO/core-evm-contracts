@@ -4,11 +4,7 @@ pragma solidity 0.8.13;
 interface IQuestionStateController {
     function initializeQuestion(uint256 questionId, string calldata uri) external;
 
-    function voteFor(
-        address _user,
-        uint256 questionId,
-        uint256 amount
-    ) external;
+    function voteFor(address _user, uint256 questionId) external;
 
     function unvoteFor(address _user, uint256 questionId) external;
 

@@ -102,7 +102,7 @@ contract QuestionAPI is Ownable, NFTLocked {
         _claimController.initializeQuestion(questionId, claimLimit);
 
         emit QuestionCreated(questionId, _msgSender());
-        
+
         return questionId;
     }
 
@@ -131,11 +131,15 @@ contract QuestionAPI is Ownable, NFTLocked {
     /**
      * @notice Upvotes a question.
      * @param questionId The questionId of the question to upvote.
-     * @param amount Metric amount to put behind the vote.
      */
-    function upvoteQuestion(uint256 questionId, uint256 amount) public {
+    function upvoteQuestion(uint256 questionId) public {
         if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotVoteForOwnQuestion();
-        _questionStateController.voteFor(_msgSender(), questionId, amount);
+
+        // Vote for a question
+        _questionStateController.voteFor(_msgSender(), questionId);
+
+        // Pay to upvote a question
+        _costController.payForVoting(_msgSender(), questionId);
 
         emit QuestionUpvoted(questionId, _msgSender());
     }

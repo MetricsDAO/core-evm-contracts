@@ -106,6 +106,7 @@ describe("Question API Contract", function () {
     it("the factory should create questions", async function () {
       // create question
       await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
+      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 10);
       await questionIDtx.wait();
@@ -146,7 +147,7 @@ describe("Question API Contract", function () {
 
     it("the factory should setup State Controller when creating a question", async function () {
       // question state should be uninit
-      const state = await questionStateController.state(0);
+      const state = await questionStateController.getState(0);
       expect(state).to.equal(new BN(0));
 
       await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
@@ -167,10 +168,11 @@ describe("Question API Contract", function () {
 
     it("the facotry should enable voting once a question is created", async () => {
       // no votes
-      let votes = await questionStateController.getVotes(0);
-      expect(votes.length).to.equal(new BN(0));
+      let votes = await questionStateController.getTotalVotes(0);
+      expect(votes).to.equal(new BN(0));
       // // create question
       await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -183,36 +185,27 @@ describe("Question API Contract", function () {
       expect(questionStateLatestQuestion).to.equal(new BN(questionState.VOTING));
 
       // still no votes
-      votes = await questionStateController.getVotes(0);
-      expect(votes.length).to.equal(new BN(0));
+      votes = await questionStateController.getTotalVotes(0);
+      expect(votes).to.equal(new BN(0));
 
       // address 2 votes with 1 xmetric
-      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"));
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID);
 
       // address 2 cant vote twice
-      await expect(questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("1"))).to.be.revertedWith(
+      await expect(questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID)).to.be.revertedWith(
         "HasAlreadyVotedForQuestion()"
       );
 
-      let amountOfVotesArray = await questionStateController.getVotes(latestQuestionID);
-      expect(amountOfVotesArray.length).to.equal(1);
-      expect(amountOfVotesArray[0][0]).to.equal(xmetricaddr2.address);
-      expect(amountOfVotesArray[0].voter).to.equal(xmetricaddr2.address);
-
-      await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
-      let totalMetricForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
-
-      // lucky 13 - 12 + 1
-      expect(totalMetricForQuestion).to.equal(utils.parseEther("13"));
+      let amountOfVotesArray = await questionStateController.getTotalVotes(latestQuestionID);
+      let votersArray = await questionStateController.getVoters(latestQuestionID);
+      expect(amountOfVotesArray).to.equal(2);
+      expect(votersArray[0]).to.equal(xmetricaddr2.address);
 
       // unvoting
       await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestionID);
-      totalMetricForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
-      expect(totalMetricForQuestion).to.equal(utils.parseEther("12"));
+      totalVotesForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
+      expect(totalVotesForQuestion).to.equal(1);
 
-      amountOfVotesArray = await questionStateController.getVotes(latestQuestionID);
-      // when user unvotes we just update value but don't remove entry from array
-      expect(amountOfVotesArray.length).to.equal(2);
     });
 
     it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
@@ -233,7 +226,12 @@ describe("Question API Contract", function () {
     });
 
     it("should set up a new way to get all questions by state", async () => {
-      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
+      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
+      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
+      await xmetric.connect(xmetricaddr3).approve(vault.address, ethers.utils.parseEther("30"));
+
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 25);
+
       await questionIDtx.wait();
 
       const questionIDtx1 = await questionAPI
@@ -251,8 +249,8 @@ describe("Question API Contract", function () {
 
       const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
 
-      await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID, utils.parseEther("12"));
-      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID, utils.parseEther("7"));
+      await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID);
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID);
 
       const latestQuestion = await bountyQuestion.getMostRecentQuestion();
 
@@ -260,7 +258,7 @@ describe("Question API Contract", function () {
 
       const allquestionsByState = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(1000));
 
-      expect(allquestionsByState[0].totalVotes).to.equal(utils.parseEther("19"));
+      expect(allquestionsByState[0].totalVotes).to.equal(3);
     });
 
     it("should get latest based on offset", async () => {

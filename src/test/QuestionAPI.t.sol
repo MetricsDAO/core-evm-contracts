@@ -86,17 +86,33 @@ contract QuestionAPITest is Test {
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
+        _metricToken.transfer(other3, 100e18);
 
         _mockAuthNFT.mintTo(manager);
 
         vm.stopPrank();
+
+        vm.prank(owner);
+        _metricToken.approve(address(_vault), 100e18);
+
+        vm.prank(manager);
+        _metricToken.approve(address(_vault), 100e18);
+
+        vm.prank(other);
+        _metricToken.approve(address(_vault), 100e18);
+
+        vm.prank(other2);
+        _metricToken.approve(address(_vault), 100e18);
+
+        vm.prank(other3);
+        _metricToken.approve(address(_vault), 100e18);
     }
 
     // ---------------------- General functionality testing
 
     function test_InitialMint() public {
         console.log("Should correctly distribute initial mint");
-        assertEq(_metricToken.balanceOf(owner), 1000000000e18 - 200e18);
+        assertEq(_metricToken.balanceOf(owner), 1000000000e18 - 300e18);
     }
 
     function test_CreateTwoQuestionsWithChangingActionCost() public {
@@ -105,7 +121,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -141,7 +156,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -162,7 +176,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -173,14 +186,14 @@ contract QuestionAPITest is Test {
         // Vote for the question
         vm.stopPrank();
         vm.prank(other3);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
         assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
-        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+        assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
 
         // Unvote for the question
         vm.stopPrank();
@@ -188,7 +201,7 @@ contract QuestionAPITest is Test {
         _questionAPI.unvoteQuestion(questionId);
 
         // Check that accounting was done properly.
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
     }
 
     function test_UnvotingWithoutFirstHavingVotedDoesNotWork() public {
@@ -197,7 +210,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -208,14 +220,14 @@ contract QuestionAPITest is Test {
         // Vote for the question
         vm.stopPrank();
         vm.prank(other3);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
         assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
-        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+        assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
         vm.stopPrank();
 
         vm.startPrank(owner);
@@ -225,7 +237,7 @@ contract QuestionAPITest is Test {
         _questionAPI.unvoteQuestion(questionId);
 
         // Check that accounting was done properly.
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
         vm.stopPrank();
     }
 
@@ -235,7 +247,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -246,23 +257,23 @@ contract QuestionAPITest is Test {
         // Vote for the question
         vm.stopPrank();
         vm.prank(other3);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
         assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
-        assertEq(_questionStateController.getTotalVotes(questionId), 5e18);
+        assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
 
         // Vote for the question again
         vm.stopPrank();
         vm.prank(other3);
         vm.expectRevert(QuestionStateController.HasAlreadyVotedForQuestion.selector);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
 
         // Check that accounting was done properly.
-        _questionStateController.getVotes(questionId);
+        _questionStateController.getVoters(questionId);
     }
 
     function test_CannotVoteForOwnQuestion() public {
@@ -271,7 +282,6 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
         assertEq(_metricToken.balanceOf(other), 99e18);
 
@@ -281,13 +291,12 @@ contract QuestionAPITest is Test {
 
         // Vote for the question
         vm.expectRevert(QuestionAPI.CannotVoteForOwnQuestion.selector);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
         vm.stopPrank();
     }
 
     function test_DisqualifyQuestion() public {
         vm.startPrank(owner);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = _questionStateController.getState(badQuestion);
@@ -298,7 +307,6 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestionTwo() public {
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         vm.stopPrank();
 
@@ -329,7 +337,7 @@ contract QuestionAPITest is Test {
         // Make sure we cannot vote for the challenge
         vm.prank(other);
         vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
 
         // Make sure that not any user can create a challenge
         vm.prank(other);
@@ -341,7 +349,6 @@ contract QuestionAPITest is Test {
         console.log("A user should should be able to claim a challenge.");
 
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
 
         // Publish the question
@@ -359,7 +366,6 @@ contract QuestionAPITest is Test {
         console.log("A user shouldnt be able to claim an unpublished question");
 
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
 
         // Attempt claim
@@ -372,7 +378,6 @@ contract QuestionAPITest is Test {
         console.log("A user shouldnt be able to claim a question that has reached its limit");
 
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 1);
 
         // Publish the question
@@ -384,7 +389,6 @@ contract QuestionAPITest is Test {
         vm.stopPrank();
 
         vm.startPrank(other2);
-        _metricToken.approve(address(_vault), 100e18);
 
         // Attempt claim again
         vm.expectRevert(ClaimController.ClaimLimitReached.selector);
@@ -393,7 +397,6 @@ contract QuestionAPITest is Test {
 
     function test_UserCannotClaimQuestionMultipleTimes() public {
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
 
         // Publish the question
@@ -411,7 +414,6 @@ contract QuestionAPITest is Test {
 
     function test_verifyClaimingAccounting() public {
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
 
         // Publish the question
@@ -429,7 +431,6 @@ contract QuestionAPITest is Test {
         vm.stopPrank();
 
         vm.startPrank(other2);
-        _metricToken.approve(address(_vault), 100e18);
 
         _claimController.getClaimDataForUser(questionId, other2);
         _questionAPI.claimQuestion(questionId);
@@ -442,7 +443,6 @@ contract QuestionAPITest is Test {
         console.log("All events should be emitted correctly.");
 
         vm.startPrank(other);
-        _metricToken.approve(address(_vault), 100e18);
 
         // Create a question
         vm.expectEmit(true, true, false, true);
@@ -455,7 +455,7 @@ contract QuestionAPITest is Test {
         // Upvote a question
         vm.expectEmit(true, true, false, false);
         emit QuestionUpvoted(1, address(other2));
-        _questionAPI.upvoteQuestion(questionId, 5e18);
+        _questionAPI.upvoteQuestion(questionId);
 
         // Unvote a question
         vm.expectEmit(true, true, false, false);

@@ -32,23 +32,18 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
             the contract.
     * @param _user The address of the user who wants to pay for creating a question.
     */
-    function payForCreateQuestion(address _user, uint256 _questionId) external onlyApi {
-        // Checks
-        // Effects
-        // Interactions
-        vault.lockMetric(_user, createCost, _questionId, 0);
+    function payForCreateQuestion(address _user, uint256 questionId) external onlyApi {
+        vault.lockMetric(_user, createCost, questionId, 0);
     }
 
     /**
     * @notice Makes a user pay for voting on a question. 
             We transfer the funds from the user executing the function to 
             the contract.
-    * @param _user The address of the user who wants to pay for voting on a question.
+    * @param user The address of the user who wants to pay for voting on a question.
     */
-    function payForVoting(address _user) external onlyApi {
-        // Checks
-        // Effects
-        // Interactions
+    function payForVoting(address user, uint256 questionId) external onlyApi {
+        vault.lockMetric(user, voteCost, questionId, 0);
     }
 
     // ------------------------------- Getter
