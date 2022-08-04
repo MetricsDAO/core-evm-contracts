@@ -159,11 +159,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Publishes a question and allows it to be claimed and receive answers.
      * @param questionId The questionId of the question to publish
      */
-    function publishQuestion(uint256 questionId) public functionLocked {
-        uint256 someBenchmark = 1;
-        // Check that benchmark is met
-        if (someBenchmark != 1) revert NotAtBenchmark();
 
+    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked{
         // Publish the question
         _questionStateController.publish(questionId);
 

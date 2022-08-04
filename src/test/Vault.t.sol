@@ -12,6 +12,7 @@ import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 contract vaultTest is Test {
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     // Accounts
     address owner = address(0x0a);
@@ -28,7 +29,8 @@ contract vaultTest is Test {
     BountyQuestion _bountyQuestion;
     ActionCostController _costController;
     QuestionStateController _questionStateController;
-    NFT _mockAuthNFT;
+    NFT _mockAuthNFTManager;
+    NFT _mockAuthNFTAdmin;
 
     function setUp() public {
         // Labeling
@@ -39,7 +41,8 @@ contract vaultTest is Test {
         vm.label(manager, "Manager");
 
         vm.startPrank(owner);
-        _mockAuthNFT = new NFT("Auth", "Auth");
+        _mockAuthNFTManager = new NFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
@@ -64,7 +67,12 @@ contract vaultTest is Test {
         _metricToken.transfer(other2, 100e18);
         _metricToken.transfer(other3, 100e18);
 
-        _mockAuthNFT.mintTo(manager);
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFTManager));
+        _questionAPI.addHolderRole(ADMIN_ROLE, address(_mockAuthNFTAdmin));
+
+        _mockAuthNFTAdmin.mintTo(owner);
+        _mockAuthNFTManager.mintTo(manager);
+        _mockAuthNFTAdmin.mintTo(other);
 
         vm.stopPrank();
 
