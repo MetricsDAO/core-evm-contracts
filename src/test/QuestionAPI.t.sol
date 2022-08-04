@@ -512,7 +512,6 @@ contract QuestionAPITest is Test {
 
         vm.prank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
-
         vm.prank(owner);
         _questionAPI.toggleLock();
 
