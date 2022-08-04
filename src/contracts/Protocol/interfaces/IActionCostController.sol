@@ -5,4 +5,6 @@ interface IActionCostController {
     function payForCreateQuestion(address _user, uint256 questionId) external;
 
     function setCreateCost(uint256 _cost) external;
+
+    function payForVoting(address user, uint256 questionId) external;
 }

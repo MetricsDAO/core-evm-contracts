@@ -16,6 +16,8 @@ contract vaultTest is Test {
     // Accounts
     address owner = address(0x0a);
     address other = address(0x0b);
+    address other2 = address(0x0d);
+    address other3 = address(0x0e);
     address manager = address(0x0c);
     address treasury = address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c);
 
@@ -32,6 +34,8 @@ contract vaultTest is Test {
         // Labeling
         vm.label(owner, "Owner");
         vm.label(other, "User");
+        vm.label(other2, "User 2");
+        vm.label(other3, "User 3");
         vm.label(manager, "Manager");
 
         vm.startPrank(owner);
@@ -57,6 +61,8 @@ contract vaultTest is Test {
         _vault.setCostController(address(_costController));
 
         _metricToken.transfer(other, 100e18);
+        _metricToken.transfer(other2, 100e18);
+        _metricToken.transfer(other3, 100e18);
 
         _mockAuthNFT.mintTo(manager);
 
@@ -242,5 +248,144 @@ contract vaultTest is Test {
         _vault.withdrawMetric(questionId, 0);
 
         vm.stopPrank();
+    }
+
+    function test_StageVaultAccountingIsCorrect() public {
+        console.log("Stage Vault Accounting is correct");
+        vm.startPrank(other);
+
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Verify total vault balance is correct
+        assertEq(_vault.getMetricTotalLockedBalance(), 1e18);
+
+        // Verify that question vault balance is correct
+        assertEq(_vault.getLockedMetricByQuestion(questionIdOne), 1e18);
+
+        // Verify that the right properties are set on the question
+        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 1e18);
+
+        // Verify that other stages arent updated
+        assertEq(_vault.getUserFromProperties(questionIdOne, 1, other), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdOne, 2, other), address(0x0));
+
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 1, other), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 2, other), 0);
+        vm.stopPrank();
+
+        // Repeat the same for second user
+        vm.startPrank(other2);
+
+        // Create question
+        _metricToken.approve(address(_vault), 100e18);
+        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://XYZ", 25);
+
+        // Verify total vault balance is correct
+        assertEq(_vault.getMetricTotalLockedBalance(), 2e18);
+
+        // Verify that question vault balance is correct
+        assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 1e18);
+
+        // Verify that the right properties are set on the question
+        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other2), other2);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 1e18);
+
+        // Verify that other stages arent updated
+        assertEq(_vault.getUserFromProperties(questionIdTwo, 1, other2), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdTwo, 2, other2), address(0x0));
+
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 1, other2), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 2, other2), 0);
+        vm.stopPrank();
+        vm.stopPrank();
+
+        // Introduce a voter
+        vm.startPrank(other3);
+
+        _metricToken.approve(address(_vault), 100e18);
+
+        _questionAPI.upvoteQuestion(questionIdOne);
+        _questionAPI.upvoteQuestion(questionIdTwo);
+
+        // Verify that total vault balance is updated
+        assertEq(_vault.getMetricTotalLockedBalance(), 4e18);
+
+        // Verify that question vault balance is correct
+        assertEq(_vault.getLockedMetricByQuestion(questionIdOne), 2e18);
+        assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 2e18);
+
+        // Verify that the right properties are set on the question
+        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other3), other3);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other3), 1e18);
+
+        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other3), other3);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other3), 1e18);
+
+        // Verify that others arent updated
+        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 1e18);
+
+        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other2), other2);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 1e18);
+        vm.stopPrank();
+
+        // Publish the questions
+        vm.prank(owner);
+        _questionAPI.publishQuestion(questionIdOne);
+        vm.prank(owner);
+        _questionAPI.publishQuestion(questionIdTwo);
+
+        // Verify that everyone can withdraw and accounting is done properly.
+        vm.prank(other);
+        _vault.withdrawMetric(questionIdOne, 0);
+
+        // Shouldn't have anything to withdraw here
+        vm.prank(other);
+        vm.expectRevert(Vault.NotTheDepositor.selector);
+        _vault.withdrawMetric(questionIdTwo, 0);
+
+        // Check everything is updated correctly
+        // Should decrease by 1e18
+        assertEq(_vault.getMetricTotalLockedBalance(), 3e18);
+        assertEq(_vault.getLockedMetricByQuestion(questionIdOne), 1e18);
+
+        // Should remain the same
+        assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 2e18);
+
+        // Should be cleared
+        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 0);
+
+        // Other users also withdraw
+        vm.prank(other2);
+        _vault.withdrawMetric(questionIdTwo, 0);
+
+        vm.prank(other3);
+        _vault.withdrawMetric(questionIdOne, 0);
+
+        vm.prank(other3);
+        _vault.withdrawMetric(questionIdTwo, 0);
+
+        // Check everything is updated correctly
+        // Should decrease by 3e18
+        assertEq(_vault.getMetricTotalLockedBalance(), 0);
+        assertEq(_vault.getLockedMetricByQuestion(questionIdOne), 0);
+
+        // Should remain the same
+        assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 0);
+
+        // Should be cleared
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other3), 0);
+
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other3), 0);
+
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+        assertEq(_metricToken.balanceOf(other3), 100e18);
     }
 }
