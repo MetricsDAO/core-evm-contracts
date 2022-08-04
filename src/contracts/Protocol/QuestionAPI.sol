@@ -199,7 +199,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Allows the owner to disqualify a question.
      * @param questionId The questionId of the question to disqualify.
      */
-    function disqualifyQuestion(uint256 questionId) public onlyOwner {
+    function disqualifyQuestion(uint256 questionId) public onlyOwner functionLocked {
         _questionStateController.setDisqualifiedState(questionId);
 
         emit QuestionDisqualified(questionId, _msgSender());
