@@ -506,13 +506,12 @@ contract QuestionAPITest is Test {
 
         vm.stopPrank();
     }
-    
+
     function test_OnlyAdminCanPublishQuestion() public {
         console.log("Only the admin should be able to publish a question.");
 
         vm.prank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
-        
         vm.prank(owner);
         _questionAPI.toggleLock();
 
@@ -522,6 +521,8 @@ contract QuestionAPITest is Test {
         _questionAPI.publishQuestion(questionId);
 
         vm.prank(other);
+        vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
+
         _questionAPI.publishQuestion(questionId);
     }
 
