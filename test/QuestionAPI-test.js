@@ -105,7 +105,6 @@ describe("Question API Contract", function () {
   describe("Creating questions", function () {
     it("the factory should create questions", async function () {
       // create question
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
       await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 10);
