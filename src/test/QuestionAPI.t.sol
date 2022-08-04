@@ -492,11 +492,29 @@ contract QuestionAPITest is Test {
         _questionAPI.disqualifyQuestion(questionId);
     }
 
+    function test_FunctionLock() public {
+        console.log("All locked functions should be locked.");
+
+        vm.prank(owner);
+        _questionAPI.toggleLock();
+
+        vm.startPrank(other);
+        uint256 q = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
+        _questionAPI.publishQuestion(q);
+
+        vm.stopPrank();
+    }
+    
     function test_OnlyAdminCanPublishQuestion() public {
         console.log("Only the admin should be able to publish a question.");
 
         vm.prank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        
+        vm.prank(owner);
+        _questionAPI.toggleLock();
 
         // Attempt to publish the question
         vm.prank(other2);
