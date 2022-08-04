@@ -15,6 +15,7 @@ import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 contract QuestionAPITest is Test {
     // Roles
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     // Accounts
     address owner = address(0x0a);
@@ -31,7 +32,8 @@ contract QuestionAPITest is Test {
     ActionCostController _costController;
     QuestionStateController _questionStateController;
     Vault _vault;
-    NFT _mockAuthNFT;
+    NFT _mockAuthNFTManager;
+    NFT _mockAuthNFTAdmin;
 
     /// @notice Emitted when a question is created.
     event QuestionCreated(uint256 indexed questionId, address indexed creator);
@@ -64,7 +66,8 @@ contract QuestionAPITest is Test {
         vm.label(manager, "Manager");
 
         vm.startPrank(owner);
-        _mockAuthNFT = new NFT("Auth", "Auth");
+        _mockAuthNFTManager = new NFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
@@ -88,7 +91,11 @@ contract QuestionAPITest is Test {
         _metricToken.transfer(other2, 100e18);
         _metricToken.transfer(other3, 100e18);
 
-        _mockAuthNFT.mintTo(manager);
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFTManager));
+        _questionAPI.addHolderRole(ADMIN_ROLE, address(_mockAuthNFTAdmin));
+
+        _mockAuthNFTManager.mintTo(manager);
+        _mockAuthNFTAdmin.mintTo(other);
 
         vm.stopPrank();
 
@@ -320,12 +327,7 @@ contract QuestionAPITest is Test {
         console.log("Only a user with the ProgramManager role should be allowed to create a challenge.");
 
         // Check that the manager holds the nft
-        assertEq(_mockAuthNFT.ownerOf(1), manager);
-
-        // Create a program manager role tied to the mockAuthNFT.
-        // This means that anyone holding a token of mockAuthNFT has program_manager_role permissions
-        vm.prank(owner);
-        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFT));
+        assertEq(_mockAuthNFTManager.ownerOf(1), manager);
 
         // Create a challenge from the manager
         vm.prank(manager);
@@ -477,10 +479,6 @@ contract QuestionAPITest is Test {
         // Question answered
         vm.stopPrank();
 
-        // Add manager
-        vm.prank(owner);
-        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFT));
-
         // Create challenge
         vm.expectEmit(true, true, false, false);
         emit ChallengeCreated(2, address(manager));
@@ -493,5 +491,29 @@ contract QuestionAPITest is Test {
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(questionId);
     }
+
+    function test_OnlyAdminCanPublishQuestion() public {
+        console.log("Only the admin should be able to publish a question.");
+
+        vm.prank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        // Attempt to publish the question
+        vm.prank(other2);
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.publishQuestion(questionId);
+
+        vm.prank(other);
+        _questionAPI.publishQuestion(questionId);
+    }
+
+    function test_OnlyOwnerCanMintPermissionedNFTs() public {
+        console.log("Only the owner should be able to mint permissioned NFTs.");
+
+        vm.prank(other);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _questionAPI.addHolderRole(ADMIN_ROLE, address(0));
+    }
+
     // --------------------- Testing for access controlls
 }

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 abstract contract NFTLocked is Ownable {
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     mapping(bytes32 => address) private _nfts;
 
