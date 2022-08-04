@@ -6,5 +6,5 @@ interface IActionCostController {
 
     function setCreateCost(uint256 _cost) external;
 
-    function getLockedPerUser(address _user) external view returns (uint256);
+    function payForVoting(address user, uint256 questionId) external;
 }
