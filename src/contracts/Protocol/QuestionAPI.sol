@@ -11,7 +11,6 @@ import "./interfaces/IActionCostController.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";
-import "./modifiers/FunctionLocked.sol";
 
 /**
  * @title MetricsDAO question API
@@ -19,7 +18,7 @@ import "./modifiers/FunctionLocked.sol";
  * @notice This contract is an API for MetricsDAO that allows for interacting with questions & challenges.
  */
 
-contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
+contract QuestionAPI is Ownable, NFTLocked {
     BountyQuestion private _question;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
@@ -159,7 +158,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Publishes a question and allows it to be claimed and receive answers.
      * @param questionId The questionId of the question to publish
      */
-    function publishQuestion(uint256 questionId) public functionLocked {
+    function publishQuestion(uint256 questionId) public {
         uint256 someBenchmark = 1;
         // Check that benchmark is met
         if (someBenchmark != 1) revert NotAtBenchmark();
@@ -174,7 +173,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Allows anm analyst to claim a question and submit an answer before the dealine.
      * @param questionId The questionId of the question to disqualify
      */
-    function claimQuestion(uint256 questionId) public functionLocked {
+    function claimQuestion(uint256 questionId) public {
         // Check if the question is published and is therefore claimable
         if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
 
@@ -189,7 +188,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionId The questionId of the question to answer.
      * @param answerURL THE IPFS hash of the answer.
      */
-    function answerQuestion(uint256 questionId, string calldata answerURL) public functionLocked {
+    function answerQuestion(uint256 questionId, string calldata answerURL) public {
         _claimController.answer(_msgSender(), questionId, answerURL);
 
         emit QuestionAnswered(questionId, _msgSender());

@@ -493,20 +493,5 @@ contract QuestionAPITest is Test {
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(questionId);
     }
-
-    function test_FunctionLock() public {
-        console.log("All locked functions should be locked.");
-
-        vm.prank(owner);
-        _questionAPI.toggleLock();
-
-        vm.startPrank(other);
-        uint256 q = _questionAPI.createQuestion("ipfs://XYZ", 5);
-
-        vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
-        _questionAPI.publishQuestion(q);
-
-        vm.stopPrank();
-    }
     // --------------------- Testing for access controlls
 }
