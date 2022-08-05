@@ -14,13 +14,4 @@ interface IQuestionStateController {
     function getState(uint256 quesitonId) external view returns (uint256 currentState);
 
     function setDisqualifiedState(uint256 questionId) external;
-
-    enum STATE {
-        // TODO this where it becomes a challenge, can be claimed and answered
-        UNINIT,
-        VOTING,
-        PUBLISHED, // TODO this where it becomes a challenge, can be claimed and answered
-        DISQUALIFIED,
-        COMPLETED
-    }
 }

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
@@ -14,39 +15,35 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(address => mapping(uint256 => bool)) public hasVoted;
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
 
-    mapping(uint256 => QuestionStats) public questionByState;
-
-    //TODO mapping     mapping(STATE => uint256[]) public questionState;
-
-    // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
+    mapping(uint256 => IBountyQuestion.QuestionStats) public questionByState;
 
     /**
      * @notice Initializes a question to draft.
      * @param questionId The id of the question
      */
     function initializeQuestion(uint256 questionId, string calldata uri) public onlyApi {
-        QuestionStats memory question;
+        IBountyQuestion.QuestionStats memory question;
 
         question.questionId = questionId;
         question.uri = uri;
         question.totalVotes = 1;
-        question.questionState = STATE.VOTING;
+        question.questionState = IBountyQuestion.STATE.VOTING;
 
         questionByState[questionId] = question;
     }
 
-    function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+    function publish(uint256 questionId) public onlyApi onlyState(IBountyQuestion.STATE.VOTING, questionId) {
         // if some voting barrier is passed, we can publish the question
-        QuestionStats storage _question = questionByState[questionId];
-        _question.questionState = STATE.PUBLISHED;
+        IBountyQuestion.QuestionStats storage _question = questionByState[questionId];
+        _question.questionState = IBountyQuestion.STATE.PUBLISHED;
     }
 
-    function voteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+    function voteFor(address _user, uint256 questionId) public onlyApi onlyState(IBountyQuestion.STATE.VOTING, questionId) {
         // Checks
         if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
 
         // Effects
-        QuestionStats storage _question = questionByState[questionId];
+        IBountyQuestion.QuestionStats storage _question = questionByState[questionId];
         _question.totalVotes += 1;
 
         hasVoted[_user][questionId] = true;
@@ -56,12 +53,12 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // Interactions
     }
 
-    function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+    function unvoteFor(address _user, uint256 questionId) public onlyApi onlyState(IBountyQuestion.STATE.VOTING, questionId) {
         // Checks
         if (!hasVoted[_user][questionId]) revert HasNotVotedForQuestion();
 
         // Effects
-        QuestionStats storage _question = questionByState[questionId];
+        IBountyQuestion.QuestionStats storage _question = questionByState[questionId];
         _question.totalVotes -= 1;
 
         uint256 index = questionIndex[_user][questionId];
@@ -73,8 +70,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     }
 
     function setDisqualifiedState(uint256 questionId) public onlyApi {
-        QuestionStats storage _question = questionByState[questionId];
-        _question.questionState = STATE.DISQUALIFIED;
+        IBountyQuestion.QuestionStats storage _question = questionByState[questionId];
+        _question.questionState = IBountyQuestion.STATE.DISQUALIFIED;
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
@@ -82,25 +79,25 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     //------------------------------------------------------ View Functions
 
     function getState(uint256 questionId) public view returns (uint256 currentState) {
-        QuestionStats memory _question = questionByState[questionId];
+        IBountyQuestion.QuestionStats memory _question = questionByState[questionId];
         return uint256(_question.questionState);
     }
 
     function getVoters(uint256 questionId) public view returns (address[] memory voters) {
-        QuestionStats memory _question = questionByState[questionId];
+        IBountyQuestion.QuestionStats memory _question = questionByState[questionId];
         return _question.voters;
     }
 
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
-        QuestionStats memory _question = questionByState[questionId];
+        IBountyQuestion.QuestionStats memory _question = questionByState[questionId];
         return _question.totalVotes;
     }
 
     function getQuestionsByState(
-        STATE currentState,
+        IBountyQuestion.STATE currentState,
         uint256 currentQuestionId,
         uint256 offset
-    ) public view returns (QuestionStats[] memory) {
+    ) public view returns (IBountyQuestion.QuestionStats[] memory) {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;
@@ -112,7 +109,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
             limit = 1;
             sizeOfArray = currentQuestionId;
         }
-        QuestionStats[] memory arr = new QuestionStats[](sizeOfArray);
+        IBountyQuestion.QuestionStats[] memory arr = new IBountyQuestion.QuestionStats[](sizeOfArray);
         for (uint256 i = currentQuestionId; i >= limit; i--) {
             if (questionByState[i].questionState == currentState) {
                 arr[j] = questionByState[i];
@@ -128,16 +125,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     error InvalidStateTransition();
 
     //------------------------------------------------------ Structs
-    modifier onlyState(STATE required, uint256 questionId) {
+    modifier onlyState(IBountyQuestion.STATE required, uint256 questionId) {
         if (uint256(required) != getState(questionId)) revert InvalidStateTransition();
         _;
-    }
-
-    struct QuestionStats {
-        uint256 questionId;
-        string uri;
-        address[] voters;
-        uint256 totalVotes;
-        STATE questionState;
     }
 }

@@ -7,6 +7,7 @@ import "./QuestionStateController.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
@@ -141,7 +142,7 @@ contract Vault is Ownable, OnlyCostController {
 
         if (stage == 0) {
             // Checks that the question is published
-            if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
+            if (questionStateController.getState(questionId) != uint256(IBountyQuestion.STATE.PUBLISHED)) revert QuestionNotPublished();
 
             // Accounting & changes
             uint256 toWithdraw = lockedMetric[questionId][stage][_msgSender()].amount;

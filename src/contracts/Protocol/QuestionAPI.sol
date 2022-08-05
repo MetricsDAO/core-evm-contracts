@@ -8,6 +8,7 @@ import "./BountyQuestion.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";
@@ -160,7 +161,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionId The questionId of the question to publish
      */
 
-    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked{
+    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked {
         // Publish the question
         _questionStateController.publish(questionId);
 
@@ -173,7 +174,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      */
     function claimQuestion(uint256 questionId) public functionLocked {
         // Check if the question is published and is therefore claimable
-        if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
+        if (_questionStateController.getState(questionId) != uint256(IBountyQuestion.STATE.PUBLISHED)) revert ClaimsNotOpen();
 
         // Claim the question
         _claimController.claim(_msgSender(), questionId);
