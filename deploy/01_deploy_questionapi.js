@@ -29,7 +29,7 @@ module.exports = async (hre) => {
 
   const vault = await deploy("Vault", {
     from: deployer,
-    args: [whichMetricAddress, questionStateController.address, treasury],
+    args: [whichMetricAddress, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
     log: true,
   });
 
@@ -77,7 +77,7 @@ module.exports = async (hre) => {
       await hre.run("verify:verify", {
         address: actionCostController.address,
         constructorArguments: [whichMetricAddress],
-        contract: "src/contracts/Protocol/QuestionStateController.sol:QuestionStateController",
+        contract: "src/contracts/Protocol/ActionCostController.sol:ActionCostController",
       });
     } catch (error) {
       console.log("error:", error.message);
@@ -96,7 +96,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: vault.address,
-        constructorArguments: [whichMetricAddress, questionStateController.address, treasury],
+        constructorArguments: [whichMetricAddress, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
         contract: "src/contracts/Protocol/Vault.sol:Vault",
       });
     } catch (error) {
