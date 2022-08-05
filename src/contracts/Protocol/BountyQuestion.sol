@@ -4,9 +4,10 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is Ownable, OnlyApi {
+contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
     using Counters for Counters.Counter;
 
     Counters.Counter private _questionIdCounter;
@@ -15,7 +16,7 @@ contract BountyQuestion is Ownable, OnlyApi {
     mapping(address => uint256[]) public authors;
 
     // This maps the question ID to the question data
-    mapping(uint256 => QuestionData) public questions;
+    mapping(uint256 => QuestionStats) public questions;
 
     constructor() {
         _questionIdCounter.increment();
@@ -25,15 +26,18 @@ contract BountyQuestion is Ownable, OnlyApi {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        questions[questionId] = QuestionData({author: author, tokenId: questionId, url: uri});
+        questions[questionId].author = author;
+        questions[questionId].uri = uri;
+        questions[questionId].questionId = questionId;
+
         authors[author].push(questionId);
         return questionId;
     }
 
-    function getAuthor(address user) public view returns (QuestionData[] memory) {
+    function getAuthor(address user) public view returns (QuestionStats[] memory) {
         uint256[] memory created = authors[user];
 
-        QuestionData[] memory ret = new QuestionData[](created.length);
+        QuestionStats[] memory ret = new QuestionStats[](created.length);
         for (uint256 i = 0; i < created.length; i++) {
             ret[i] = questions[created[i]];
         }
@@ -46,11 +50,5 @@ contract BountyQuestion is Ownable, OnlyApi {
 
     function getMostRecentQuestion() public view returns (uint256) {
         return _questionIdCounter.current();
-    }
-
-    struct QuestionData {
-        address author;
-        uint256 tokenId;
-        string url;
     }
 }

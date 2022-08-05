@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 interface IBountyQuestion {
-    function getById(uint256 questionId) external returns (IBountyQuestion);
+    // function getById(uint256 questionId) external returns (IBountyQuestion);
 
     enum STATE {
         UNINIT,
