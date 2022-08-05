@@ -1,6 +1,6 @@
 {
   "name": "core-evm-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Core EVM contracts for MetricsDao",
   "scripts": {
     "test": "npx hardhat test && forge test",
