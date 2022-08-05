@@ -1,45 +1,77 @@
-const { ethers } = require("ethers");
+import fs from "fs";
+import { ethers } from "hardhat";
 require("dotenv").config();
 
-const costControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ActionCostController.json`);
-const bountyQuestionJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/BountyQuestion.json`);
-const questionStateControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionStateController.json`);
-const claimControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ClaimController.json`);
-const questionAPIJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionAPI.json`);
-const vaultJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Vault.json`);
-const xmetricJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Xmetric.json`);
+// const costControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ActionCostController.json`);
+// const bountyQuestionJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/BountyQuestion.json`);
+// const questionStateControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionStateController.json`);
+// const claimControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ClaimController.json`);
+// const questionAPIJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionAPI.json`);
+// const vaultJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Vault.json`);
+// const xmetricJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Xmetric.json`);
 
 // CHANGE THIS TO WHATEVER PROVIDER YOUR USING CURRENTLY LOCALHOST/HARDHAT
-const provider = new ethers.providers.JsonRpcProvider();
-const signer = provider.getSigner();
+// const provider = new ethers.providers.JsonRpcProvider();
+// const signer = provider.getSigner();
 
 async function main() {
-  const bountyQuestion = new ethers.Contract(bountyQuestionJson.address, bountyQuestionJson.abi, signer);
-  const questionStateController = new ethers.Contract(questionStateControllerJson.address, questionStateControllerJson.abi, signer);
-  const claimController = new ethers.Contract(claimControllerJson.address, claimControllerJson.abi, signer);
-  const actionCostController = new ethers.Contract(costControllerJson.address, costControllerJson.abi, signer);
-  const vault = new ethers.Contract(vaultJson.address, vaultJson.abi, signer);
-  const xmetric = new ethers.Contract(xmetricJson.address, xmetricJson.abi, signer);
+  const network = process.env.HARDHAT_NETWORK;
+  console.log("adding transactor on: ", network);
 
-  let tx = await vault.setCostController(costControllerJson.address);
+  let data = await fs.readFileSync("./deployments/" + network + "/Xmetric.json", "utf8");
+  let address = JSON.parse(data).address;
+  const contract = await ethers.getContractFactory("Xmetric");
+  const xmetric = await contract.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/BountyQuestion.json", "utf8");
+  address = JSON.parse(data).address;
+  const c2 = await ethers.getContractFactory("BountyQuestion");
+  const bountyQuestion = await c2.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/QuestionStateController.json", "utf8");
+  address = JSON.parse(data).address;
+  const c3 = await ethers.getContractFactory("QuestionStateController");
+  const questionStateController = await c3.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/ClaimController.json", "utf8");
+  address = JSON.parse(data).address;
+  const c4 = await ethers.getContractFactory("ClaimController");
+  const claimController = await c4.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/ActionCostController.json", "utf8");
+  address = JSON.parse(data).address;
+  const c5 = await ethers.getContractFactory("ActionCostController");
+  const actionCostController = await c5.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/Vault.json", "utf8");
+  address = JSON.parse(data).address;
+  const c6 = await ethers.getContractFactory("Vault");
+  const vault = await c6.attach(address);
+
+  data = await fs.readFileSync("./deployments/" + network + "/QuestionAPI.json", "utf8");
+  address = JSON.parse(data).address;
+  const c7 = await ethers.getContractFactory("QuestionAPI");
+  const questionAPI = await c7.attach(address);
+
+  let tx = await vault.setCostController(actionCostController.address);
   let receipt = await tx.wait();
 
-  tx = await bountyQuestion.setQuestionApi(questionAPIJson.address);
+  tx = await bountyQuestion.setQuestionApi(questionAPI.address);
   receipt = await tx.wait();
 
-  tx = await questionStateController.setQuestionApi(questionAPIJson.address);
+  tx = await questionStateController.setQuestionApi(questionAPI.address);
   receipt = await tx.wait();
 
-  tx = await claimController.setQuestionApi(questionAPIJson.address);
+  tx = await claimController.setQuestionApi(questionAPI.address);
   receipt = await tx.wait();
 
-  tx = await actionCostController.setQuestionApi(questionAPIJson.address);
+  tx = await actionCostController.setQuestionApi(questionAPI.address);
   receipt = await tx.wait();
 
-  await xmetric.setTransactor(costControllerJson.address, true);
+  await xmetric.setTransactor(actionCostController.address, true);
   receipt = await tx.wait();
 
-  await xmetric.setTransactor(vaultJson.address, true);
+  await xmetric.setTransactor(vault.address, true);
   receipt = await tx.wait();
 
   tx = await actionCostController.setCreateCost(0);
