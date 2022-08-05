@@ -100,7 +100,7 @@ contract XProtocolTest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_questionStateController.getState(questionId), uint256(IBountyQuestion.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Other cannot directly call onlyApi functions
@@ -122,7 +122,7 @@ contract XProtocolTest is Test {
         assertEq(_xMetric.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(_questionStateController.getState(questionId), uint256(IBountyQuestion.STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Other cannot directly call onlyApi functions
