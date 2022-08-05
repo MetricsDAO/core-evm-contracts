@@ -13,7 +13,7 @@ import "./modifiers/OnlyAPI.sol";
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     // Mapping for all questions that are upvoted by the user?
     mapping(address => mapping(uint256 => bool)) public hasVoted;
-    mapping(address => mapping(uint256 => uint256)) public questionIndex;
+    mapping(address => mapping(uint256 => uint256)) public questionVoteIndex;
 
     mapping(uint256 => IBountyQuestion.QuestionStats) public questionByState;
 
@@ -48,7 +48,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
         hasVoted[_user][questionId] = true;
         _question.voters.push(_user);
-        questionIndex[_user][questionId] = _question.voters.length - 1;
+        questionVoteIndex[_user][questionId] = _question.voters.length - 1;
 
         // Interactions
     }
@@ -61,7 +61,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         IBountyQuestion.QuestionStats storage _question = questionByState[questionId];
         _question.totalVotes -= 1;
 
-        uint256 index = questionIndex[_user][questionId];
+        uint256 index = questionVoteIndex[_user][questionId];
         delete _question.voters[index];
 
         hasVoted[_user][questionId] = false;
