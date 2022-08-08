@@ -53,4 +53,3 @@ module.exports = async (hre) => {
   }
 };
 module.exports.tags = ["distribution"];
-// module.exports.dependencies = ["MetricToken"];
