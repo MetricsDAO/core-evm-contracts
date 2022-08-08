@@ -3,7 +3,7 @@ const { ethers, network, deployments } = require("hardhat");
 const { utils } = require("ethers");
 const { BN, getContract } = require("./utils");
 
-describe.only("Question API Contract", function () {
+describe("Question API Contract", function () {
   let metricToken;
   let questionAPI;
   let bountyQuestion;
