@@ -50,29 +50,12 @@ describe.only("Question API Contract", function () {
 
     // deploy Vault
     vault = await getContract("Vault");
-    // const VaultContract = await ethers.getContractFactory("Vault");
-    // vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
 
     // deploy Cost Controller
     costController = await getContract("ActionCostController");
-    // const costContract = await ethers.getContractFactory("ActionCostController");
-    // costController = await costContract.deploy(xmetric.address, vault.address);
 
-    await vault.setCostController(costController.address);
-
-    // deploy Factory
-    const factoryContract = await ethers.getContractFactory("QuestionAPI");
-    questionAPI = await factoryContract.deploy(
-      bountyQuestion.address,
-      questionStateController.address,
-      claimController.address,
-      costController.address
-    );
-
-    bountyQuestion.setQuestionApi(questionAPI.address);
-    questionStateController.setQuestionApi(questionAPI.address);
-    claimController.setQuestionApi(questionAPI.address);
-    costController.setQuestionApi(questionAPI.address);
+    // deploy Question API
+    questionAPI = await getContract("QuestionAPI");
 
     if (whichMetric === "Xmetric") {
       await metricToken.setTransactor(costController.address, true);
