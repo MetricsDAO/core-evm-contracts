@@ -15,7 +15,6 @@ module.exports = async (hre) => {
   if (network === "hardhat") {
     network = "localhost";
   }
-  console.log("huh");
   const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
 
   const liveMetric = await getContract(whichMetric);
@@ -60,8 +59,6 @@ module.exports = async (hre) => {
 
   tx = await actionCostController.setVoteCost(0);
   await tx.wait();
-
-  console.log(";done");
 };
 module.exports.tags = ["MVP1"];
 module.exports.dependencies = ["questionAPI"];

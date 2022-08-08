@@ -1,13 +1,13 @@
 const { getContract } = require("../test/utils");
 
 const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
-console.log("which metric", whichMetric);
+
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
   const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
-  console.log("wat");
+
   let network = hre.network.name;
   if (network === "hardhat") {
     network = "localhost";
@@ -30,8 +30,6 @@ module.exports = async (hre) => {
 
   const metric = await getContract(whichMetric);
 
-  // console.log("whichMetricAddress:", whichMetricAddress);
-  console.log("whichMetric:", whichMetric);
   const vault = await deploy("Vault", {
     from: deployer,
     args: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
