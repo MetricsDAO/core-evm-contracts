@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers, deployments } = require("hardhat");
 
 function BN(input) {
   return ethers.BigNumber.from(input);
@@ -20,9 +20,15 @@ const closeEnough = (first, second) => {
   return Math.abs(first - second) < 1e-13;
 };
 
+const getContract = async (name) => {
+  const deployment = await deployments.get(name);
+  return await ethers.getContractAt(name, deployment.address);
+};
+
 module.exports = {
   add,
   BN,
   mineBlocks,
   closeEnough,
+  getContract,
 };

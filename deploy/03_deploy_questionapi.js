@@ -1,16 +1,17 @@
+const { getContract } = require("../test/utils");
+
+const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
+
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
   const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
   let network = hre.network.name;
   if (network === "hardhat") {
     network = "localhost";
   }
-
-  const { address: whichMetricAddress } = require(`../deployments/${network}/${whichMetric}.json`);
 
   const bountyQuestion = await deploy("BountyQuestion", {
     from: deployer,
@@ -27,15 +28,17 @@ module.exports = async (hre) => {
     log: true,
   });
 
+  const metric = await getContract(whichMetric);
+
   const vault = await deploy("Vault", {
     from: deployer,
-    args: [whichMetricAddress, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
+    args: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
     log: true,
   });
 
   const actionCostController = await deploy("ActionCostController", {
     from: deployer,
-    args: [whichMetricAddress, vault.address],
+    args: [metric.address, vault.address],
     log: true,
   });
 
@@ -104,5 +107,5 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["QuestionAPI"];
-module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "Vault", "ClaimController", "ActionCostController"];
+module.exports.tags = ["questionAPI"];
+module.exports.dependencies = ["Xmetric"];
