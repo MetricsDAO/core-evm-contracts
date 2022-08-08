@@ -4,8 +4,7 @@ const { utils } = require("ethers");
 const { BN, getContract } = require("./utils");
 
 describe.only("Question API Contract", function () {
-  let metric;
-  let xmetric;
+  let metricToken;
   let questionAPI;
   let bountyQuestion;
   let claimController;
@@ -34,14 +33,11 @@ describe.only("Question API Contract", function () {
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
 
-    await deployments.fixture(["MVP1", "metricToken", "xMetricToken"]);
+    await deployments.fixture(["MVP1"]);
 
     // deploy Metric
-    const metricContract = await deployments.get("MetricToken");
-    metric = await ethers.getContractAt("MetricToken", metricContract.address);
-
-    // deploy Xmetric XMETRIC
-    xmetric = await getContract("Xmetric");
+    const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
+    metricToken = await getContract(whichMetric);
 
     // deploy Bounty Question
     bountyQuestion = await getContract("BountyQuestion");
@@ -53,14 +49,14 @@ describe.only("Question API Contract", function () {
     questionStateController = await getContract("QuestionStateController");
 
     // deploy Vault
-    // vault = await getContract("Vault");
-    const VaultContract = await ethers.getContractFactory("Vault");
-    vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
+    vault = await getContract("Vault");
+    // const VaultContract = await ethers.getContractFactory("Vault");
+    // vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
 
     // deploy Cost Controller
-    // costController = await getContract("ActionCostController");
-    const costContract = await ethers.getContractFactory("ActionCostController");
-    costController = await costContract.deploy(xmetric.address, vault.address);
+    costController = await getContract("ActionCostController");
+    // const costContract = await ethers.getContractFactory("ActionCostController");
+    // costController = await costContract.deploy(xmetric.address, vault.address);
 
     await vault.setCostController(costController.address);
 
@@ -78,16 +74,14 @@ describe.only("Question API Contract", function () {
     claimController.setQuestionApi(questionAPI.address);
     costController.setQuestionApi(questionAPI.address);
 
-    await xmetric.setTransactor(costController.address, true);
-    await xmetric.setTransactor(vault.address, true);
-
-    await xmetric.transfer(xmetricaddr2.address, utils.parseEther("20"));
-
-    await xmetric.transfer(xmetricaddr3.address, utils.parseEther("1000")); // https://www.youtube.com/watch?v=oTZETtLCZZ0
-
-    await metric.transfer(metricaddr1.address, BN(2000));
-    await xmetric.transfer(xmetricaddr1.address, utils.parseEther("40"));
-    await xmetric.connect(xmetricaddr1).approve(vault.address, utils.parseEther("30"));
+    if (whichMetric === "Xmetric") {
+      await metricToken.setTransactor(costController.address, true);
+      await metricToken.setTransactor(vault.address, true);
+    }
+    await metricToken.transfer(metricaddr1.address, BN(2000));
+    await metricToken.transfer(xmetricaddr2.address, utils.parseEther("20"));
+    await metricToken.transfer(xmetricaddr3.address, utils.parseEther("1000")); // https://www.youtube.com/watch?v=oTZETtLCZZ0
+    await metricToken.connect(xmetricaddr1).approve(vault.address, utils.parseEther("30"));
   });
 
   describe("Deployment", function () {
@@ -96,18 +90,16 @@ describe.only("Question API Contract", function () {
       expect(await questionAPI.owner()).to.equal(owner.address);
       expect(await questionAPI.owner()).to.not.equal(metricaddr1.address);
 
-      const metricaddr1Balance = await metric.balanceOf(metricaddr1.address);
-      const xmetricaddr1Balance = await xmetric.balanceOf(xmetricaddr1.address);
+      const metricaddr1Balance = await metricToken.balanceOf(metricaddr1.address);
 
       expect(metricaddr1Balance).to.equal("2000");
-      expect(xmetricaddr1Balance).to.equal("40000000000000000000");
     });
   });
 
   describe("Creating questions", function () {
     it("the factory should create questions", async function () {
       // create question
-      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
+      await metricToken.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 10);
       await questionIDtx.wait();
@@ -151,7 +143,7 @@ describe.only("Question API Contract", function () {
       const state = await questionStateController.getState(0);
       expect(state).to.equal(new BN(0));
 
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+      await metricToken.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -172,8 +164,8 @@ describe.only("Question API Contract", function () {
       let votes = await questionStateController.getTotalVotes(0);
       expect(votes).to.equal(new BN(0));
       // // create question
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
-      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("10"));
+      await metricToken.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+      await metricToken.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -207,7 +199,7 @@ describe.only("Question API Contract", function () {
     });
 
     it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
+      await metricToken.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("10"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 5);
       await questionIDtx.wait();
@@ -223,9 +215,9 @@ describe.only("Question API Contract", function () {
     });
 
     it("should set up a new way to get all questions by state", async () => {
-      await xmetric.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
-      await xmetric.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
-      await xmetric.connect(xmetricaddr3).approve(vault.address, ethers.utils.parseEther("30"));
+      await metricToken.connect(xmetricaddr1).approve(vault.address, ethers.utils.parseEther("30"));
+      await metricToken.connect(xmetricaddr2).approve(vault.address, ethers.utils.parseEther("30"));
+      await metricToken.connect(xmetricaddr3).approve(vault.address, ethers.utils.parseEther("30"));
 
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz", 25);
 

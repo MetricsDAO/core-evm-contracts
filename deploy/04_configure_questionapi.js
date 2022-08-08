@@ -1,34 +1,36 @@
+const { getContract } = require("../test/utils");
+
+if (!process.env.metric) {
+  console.error("Please set the environment variable 'metric' to a value of 'metric' or 'xmetric' to deploy the contract.");
+  return;
+}
+
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
   const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
   let network = hre.network.name;
   if (network === "hardhat") {
     network = "localhost";
   }
   console.log("huh");
-  const { address: whichMetricAddress } = require(`../deployments/${network}/${whichMetric}.json`);
+  const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
 
-  const bountyQuestionDeployment = await deployments.get("BountyQuestion");
-  const bountyQuestion = await hre.ethers.getContractAt("BountyQuestion", bountyQuestionDeployment.address);
+  const liveMetric = await getContract(whichMetric);
 
-  const vaultDeployment = await deployments.get("Vault");
-  const vault = await hre.ethers.getContractAt("Vault", vaultDeployment.address);
+  const bountyQuestion = await getContract("BountyQuestion");
 
-  const questionApiDeployment = await deployments.get("QuestionAPI");
-  const questionAPI = await hre.ethers.getContractAt("QuestionAPI", questionApiDeployment.address);
+  const vault = await getContract("Vault");
 
-  const actionCostDeployment = await deployments.get("ActionCostController");
-  const actionCostController = await hre.ethers.getContractAt("ActionCostController", actionCostDeployment.address);
+  const questionAPI = await getContract("QuestionAPI");
 
-  const questionStateDeployment = await deployments.get("QuestionStateController");
-  const questionStateController = await hre.ethers.getContractAt("QuestionStateController", questionStateDeployment.address);
+  const actionCostController = await getContract("ActionCostController");
 
-  const claimDeployment = await deployments.get("ClaimController");
-  const claimController = await hre.ethers.getContractAt("ClaimController", claimDeployment.address);
+  const questionStateController = await getContract("QuestionStateController");
+
+  const claimController = await getContract("ClaimController");
 
   let tx = await vault.setCostController(actionCostController.address);
   await tx.wait();
@@ -46,12 +48,11 @@ module.exports = async (hre) => {
   await tx.wait();
 
   if (whichMetric === "Xmetric") {
-    const xmetric = await hre.ethers.getContractAt("Xmetric", whichMetricAddress);
-    // tx = await xmetric.setTransactor(vault.address, true);
-    // await tx.wait();
+    tx = await liveMetric.setTransactor(vault.address, true);
+    await tx.wait();
 
-    // await xmetric.setTransactor(actionCostDeployment.address, true);
-    // await tx.wait();
+    await liveMetric.setTransactor(actionCostController.address, true);
+    await tx.wait();
   }
 
   tx = await actionCostController.setCreateCost(0);
@@ -60,7 +61,7 @@ module.exports = async (hre) => {
   tx = await actionCostController.setVoteCost(0);
   await tx.wait();
 
-  console.log("----- DONE");
+  console.log(";done");
 };
 module.exports.tags = ["MVP1"];
 module.exports.dependencies = ["questionAPI"];
