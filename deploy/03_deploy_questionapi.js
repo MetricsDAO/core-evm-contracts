@@ -3,7 +3,7 @@ module.exports = async (hre) => {
   const { deploy } = deployments;
   const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
-
+  console.log("wat");
   const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
   let network = hre.network.name;
   if (network === "hardhat") {
@@ -104,5 +104,4 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["QuestionAPI"];
-module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "Vault", "ClaimController", "ActionCostController"];
+module.exports.tags = ["questionAPI"];

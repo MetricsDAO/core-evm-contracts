@@ -2,18 +2,6 @@ import fs from "fs";
 import { ethers } from "hardhat";
 require("dotenv").config();
 
-// const costControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ActionCostController.json`);
-// const bountyQuestionJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/BountyQuestion.json`);
-// const questionStateControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionStateController.json`);
-// const claimControllerJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/ClaimController.json`);
-// const questionAPIJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/QuestionAPI.json`);
-// const vaultJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Vault.json`);
-// const xmetricJson = require(`../deployments/${process.env.HARDHAT_NETWORK}/Xmetric.json`);
-
-// CHANGE THIS TO WHATEVER PROVIDER YOUR USING CURRENTLY LOCALHOST/HARDHAT
-// const provider = new ethers.providers.JsonRpcProvider();
-// const signer = provider.getSigner();
-
 async function main() {
   const network = process.env.HARDHAT_NETWORK;
   console.log("adding transactor on: ", network);

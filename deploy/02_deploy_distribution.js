@@ -52,5 +52,5 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["TopChef", "StakingChef"];
-module.exports.dependencies = ["MetricToken"];
+module.exports.tags = ["distribution"];
+// module.exports.dependencies = ["MetricToken"];

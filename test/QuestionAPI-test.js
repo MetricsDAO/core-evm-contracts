@@ -1,9 +1,9 @@
 const { expect } = require("chai");
-const { ethers, network } = require("hardhat");
+const { ethers, network, deployments } = require("hardhat");
 const { utils } = require("ethers");
-const { BN } = require("./utils");
+const { BN, getContract } = require("./utils");
 
-describe("Question API Contract", function () {
+describe.only("Question API Contract", function () {
   let metric;
   let xmetric;
   let questionAPI;
@@ -33,30 +33,32 @@ describe("Question API Contract", function () {
     [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, treasury, ...addrs] = await ethers.getSigners();
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
+
+    await deployments.fixture(["MVP1", "metricToken", "xMetricToken"]);
+
     // deploy Metric
-    const metricContract = await ethers.getContractFactory("MetricToken");
-    metric = await metricContract.deploy();
+    const metricContract = await deployments.get("MetricToken");
+    metric = await ethers.getContractAt("MetricToken", metricContract.address);
 
     // deploy Xmetric XMETRIC
-    const xmetricContract = await ethers.getContractFactory("Xmetric");
-    xmetric = await xmetricContract.deploy();
+    xmetric = await getContract("Xmetric");
 
     // deploy Bounty Question
-    const questionContract = await ethers.getContractFactory("BountyQuestion");
-    bountyQuestion = await questionContract.deploy();
+    bountyQuestion = await getContract("BountyQuestion");
 
     // deploy Claim Controller
-    const claimContract = await ethers.getContractFactory("ClaimController");
-    claimController = await claimContract.deploy();
+    claimController = await getContract("ClaimController");
 
     // deploy State Controller
-    const stateContract = await ethers.getContractFactory("QuestionStateController");
-    questionStateController = await stateContract.deploy();
+    questionStateController = await getContract("QuestionStateController");
 
+    // deploy Vault
+    // vault = await getContract("Vault");
     const VaultContract = await ethers.getContractFactory("Vault");
     vault = await VaultContract.deploy(xmetric.address, questionStateController.address, treasury.address);
 
     // deploy Cost Controller
+    // costController = await getContract("ActionCostController");
     const costContract = await ethers.getContractFactory("ActionCostController");
     costController = await costContract.deploy(xmetric.address, vault.address);
 
@@ -191,12 +193,10 @@ describe("Question API Contract", function () {
       await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID);
 
       // address 2 cant vote twice
-      await expect(questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID)).to.be.revertedWith(
-        "HasAlreadyVotedForQuestion()"
-      );
+      await expect(questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID)).to.be.revertedWith("HasAlreadyVotedForQuestion()");
 
-      let amountOfVotesArray = await questionStateController.getTotalVotes(latestQuestionID);
-      let votersArray = await questionStateController.getVoters(latestQuestionID);
+      const amountOfVotesArray = await questionStateController.getTotalVotes(latestQuestionID);
+      const votersArray = await questionStateController.getVoters(latestQuestionID);
       expect(amountOfVotesArray).to.equal(2);
       expect(votersArray[0]).to.equal(xmetricaddr2.address);
 
@@ -204,7 +204,6 @@ describe("Question API Contract", function () {
       await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestionID);
       totalVotesForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
       expect(totalVotesForQuestion).to.equal(1);
-
     });
 
     it("should set up a new mapping and a getter when initializing question in questionCostController", async () => {
@@ -221,7 +220,6 @@ describe("Question API Contract", function () {
       const questionIDtx2 = await questionAPI.connect(xmetricaddr1).callStatic.createQuestion("ipfs://", 5);
 
       expect(questionIDtx2).to.equal(3);
-
     });
 
     it("should set up a new way to get all questions by state", async () => {
