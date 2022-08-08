@@ -2,8 +2,7 @@ const { getContract } = require("../test/utils");
 
 if (!process.env.metric) {
   console.error("Please set the environment variable 'metric' to a value of 'metric' or 'xmetric' to deploy the contract.");
-  return;
-}
+}}
 
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
