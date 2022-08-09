@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
@@ -11,6 +11,9 @@ import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
 import "@contracts/Protocol/Vault.sol";
 import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
+
+import "../contracts/Protocol/Enums/ActionEnum.sol";
+import "../contracts/Protocol/Enums/VaultEnum.sol";
 
 contract QuestionAPITest is Test {
     // Roles
@@ -139,7 +142,7 @@ contract QuestionAPITest is Test {
 
         // Update the costs of creating a question
         vm.prank(owner);
-        _costController.setCreateCost(9e18);
+        _costController.setActionCost(ACTION.CREATE, 9e18);
 
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
@@ -172,7 +175,7 @@ contract QuestionAPITest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other, questionId);
+        _costController.payForAction(other, questionId, ACTION.CREATE);
 
         vm.stopPrank();
     }

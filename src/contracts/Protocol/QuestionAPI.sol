@@ -9,6 +9,9 @@ import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
 
+// Enums
+import "./Enums/ActionEnum.sol";
+
 // Modifiers
 import "./modifiers/NFTLocked.sol";
 import "./modifiers/FunctionLocked.sol";
@@ -96,7 +99,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Pay to create a question
-        _costController.payForCreateQuestion(_msgSender(), questionId);
+        _costController.payForAction(_msgSender(), questionId, ACTION.CREATE);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId, uri);
@@ -140,7 +143,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         _questionStateController.voteFor(_msgSender(), questionId);
 
         // Pay to upvote a question
-        _costController.payForVoting(_msgSender(), questionId);
+        _costController.payForAction(_msgSender(), questionId, ACTION.VOTE);
 
         emit QuestionUpvoted(questionId, _msgSender());
     }
@@ -160,7 +163,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionId The questionId of the question to publish
      */
 
-    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked{
+    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked {
         // Publish the question
         _questionStateController.publish(questionId);
 
