@@ -105,7 +105,7 @@ contract XProtocolTest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other, questionId);
+        _costController.payForAction(other, questionId, ACTION.CREATE);
 
         vm.stopPrank();
     }
@@ -127,7 +127,7 @@ contract XProtocolTest is Test {
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _costController.payForCreateQuestion(other, questionId);
+        _costController.payForAction(other, questionId, ACTION.CREATE);
 
         vm.stopPrank();
     }

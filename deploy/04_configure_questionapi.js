@@ -53,10 +53,10 @@ module.exports = async (hre) => {
     await tx.wait();
   }
 
-  tx = await actionCostController.setCreateCost(0);
+  tx = await actionCostController.setActionCost(0, 0);
   await tx.wait();
 
-  tx = await actionCostController.setVoteCost(0);
+  tx = await actionCostController.setActionCost(1, 0);
   await tx.wait();
 };
 module.exports.tags = ["MVP1"];
