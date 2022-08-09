@@ -10,6 +10,8 @@ import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/Vault.sol";
 import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
+import "../contracts/Protocol/Enums/VaultEnum.sol";
+
 contract vaultTest is Test {
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -123,7 +125,7 @@ contract vaultTest is Test {
         _questionAPI.publishQuestion(questionId);
 
         //withdraw Metric
-        _vault.withdrawMetric(questionId, 0);
+        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
         assertEq(_vault.getMetricTotalLockedBalance(), 0);
         vm.stopPrank();
     }
@@ -233,7 +235,7 @@ contract vaultTest is Test {
 
         //withdraw Metric
         vm.expectRevert(Vault.QuestionNotPublished.selector);
-        _vault.withdrawMetric(questionId, 0);
+        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
         vm.stopPrank();
     }
 
@@ -249,11 +251,11 @@ contract vaultTest is Test {
         _questionAPI.publishQuestion(questionId);
 
         // Withdraw Metric
-        _vault.withdrawMetric(questionId, 0);
+        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
 
         // Withdraw again
         vm.expectRevert(Vault.NoMetricDeposited.selector);
-        _vault.withdrawMetric(questionId, 0);
+        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
 
         vm.stopPrank();
     }
@@ -273,15 +275,15 @@ contract vaultTest is Test {
         assertEq(_vault.getLockedMetricByQuestion(questionIdOne), 1e18);
 
         // Verify that the right properties are set on the question
-        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), 1e18);
 
         // Verify that other stages arent updated
-        assertEq(_vault.getUserFromProperties(questionIdOne, 1, other), address(0x0));
-        assertEq(_vault.getUserFromProperties(questionIdOne, 2, other), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.CLAIM_AND_ANSWER, other), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.REVIEW, other), address(0x0));
 
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 1, other), 0);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 2, other), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CLAIM_AND_ANSWER, other), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.REVIEW, other), 0);
         vm.stopPrank();
 
         // Repeat the same for second user
@@ -298,15 +300,15 @@ contract vaultTest is Test {
         assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 1e18);
 
         // Verify that the right properties are set on the question
-        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other2), other2);
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other2), other2);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other2), 1e18);
 
         // Verify that other stages arent updated
-        assertEq(_vault.getUserFromProperties(questionIdTwo, 1, other2), address(0x0));
-        assertEq(_vault.getUserFromProperties(questionIdTwo, 2, other2), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdTwo, STAGE.CLAIM_AND_ANSWER, other2), address(0x0));
+        assertEq(_vault.getUserFromProperties(questionIdTwo, STAGE.REVIEW, other2), address(0x0));
 
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 1, other2), 0);
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 2, other2), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CLAIM_AND_ANSWER, other2), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.REVIEW, other2), 0);
         vm.stopPrank();
         vm.stopPrank();
 
@@ -326,18 +328,18 @@ contract vaultTest is Test {
         assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 2e18);
 
         // Verify that the right properties are set on the question
-        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other3), other3);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other3), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other3), other3);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other3), 1e18);
 
-        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other3), other3);
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other3), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other3), other3);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other3), 1e18);
 
         // Verify that others arent updated
-        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), 1e18);
 
-        assertEq(_vault.getUserFromProperties(questionIdTwo, 0, other2), other2);
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 1e18);
+        assertEq(_vault.getUserFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other2), other2);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other2), 1e18);
         vm.stopPrank();
 
         // Publish the questions
@@ -348,12 +350,12 @@ contract vaultTest is Test {
 
         // Verify that everyone can withdraw and accounting is done properly.
         vm.prank(other);
-        _vault.withdrawMetric(questionIdOne, 0);
+        _vault.withdrawMetric(questionIdOne, STAGE.CREATE_AND_VOTE);
 
         // Shouldn't have anything to withdraw here
         vm.prank(other);
         vm.expectRevert(Vault.NotTheDepositor.selector);
-        _vault.withdrawMetric(questionIdTwo, 0);
+        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         // Check everything is updated correctly
         // Should decrease by 1e18
@@ -364,18 +366,18 @@ contract vaultTest is Test {
         assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 2e18);
 
         // Should be cleared
-        assertEq(_vault.getUserFromProperties(questionIdOne, 0, other), other);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 0);
+        assertEq(_vault.getUserFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), other);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), 0);
 
         // Other users also withdraw
         vm.prank(other2);
-        _vault.withdrawMetric(questionIdTwo, 0);
+        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         vm.prank(other3);
-        _vault.withdrawMetric(questionIdOne, 0);
+        _vault.withdrawMetric(questionIdOne, STAGE.CREATE_AND_VOTE);
 
         vm.prank(other3);
-        _vault.withdrawMetric(questionIdTwo, 0);
+        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         // Check everything is updated correctly
         // Should decrease by 3e18
@@ -386,11 +388,11 @@ contract vaultTest is Test {
         assertEq(_vault.getLockedMetricByQuestion(questionIdTwo), 0);
 
         // Should be cleared
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other), 0);
-        assertEq(_vault.getAmountFromProperties(questionIdOne, 0, other3), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdOne, STAGE.CREATE_AND_VOTE, other3), 0);
 
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other2), 0);
-        assertEq(_vault.getAmountFromProperties(questionIdTwo, 0, other3), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other2), 0);
+        assertEq(_vault.getAmountFromProperties(questionIdTwo, STAGE.CREATE_AND_VOTE, other3), 0);
 
         assertEq(_metricToken.balanceOf(other), 100e18);
         assertEq(_metricToken.balanceOf(other2), 100e18);

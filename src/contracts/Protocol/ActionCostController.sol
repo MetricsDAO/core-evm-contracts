@@ -9,6 +9,9 @@ import "./Vault.sol";
 // Interfaces
 import "./interfaces/IActionCostController.sol";
 
+// Enums
+import "./Enums/VaultEnum.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
@@ -33,7 +36,7 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     * @param _user The address of the user who wants to pay for creating a question.
     */
     function payForCreateQuestion(address _user, uint256 questionId) external onlyApi {
-        vault.lockMetric(_user, createCost, questionId, 0);
+        vault.lockMetric(_user, createCost, questionId, STAGE.CREATE_AND_VOTE);
     }
 
     /**
@@ -43,7 +46,7 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     * @param user The address of the user who wants to pay for voting on a question.
     */
     function payForVoting(address user, uint256 questionId) external onlyApi {
-        vault.lockMetric(user, voteCost, questionId, 0);
+        vault.lockMetric(user, voteCost, questionId, STAGE.CREATE_AND_VOTE);
     }
 
     // ------------------------------- Getter
