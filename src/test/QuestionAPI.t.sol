@@ -89,6 +89,7 @@ contract QuestionAPITest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _vault.setCostController(address(_costController));
+        _vault.setBountyQuestion(address(_bountyQuestion));
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
@@ -568,6 +569,17 @@ contract QuestionAPITest is Test {
         vm.expectRevert(Vault.UserHasNotUnvoted.selector);
         _vault.withdrawMetric(questionId, STAGE.UNVOTE);
 
+        vm.stopPrank();
+    }
+
+    function test_CannotWithrawForUnvotingAfterCreatingQuestion() public {
+        console.log("A user should not be able to withdraw their funds after creating a question.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        vm.expectRevert(Vault.CannotUnvoteOwnQuestion.selector);
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
         vm.stopPrank();
     }
 
