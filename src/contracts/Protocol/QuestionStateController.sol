@@ -96,10 +96,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return _question.totalVotes;
     }
 
-    function getQuestionIndexOfUser(address user, uint256 questionId) external view returns (uint256) {
-        return questionIndex[user][questionId];
-    }
-
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool) {
         return hasVoted[user][questionId];
     }
