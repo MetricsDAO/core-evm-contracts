@@ -11,6 +11,7 @@ import "./interfaces/IActionCostController.sol";
 
 // Enums
 import "./Enums/ActionEnum.sol";
+import "./Enums/QuestionState.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";
@@ -176,7 +177,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      */
     function claimQuestion(uint256 questionId) public functionLocked {
         // Check if the question is published and is therefore claimable
-        if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
+        if (_questionStateController.getState(questionId) != STATE.PUBLISHED) revert ClaimsNotOpen();
 
         // Claim the question
         _claimController.claim(_msgSender(), questionId);
