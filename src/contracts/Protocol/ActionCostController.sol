@@ -29,9 +29,11 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
 
         actionCost[ACTION.CREATE] = 1e18;
         actionCost[ACTION.VOTE] = 1e18;
+        actionCost[ACTION.CLAIM] = 1e18;
 
         actionStage[ACTION.CREATE] = STAGE.CREATE_AND_VOTE;
         actionStage[ACTION.VOTE] = STAGE.CREATE_AND_VOTE;
+        actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
     }
 
     function payForAction(
@@ -42,7 +44,6 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
     }
 
-    // ------------------------------- Getter
     // ------------------------------- Admin
 
     /**

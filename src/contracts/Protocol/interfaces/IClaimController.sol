@@ -6,6 +6,8 @@ interface IClaimController {
 
     function claim(address user, uint256 questionId) external;
 
+    function releaseClaim(address user, uint256 questionId) external;
+
     function answer(
         address user,
         uint256 questionId,

@@ -63,6 +63,8 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         answers[questionId][user] = _answer;
     }
 
+    function releaseClaim(address user, uint256 questionId) public onlyApi {}
+
     function answer(
         address user,
         uint256 questionId,

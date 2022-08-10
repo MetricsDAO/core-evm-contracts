@@ -149,6 +149,8 @@ contract Vault is Ownable, OnlyCostController {
             vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.CLAIM_AND_ANSWER) {
             // if (submissionPeriod == active) revert SubmissionPeriodActive();
+
+            vaultAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
         } else {
             // if (reviewPeriod == active) revert ReviewPeriodActive();
         }

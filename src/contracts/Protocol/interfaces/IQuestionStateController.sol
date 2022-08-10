@@ -10,7 +10,7 @@ interface IQuestionStateController {
 
     function unvoteFor(address _user, uint256 questionId) external;
 
-    function publish(uint256 questionId) external;
+    function publish(uint256 question) external;
 
     function getState(uint256 quesitonId) external view returns (STATE currentState);
 
