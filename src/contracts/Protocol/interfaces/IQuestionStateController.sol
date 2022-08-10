@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../Enums/QuestionState.sol";
+import "../Enums/QuestionStateEnum.sol";
 
 interface IQuestionStateController {
     function initializeQuestion(uint256 questionId, string calldata uri) external;

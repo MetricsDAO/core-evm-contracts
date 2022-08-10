@@ -10,7 +10,7 @@ import "./interfaces/IQuestionStateController.sol";
 
 // Enums
 import "./Enums/VaultEnum.sol";
-import "./Enums/QuestionState.sol";
+import "./Enums/QuestionStateEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
@@ -63,15 +63,6 @@ contract Vault is Ownable, OnlyCostController {
         address user;
         uint256 amount;
         STATUS status;
-    }
-
-    //------------------------------------------------------ ENUMS
-
-    enum STATUS {
-        UNINT,
-        DEPOSITED,
-        WITHDRAWN,
-        SLASHED
     }
 
     //------------------------------------------------------ EVENTS

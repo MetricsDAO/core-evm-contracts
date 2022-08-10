@@ -11,7 +11,7 @@ import "./interfaces/IActionCostController.sol";
 
 // Enums
 import "./Enums/ActionEnum.sol";
-import "./Enums/QuestionState.sol";
+import "./Enums/QuestionStateEnum.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";

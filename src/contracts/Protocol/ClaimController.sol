@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // Interfaces
 import "./interfaces/IClaimController.sol";
 
+// Enums
+import "./Enums/ClaimEnum.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
@@ -33,19 +36,11 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
     //------------------------------------------------------ STRUCTS
 
     struct Answer {
-        STATE state;
+        CLAIM_STATE state;
         address author;
         string answerURL;
         uint256 finalGrade;
         string scoringMetaDataURI; // store heuristics and such on ipfs
-    }
-
-    // ------------------------------------------------------ ENUMS
-
-    enum STATE {
-        UNINT,
-        CLAIMED,
-        ANSWERED
     }
 
     // ------------------------------------------------------ FUNCTIONS
@@ -64,7 +59,7 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         if (answers[questionId][user].author == user) revert AlreadyClaimed();
 
         claims[questionId].push(user);
-        Answer memory _answer = Answer({state: STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
+        Answer memory _answer = Answer({state: CLAIM_STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
         answers[questionId][user] = _answer;
     }
 
@@ -73,7 +68,7 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         uint256 questionId,
         string calldata answerURL
     ) public onlyOwner {
-        if (answers[questionId][user].state != STATE.CLAIMED) revert NeedClaimToAnswer();
+        if (answers[questionId][user].state != CLAIM_STATE.CLAIMED) revert NeedClaimToAnswer();
         answers[questionId][user].answerURL = answerURL;
     }
 

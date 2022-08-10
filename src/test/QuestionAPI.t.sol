@@ -14,7 +14,7 @@ import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 import "../contracts/Protocol/Enums/ActionEnum.sol";
 import "../contracts/Protocol/Enums/VaultEnum.sol";
-import "../contracts/Protocol/Enums/QuestionState.sol";
+import "../contracts/Protocol/Enums/QuestionStateEnum.sol";
 
 contract QuestionAPITest is Test {
     // Roles

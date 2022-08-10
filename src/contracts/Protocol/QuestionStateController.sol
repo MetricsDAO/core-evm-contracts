@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IQuestionStateController.sol";
 
 // Enums
-import "./Enums/QuestionState.sol";
+import "./Enums/QuestionStateEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
