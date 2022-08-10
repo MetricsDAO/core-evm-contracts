@@ -43,8 +43,12 @@ contract Vault is Ownable, OnlyCostController {
     error NoMetricDeposited();
     /// @notice Throw if user tries to lock Metric for a question that has a different state than UNINT.
     error QuestionHasInvalidStatus();
+    /// @notice Throw if user tries to claim Metric for unvoting on a question that is not in the VOTING state.
+    error QuestionNotInVoting();
     /// @notice Throw if user tries to claim Metric for a question that has not been published (yet).
     error QuestionNotPublished();
+    /// @notice Throw if user tries to claim Metric for a question that was not unvoted
+    error UserHasNotUnvoted();
     /// @notice Throw if the same question is slashed twice.
     error AlreadySlashed();
     /// @notice Throw if address is equal to address(0).
@@ -137,35 +141,43 @@ contract Vault is Ownable, OnlyCostController {
     function withdrawMetric(uint256 questionId, STAGE stage) external {
         // Checks if Metric is withdrawn for a valid stage.
         if (uint8(stage) >= 4) revert InvalidStage();
-        // Checks that only the depositer can withdraw the metric
-        if (_msgSender() != lockedMetric[questionId][stage][_msgSender()].user) revert NotTheDepositor();
-        // Checks that the metric to withdraw is not 0
-        if (lockedMetric[questionId][stage][_msgSender()].status != STATUS.DEPOSITED) revert NoMetricDeposited();
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
             if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
 
             // Accounting & changes
-            uint256 toWithdraw = lockedMetric[questionId][stage][_msgSender()].amount;
-
-            lockedMetric[questionId][stage][_msgSender()].status = STATUS.WITHDRAWN;
-            lockedMetric[questionId][stage][_msgSender()].amount = 0;
-
-            lockedMetricByQuestion[questionId] -= toWithdraw;
-            totalLockedInVaults[_msgSender()] -= toWithdraw;
-
-            // Transfers Metric from the vault to the user.
-            metric.transfer(_msgSender(), toWithdraw);
-
-            emit Withdraw(_msgSender(), toWithdraw);
+            vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.UNVOTE) {
-            // reimburse unvoting
+            // Check that user has a voting index, has not voted and the question state is VOTING.
+            if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
+            if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.VOTING)) revert QuestionNotInVoting();
+
+            // Accounting & changes
+            vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.CLAIM_AND_ANSWER) {
             // if (submissionPeriod == active) revert SubmissionPeriodActive();
         } else {
             // if (reviewPeriod == active) revert ReviewPeriodActive();
         }
+    }
+
+    function vaultAccounting(uint256 questionId, STAGE stage) internal {
+        if (_msgSender() != lockedMetric[questionId][stage][_msgSender()].user) revert NotTheDepositor();
+        if (lockedMetric[questionId][stage][_msgSender()].status != STATUS.DEPOSITED) revert NoMetricDeposited();
+
+        uint256 toWithdraw = lockedMetric[questionId][stage][_msgSender()].amount;
+
+        lockedMetric[questionId][stage][_msgSender()].status = STATUS.WITHDRAWN;
+        lockedMetric[questionId][stage][_msgSender()].amount = 0;
+
+        lockedMetricByQuestion[questionId] -= toWithdraw;
+        totalLockedInVaults[_msgSender()] -= toWithdraw;
+
+        // Transfers Metric from the vault to the user.
+        metric.transfer(_msgSender(), toWithdraw);
+
+        emit Withdraw(_msgSender(), toWithdraw);
     }
 
     /**

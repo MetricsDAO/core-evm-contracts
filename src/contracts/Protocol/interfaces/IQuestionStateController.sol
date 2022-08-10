@@ -13,6 +13,10 @@ interface IQuestionStateController {
     // TODO currentState can probably be like a uint8, it depends on how many states we have
     function getState(uint256 quesitonId) external view returns (uint256 currentState);
 
+    function getQuestionIndexOfUser(address user, uint256 questionId) external view returns (uint256);
+
+    function getHasUserVoted(address user, uint256 questionId) external view returns (bool);
+
     function setDisqualifiedState(uint256 questionId) external;
 
     enum STATE {
