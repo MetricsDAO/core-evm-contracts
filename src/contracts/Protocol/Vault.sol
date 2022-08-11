@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./QuestionStateController.sol";
+import "./BountyQuestion.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
@@ -21,6 +22,7 @@ contract Vault is Ownable, OnlyCostController {
     IERC20 public metric;
     IQuestionStateController public questionStateController;
     IClaimController public claimController;
+    BountyQuestion private _question;
 
     STATUS public status;
 
@@ -57,6 +59,8 @@ contract Vault is Ownable, OnlyCostController {
     error QuestionNotInReview();
     /// @notice Throw if user tries to withdraw Metric from a claim that is not released.
     error ClaimNotReleased();
+    /// @notice Throw if creator of question tries to unvote
+    error CannotUnvoteOwnQuestion();
     /// @notice Throw if the same question is slashed twice.
     error AlreadySlashed();
     /// @notice Throw if address is equal to address(0).
@@ -137,6 +141,7 @@ contract Vault is Ownable, OnlyCostController {
             withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.UNVOTE) {
             // Check that user has a voting index, has not voted and the question state is VOTING.
+            if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotUnvoteOwnQuestion();
             if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
             if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
 
@@ -294,6 +299,10 @@ contract Vault is Ownable, OnlyCostController {
      */
     function setTreasury(address _treasury) public onlyOwner {
         treasury = _treasury;
+    }
+
+    function setBountyQuestion(address _bountyQuestion) public onlyOwner {
+        _question = BountyQuestion(_bountyQuestion);
     }
 
     /**
