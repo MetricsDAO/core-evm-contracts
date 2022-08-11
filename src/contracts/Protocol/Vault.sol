@@ -7,10 +7,12 @@ import "./QuestionStateController.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
+import "./interfaces/IClaimController.sol";
 
 // Enums
 import "./Enums/VaultEnum.sol";
 import "./Enums/QuestionStateEnum.sol";
+import "./Enums/ClaimEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
@@ -18,6 +20,7 @@ import "./modifiers/OnlyCostController.sol";
 contract Vault is Ownable, OnlyCostController {
     IERC20 public metric;
     IQuestionStateController public questionStateController;
+    IClaimController public claimController;
 
     STATUS public status;
 
@@ -50,6 +53,10 @@ contract Vault is Ownable, OnlyCostController {
     error QuestionNotPublished();
     /// @notice Throw if user tries to claim Metric for a question that was not unvoted
     error UserHasNotUnvoted();
+    /// @notice Throw if user tries to withdraw Metric from a question that is not in the review state.
+    error QuestionNotInReview();
+    /// @notice Throw if user tries to withdraw Metric from a claim that is not released.
+    error ClaimNotReleased();
     /// @notice Throw if the same question is slashed twice.
     error AlreadySlashed();
     /// @notice Throw if address is equal to address(0).
@@ -106,10 +113,55 @@ contract Vault is Ownable, OnlyCostController {
         STAGE stage
     ) external onlyCostController {
         // Checks if METRIC is locked for a valid stage.
-        if (uint8(stage) >= 4) revert InvalidStage();
+        if (uint8(stage) >= 5) revert InvalidStage();
         // Checks if there has not been a deposit yet
         if (lockedMetric[questionId][stage][user].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
 
+        depositAccounting(user, amount, questionId, stage);
+    }
+
+    /**
+     * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
+     * @param questionId The question id
+     * @param stage The stage for which the user is withdrawing metric from a question.
+     */
+    function withdrawMetric(uint256 questionId, STAGE stage) external {
+        // Checks if Metric is withdrawn for a valid stage.
+        if (uint8(stage) >= 5) revert InvalidStage();
+
+        if (stage == STAGE.CREATE_AND_VOTE) {
+            // Checks that the question is published
+            if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
+
+            // Accounting & changes
+            withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
+        } else if (stage == STAGE.UNVOTE) {
+            // Check that user has a voting index, has not voted and the question state is VOTING.
+            if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
+            if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
+
+            // Accounting & changes
+            withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
+        } else if (stage == STAGE.CLAIM_AND_ANSWER) {
+            if (questionStateController.getState(questionId) != STATE.COMPLETED) revert QuestionNotInReview();
+
+            withdrawalAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
+        } else if (stage == STAGE.RELEASE_CLAIM) {
+            if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
+            if (claimController.getQuestionClaimState(questionId, _msgSender()) != CLAIM_STATE.RELEASED) revert ClaimNotReleased();
+
+            withdrawalAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
+        } else {
+            // if (reviewPeriod == active) revert ReviewPeriodActive();
+        }
+    }
+
+    function depositAccounting(
+        address user,
+        uint256 amount,
+        uint256 questionId,
+        STAGE stage
+    ) internal {
         // Accounting & changes
         lockedMetric[questionId][stage][user].user = user;
         lockedMetric[questionId][stage][user].amount += amount;
@@ -125,38 +177,7 @@ contract Vault is Ownable, OnlyCostController {
         metric.transferFrom(user, address(this), amount);
     }
 
-    /**
-     * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
-     * @param questionId The question id
-     * @param stage The stage for which the user is withdrawing metric from a question.
-     */
-    function withdrawMetric(uint256 questionId, STAGE stage) external {
-        // Checks if Metric is withdrawn for a valid stage.
-        if (uint8(stage) >= 4) revert InvalidStage();
-
-        if (stage == STAGE.CREATE_AND_VOTE) {
-            // Checks that the question is published
-            if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
-
-            // Accounting & changes
-            vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
-        } else if (stage == STAGE.UNVOTE) {
-            // Check that user has a voting index, has not voted and the question state is VOTING.
-            if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
-            if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
-
-            // Accounting & changes
-            vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
-        } else if (stage == STAGE.CLAIM_AND_ANSWER) {
-            // if (submissionPeriod == active) revert SubmissionPeriodActive();
-
-            vaultAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
-        } else {
-            // if (reviewPeriod == active) revert ReviewPeriodActive();
-        }
-    }
-
-    function vaultAccounting(uint256 questionId, STAGE stage) internal {
+    function withdrawalAccounting(uint256 questionId, STAGE stage) internal {
         if (_msgSender() != lockedMetric[questionId][stage][_msgSender()].user) revert NotTheDepositor();
         if (lockedMetric[questionId][stage][_msgSender()].status != STATUS.DEPOSITED) revert NoMetricDeposited();
 
@@ -257,6 +278,11 @@ contract Vault is Ownable, OnlyCostController {
     function setQuestionStateController(address _questionStateController) public onlyOwner {
         if (_questionStateController == address(0)) revert InvalidAddress();
         questionStateController = IQuestionStateController(_questionStateController);
+    }
+
+    function setClaimController(address _claimController) public onlyOwner {
+        if (_claimController == address(0)) revert InvalidAddress();
+        claimController = IClaimController(_claimController);
     }
 
     /**
