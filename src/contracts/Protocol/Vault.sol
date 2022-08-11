@@ -142,6 +142,8 @@ contract Vault is Ownable, OnlyCostController {
 
             // Accounting & changes
             withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
+
+            lockedMetric[questionId][STAGE.CREATE_AND_VOTE][_msgSender()].status = STATUS.UNINT;
         } else if (stage == STAGE.CLAIM_AND_ANSWER) {
             if (questionStateController.getState(questionId) != STATE.COMPLETED) revert QuestionNotInReview();
 
@@ -151,6 +153,8 @@ contract Vault is Ownable, OnlyCostController {
             if (claimController.getQuestionClaimState(questionId, _msgSender()) != CLAIM_STATE.RELEASED) revert ClaimNotReleased();
 
             withdrawalAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
+
+            lockedMetric[questionId][STAGE.CLAIM_AND_ANSWER][_msgSender()].status = STATUS.UNINT;
         } else {
             // if (reviewPeriod == active) revert ReviewPeriodActive();
         }

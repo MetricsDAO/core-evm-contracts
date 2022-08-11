@@ -346,23 +346,6 @@ contract QuestionAPITest is Test {
         _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
 
-    function test_ClaimQuestion() public {
-        console.log("A user should should be able to claim a challenge.");
-
-        vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
-
-        // Publish the question
-        _questionAPI.publishQuestion(questionId, 25);
-
-        // Claim the question
-        _questionAPI.claimQuestion(questionId);
-
-        // Verify the right user has claimed the question
-        assertEq(_claimController.getClaims(questionId)[0], other);
-        vm.stopPrank();
-    }
-
     function test_CannotClaimQuestionThatIsNotPublished() public {
         console.log("A user shouldnt be able to claim an unpublished question");
 
@@ -590,6 +573,10 @@ contract QuestionAPITest is Test {
         _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
         assertEq(_metricToken.balanceOf(other2), 100e18);
 
+        _questionAPI.claimQuestion(questionId);
+        assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
         vm.stopPrank();
     }
 
@@ -611,6 +598,25 @@ contract QuestionAPITest is Test {
 
         vm.expectRevert(Vault.ClaimNotReleased.selector);
         _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        vm.stopPrank();
+    }
+
+    function test_VoteUnvoteVote() public {
+        console.log("A user should be able to vote unvote vote.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        _questionAPI.upvoteQuestion(questionId);
+
+        _questionAPI.unvoteQuestion(questionId);
+
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        _questionAPI.upvoteQuestion(questionId);
 
         vm.stopPrank();
     }

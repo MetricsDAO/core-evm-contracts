@@ -58,7 +58,6 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         if (answers[questionId][user].author == user) revert AlreadyClaimed();
 
         ++claimCounts[questionId];
-        claims[questionId].push(user);
         Answer memory _answer = Answer({state: CLAIM_STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
         answers[questionId][user] = _answer;
     }
@@ -67,6 +66,7 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         if (answers[questionId][user].author != user) revert NoClaimToRelease();
 
         answers[questionId][user].state = CLAIM_STATE.RELEASED;
+        answers[questionId][user].author = address(0);
 
         --claimCounts[questionId];
     }
