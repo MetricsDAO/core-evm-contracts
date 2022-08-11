@@ -4,5 +4,6 @@ pragma solidity ^0.8.13;
 enum CLAIM_STATE {
     UNINT,
     CLAIMED,
+    RELEASED,
     ANSWERED
 }

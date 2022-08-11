@@ -93,7 +93,7 @@ contract vaultTest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         _metricToken.approve(address(_vault), 100e18);
-        _questionAPI.createQuestion("ipfs://XYZ", 25);
+        _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_vault.getMetricTotalLockedBalance(), 100e16);
         vm.stopPrank();
     }
@@ -104,10 +104,10 @@ contract vaultTest is Test {
         vm.startPrank(other);
         // Create 1st question
         _metricToken.approve(address(_vault), 100e18);
-        _questionAPI.createQuestion("ipfs://XYZ", 25);
+        _questionAPI.createQuestion("ipfs://XYZ");
 
         // Create 2nd question
-        _questionAPI.createQuestion("ipfs://XYZ/1", 26);
+        _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_vault.getMetricTotalLockedBalance(), 200e16);
 
         vm.stopPrank();
@@ -119,10 +119,10 @@ contract vaultTest is Test {
 
         // Create question
         _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish question
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         //withdraw Metric
         _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
@@ -135,7 +135,7 @@ contract vaultTest is Test {
     //     vm.startPrank(other);
     //     // Create question
     //     _metricToken.approve(address(_vault), 100e18);
-    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
     //     vm.stopPrank();
 
     //     //slash Metric
@@ -156,7 +156,7 @@ contract vaultTest is Test {
     //     vm.startPrank(other);
     //     // Create question
     //     _metricToken.approve(address(_vault), 100e18);
-    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
     //     //slash Metric
     //     vm.expectRevert("Ownable: caller is not the owner");
@@ -170,7 +170,7 @@ contract vaultTest is Test {
     //     vm.startPrank(other);
     //     // Create question
     //     _metricToken.approve(address(_vault), 100e18);
-    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+    //     uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
     //     vm.stopPrank();
 
     //     vm.startPrank(owner);
@@ -231,7 +231,7 @@ contract vaultTest is Test {
 
         // Create question
         _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         //withdraw Metric
         vm.expectRevert(Vault.QuestionNotPublished.selector);
@@ -245,10 +245,10 @@ contract vaultTest is Test {
 
         // Create question
         _metricToken.approve(address(_vault), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish question
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         // Withdraw Metric
         _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
@@ -266,7 +266,7 @@ contract vaultTest is Test {
 
         // Create question
         _metricToken.approve(address(_vault), 100e18);
-        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Verify total vault balance is correct
         assertEq(_vault.getMetricTotalLockedBalance(), 1e18);
@@ -291,7 +291,7 @@ contract vaultTest is Test {
 
         // Create question
         _metricToken.approve(address(_vault), 100e18);
-        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Verify total vault balance is correct
         assertEq(_vault.getMetricTotalLockedBalance(), 2e18);
@@ -344,9 +344,9 @@ contract vaultTest is Test {
 
         // Publish the questions
         vm.prank(owner);
-        _questionAPI.publishQuestion(questionIdOne);
+        _questionAPI.publishQuestion(questionIdOne, 25);
         vm.prank(owner);
-        _questionAPI.publishQuestion(questionIdTwo);
+        _questionAPI.publishQuestion(questionIdTwo, 25);
 
         // Verify that everyone can withdraw and accounting is done properly.
         vm.prank(other);

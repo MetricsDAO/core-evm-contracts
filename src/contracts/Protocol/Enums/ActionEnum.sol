@@ -3,5 +3,6 @@ pragma solidity ^0.8.13;
 
 enum ACTION {
     CREATE,
-    VOTE
+    VOTE,
+    CLAIM
 }

@@ -15,6 +15,7 @@ import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 import "../contracts/Protocol/Enums/ActionEnum.sol";
 import "../contracts/Protocol/Enums/VaultEnum.sol";
 import "../contracts/Protocol/Enums/QuestionStateEnum.sol";
+import "../contracts/Protocol/Enums/ClaimEnum.sol";
 
 contract QuestionAPITest is Test {
     // Roles
@@ -90,6 +91,7 @@ contract QuestionAPITest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _vault.setCostController(address(_costController));
+        _vault.setClaimController(address(_claimController));
         _vault.setBountyQuestion(address(_bountyQuestion));
 
         _metricToken.transfer(other, 100e18);
@@ -133,12 +135,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionIdOne = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionIdOne)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionIdOne), 25);
 
         vm.stopPrank();
 
@@ -149,12 +150,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 99e18);
-        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://MDAO", 15);
+        uint256 questionIdTwo = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 90e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionIdTwo)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionIdTwo), 15);
 
         // Assert that accounting has been done correctly
         assertEq(_vault.getLockedPerUser(other), 10e18);
@@ -168,12 +168,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Other cannot directly call onlyApi functions
         vm.expectRevert(OnlyApi.NotTheApi.selector);
@@ -188,12 +187,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
         vm.stopPrank();
@@ -222,12 +220,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
         vm.stopPrank();
@@ -259,12 +256,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
         vm.stopPrank();
@@ -294,12 +290,11 @@ contract QuestionAPITest is Test {
         vm.startPrank(other);
         // Create a question and see that it is created and balance is updated.
         assertEq(_metricToken.balanceOf(other), 100e18);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
-        assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
         vm.expectRevert(QuestionAPI.CannotVoteForOwnQuestion.selector);
@@ -309,7 +304,7 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestion() public {
         vm.startPrank(owner);
-        uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
+        uint256 badQuestion = _questionAPI.createQuestion("ipfs://XYZ");
         _questionAPI.disqualifyQuestion(badQuestion);
         uint256 questionState = uint256(_questionStateController.getState(badQuestion));
 
@@ -319,7 +314,7 @@ contract QuestionAPITest is Test {
 
     function test_DisqualifyQuestionTwo() public {
         vm.startPrank(other);
-        uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
+        uint256 badQuestion = _questionAPI.createQuestion("ipfs://XYZ");
         vm.stopPrank();
 
         vm.prank(owner);
@@ -352,28 +347,11 @@ contract QuestionAPITest is Test {
         _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
 
-    function test_ClaimQuestion() public {
-        console.log("A user should should be able to claim a challenge.");
-
-        vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
-
-        // Publish the question
-        _questionAPI.publishQuestion(questionId);
-
-        // Claim the question
-        _questionAPI.claimQuestion(questionId);
-
-        // Verify the right user has claimed the question
-        assertEq(_claimController.getClaims(questionId)[0], other);
-        vm.stopPrank();
-    }
-
     function test_CannotClaimQuestionThatIsNotPublished() public {
         console.log("A user shouldnt be able to claim an unpublished question");
 
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Attempt claim
         vm.expectRevert(QuestionAPI.ClaimsNotOpen.selector);
@@ -385,10 +363,10 @@ contract QuestionAPITest is Test {
         console.log("A user shouldnt be able to claim a question that has reached its limit");
 
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 1);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 1);
 
         // Attempt claim
         _questionAPI.claimQuestion(questionId);
@@ -404,10 +382,10 @@ contract QuestionAPITest is Test {
 
     function test_UserCannotClaimQuestionMultipleTimes() public {
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         // Claim the question
         _questionAPI.claimQuestion(questionId);
@@ -421,10 +399,10 @@ contract QuestionAPITest is Test {
 
     function test_verifyClaimingAccounting() public {
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         // Verify that everything is updated correctly
         _claimController.getClaimDataForUser(questionId, other);
@@ -454,7 +432,7 @@ contract QuestionAPITest is Test {
         // Create a question
         vm.expectEmit(true, true, false, true);
         emit QuestionCreated(1, address(other));
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         vm.stopPrank();
 
@@ -474,7 +452,7 @@ contract QuestionAPITest is Test {
         // Publish the question
         vm.expectEmit(true, true, false, false);
         emit QuestionPublished(questionId, address(other));
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         // Claim the question
         vm.expectEmit(true, true, false, false);
@@ -504,10 +482,10 @@ contract QuestionAPITest is Test {
         _questionAPI.toggleLock();
 
         vm.startPrank(other);
-        uint256 q = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 q = _questionAPI.createQuestion("ipfs://XYZ");
 
         vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
-        _questionAPI.publishQuestion(q);
+        _questionAPI.publishQuestion(q, 25);
 
         vm.stopPrank();
     }
@@ -516,19 +494,19 @@ contract QuestionAPITest is Test {
         console.log("Only the admin should be able to publish a question.");
 
         vm.prank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         vm.prank(owner);
         _questionAPI.toggleLock();
 
         // Attempt to publish the question
         vm.prank(other2);
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
 
         vm.prank(other);
         vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
 
-        _questionAPI.publishQuestion(questionId);
+        _questionAPI.publishQuestion(questionId, 25);
     }
 
     function test_OnlyOwnerCanMintPermissionedNFTs() public {
@@ -543,7 +521,7 @@ contract QuestionAPITest is Test {
         console.log("A user should be able to withdraw their funds after unvoting.");
 
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
         vm.stopPrank();
 
         vm.startPrank(other2);
@@ -572,6 +550,74 @@ contract QuestionAPITest is Test {
 
         vm.stopPrank();
     }
+
+    function test_ClaimReleaseClaim() public {
+        console.log("A user should be able to release their claim after claiming.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(questionId, 25);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+        assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
+        // Release the claim
+        _questionAPI.releaseClaim(questionId);
+        assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.RELEASED));
+
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        _questionAPI.claimQuestion(questionId);
+        assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
+        vm.stopPrank();
+    }
+
+    function test_ClaimTryWithdrawWithoutRelease() public {
+        console.log("A user should only be able to try to withdraw their claim after releasing.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(questionId, 25);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+        assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
+        vm.expectRevert(Vault.ClaimNotReleased.selector);
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        vm.stopPrank();
+    }
+
+    function test_VoteUnvoteVote() public {
+        console.log("A user should be able to vote unvote vote.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        _questionAPI.upvoteQuestion(questionId);
+
+        _questionAPI.unvoteQuestion(questionId);
+
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        _questionAPI.upvoteQuestion(questionId);
 
     function test_CannotWithrawForUnvotingAfterCreatingQuestion() public {
         console.log("A user should not be able to withdraw their funds after creating a question.");
