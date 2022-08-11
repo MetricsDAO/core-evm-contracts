@@ -89,6 +89,7 @@ contract QuestionAPITest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _vault.setCostController(address(_costController));
+        _vault.setBountyQuestion(address(_bountyQuestion));
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
@@ -535,6 +536,51 @@ contract QuestionAPITest is Test {
         vm.prank(other);
         vm.expectRevert("Ownable: caller is not the owner");
         _questionAPI.addHolderRole(ADMIN_ROLE, address(0));
+    }
+
+    function test_WithdrawAfterUnvoting() public {
+        console.log("A user should be able to withdraw their funds after unvoting.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId);
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
+        // Unvote the question
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Verify balance updates
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+        vm.stopPrank();
+
+        vm.startPrank(other3);
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId);
+        assertEq(_metricToken.balanceOf(other3), 99e18);
+
+        // Verify user cannot withdraw funds
+        vm.expectRevert(Vault.UserHasNotUnvoted.selector);
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        vm.stopPrank();
+    }
+
+    function test_CannotWithrawForUnvotingAfterCreatingQuestion() public {
+        console.log("A user should not be able to withdraw their funds after creating a question.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+
+        vm.expectRevert(Vault.CannotUnvoteOwnQuestion.selector);
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+        vm.stopPrank();
     }
 
     // --------------------- Testing for access controlls
