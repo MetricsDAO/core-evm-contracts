@@ -618,12 +618,13 @@ contract QuestionAPITest is Test {
         _vault.withdrawMetric(questionId, STAGE.UNVOTE);
 
         _questionAPI.upvoteQuestion(questionId);
+    }
 
     function test_CannotWithrawForUnvotingAfterCreatingQuestion() public {
         console.log("A user should not be able to withdraw their funds after creating a question.");
 
         vm.startPrank(other);
-        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ", 5);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         vm.expectRevert(Vault.CannotUnvoteOwnQuestion.selector);
         _vault.withdrawMetric(questionId, STAGE.UNVOTE);

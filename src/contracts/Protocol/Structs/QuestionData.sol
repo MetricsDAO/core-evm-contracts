@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "../interfaces/IQuestionStateController.sol";
+import "../Enums/QuestionStateEnum.sol";
 
 struct QuestionData {
     uint256 questionId;
@@ -9,5 +9,5 @@ struct QuestionData {
     string uri;
     address[] voters;
     uint256 totalVotes;
-    IQuestionStateController.STATE questionState;
+    STATE questionState;
 }
