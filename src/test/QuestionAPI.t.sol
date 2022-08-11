@@ -14,6 +14,7 @@ import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 import "../contracts/Protocol/Enums/ActionEnum.sol";
 import "../contracts/Protocol/Enums/VaultEnum.sol";
+import "../contracts/Protocol/Enums/QuestionStateEnum.sol";
 
 contract QuestionAPITest is Test {
     // Roles
@@ -136,7 +137,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionIdOne), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionIdOne)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionIdOne), 25);
 
         vm.stopPrank();
@@ -152,7 +153,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 90e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionIdTwo), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionIdTwo)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionIdTwo), 15);
 
         // Assert that accounting has been done correctly
@@ -171,7 +172,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Other cannot directly call onlyApi functions
@@ -191,7 +192,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
@@ -200,7 +201,7 @@ contract QuestionAPITest is Test {
         _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
@@ -225,7 +226,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
@@ -234,7 +235,7 @@ contract QuestionAPITest is Test {
         _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
@@ -262,7 +263,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
@@ -271,7 +272,7 @@ contract QuestionAPITest is Test {
         _questionAPI.upvoteQuestion(questionId);
         vm.startPrank(other);
         assertEq(_metricToken.balanceOf(other), 99e18);
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_questionStateController.getTotalVotes(questionId), 2);
 
         // Question is set for the right address and values
@@ -297,7 +298,7 @@ contract QuestionAPITest is Test {
         assertEq(_metricToken.balanceOf(other), 99e18);
 
         // Assert that the question is now a VOTING and has the correct data (claim limit).
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.VOTING));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
         assertEq(_claimController.getClaimLimit(questionId), 25);
 
         // Vote for the question
@@ -310,9 +311,9 @@ contract QuestionAPITest is Test {
         vm.startPrank(owner);
         uint256 badQuestion = _questionAPI.createQuestion("Bad question", 1);
         _questionAPI.disqualifyQuestion(badQuestion);
-        uint256 questionState = _questionStateController.getState(badQuestion);
+        uint256 questionState = uint256(_questionStateController.getState(badQuestion));
 
-        assertEq(questionState, uint256(IQuestionStateController.STATE.DISQUALIFIED));
+        assertEq(questionState, uint256(STATE.DISQUALIFIED));
         vm.stopPrank();
     }
 
@@ -324,7 +325,7 @@ contract QuestionAPITest is Test {
         vm.prank(owner);
         _questionAPI.disqualifyQuestion(badQuestion);
 
-        assertEq(_questionStateController.getState(badQuestion), uint256(IQuestionStateController.STATE.DISQUALIFIED));
+        assertEq(uint256(_questionStateController.getState(badQuestion)), uint256(STATE.DISQUALIFIED));
     }
 
     function test_ProgramManagerCreateChallenge() public {
@@ -338,7 +339,7 @@ contract QuestionAPITest is Test {
         uint256 questionId = _questionAPI.createChallenge("ipfs://XYZ", 25);
 
         // Verify that challenge is published
-        assertEq(_questionStateController.getState(questionId), uint256(IQuestionStateController.STATE.PUBLISHED));
+        assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.PUBLISHED));
 
         // Make sure we cannot vote for the challenge
         vm.prank(other);

@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
 
+// Enums
+import "./Enums/QuestionStateEnum.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
@@ -81,9 +84,9 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     //------------------------------------------------------ View Functions
 
-    function getState(uint256 questionId) public view returns (uint256 currentState) {
+    function getState(uint256 questionId) public view returns (STATE currentState) {
         QuestionStats memory _question = questionByState[questionId];
-        return uint256(_question.questionState);
+        return _question.questionState;
     }
 
     function getVoters(uint256 questionId) public view returns (address[] memory voters) {
@@ -133,7 +136,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     //------------------------------------------------------ Structs
     modifier onlyState(STATE required, uint256 questionId) {
-        if (uint256(required) != getState(questionId)) revert InvalidStateTransition();
+        if (required != getState(questionId)) revert InvalidStateTransition();
         _;
     }
 

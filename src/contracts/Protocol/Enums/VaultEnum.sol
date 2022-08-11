@@ -7,3 +7,10 @@ enum STAGE {
     CLAIM_AND_ANSWER,
     REVIEW
 }
+
+enum STATUS {
+    UNINT,
+    DEPOSITED,
+    WITHDRAWN,
+    SLASHED
+}

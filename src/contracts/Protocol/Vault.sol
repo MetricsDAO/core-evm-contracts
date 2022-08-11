@@ -11,6 +11,7 @@ import "./interfaces/IQuestionStateController.sol";
 
 // Enums
 import "./Enums/VaultEnum.sol";
+import "./Enums/QuestionStateEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
@@ -66,15 +67,6 @@ contract Vault is Ownable, OnlyCostController {
         address user;
         uint256 amount;
         STATUS status;
-    }
-
-    //------------------------------------------------------ ENUMS
-
-    enum STATUS {
-        UNINT,
-        DEPOSITED,
-        WITHDRAWN,
-        SLASHED
     }
 
     //------------------------------------------------------ EVENTS
@@ -148,7 +140,7 @@ contract Vault is Ownable, OnlyCostController {
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
-            if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert QuestionNotPublished();
+            if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
 
             // Accounting & changes
             vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
@@ -156,7 +148,7 @@ contract Vault is Ownable, OnlyCostController {
             // Check that user has a voting index, has not voted and the question state is VOTING.
             if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotUnvoteOwnQuestion();
             if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
-            if (questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.VOTING)) revert QuestionNotInVoting();
+            if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
 
             // Accounting & changes
             vaultAccounting(questionId, STAGE.CREATE_AND_VOTE);
