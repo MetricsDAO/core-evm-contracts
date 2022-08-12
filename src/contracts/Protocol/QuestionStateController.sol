@@ -10,6 +10,9 @@ import "./interfaces/IBountyQuestion.sol";
 // Enums
 import "./Enums/QuestionStateEnum.sol";
 
+// Structs
+import "./Structs/QuestionData.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
@@ -19,6 +22,9 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     // TODO rename this to be more clear
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
     mapping(uint256 => QuestionStats) public questionByState;
+
+    mapping(STATE => uint256[]) public questionIDByState;
+    mapping(STATE => mapping(uint256 => uint256)) public questionIndexByIDByState;
 
     IBountyQuestion private _bountyQuestion;
 
@@ -90,6 +96,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     //------------------------------------------------------ View Functions
 
     function getState(uint256 questionId) public view returns (STATE currentState) {
+        // return _bountyQuestion.getQuestionData(questionId).questionState;
         QuestionStats memory _question = questionByState[questionId];
         return _question.questionState;
     }
@@ -106,6 +113,17 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool) {
         return hasVoted[user][questionId];
+    }
+
+    function getQuestions(
+        STATE state,
+        uint256 offset,
+        uint256 limit
+    ) public view {
+        uint256 highestQuestion = _bountyQuestion.getMostRecentQuestion();
+        if (limit > highestQuestion) limit = highestQuestion;
+        if (offset > highestQuestion) offset = highestQuestion;
+        uint256 sizeOfArray = limit - offset;
     }
 
     function getQuestionsByState(
