@@ -26,6 +26,7 @@ module.exports = async (hre) => {
   const questionStateController = await deploy("QuestionStateController", {
     from: deployer,
     log: true,
+    args: [bountyQuestion.address],
   });
 
   const metric = await getContract(whichMetric);
@@ -70,6 +71,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: questionStateController.address,
+        constructorArguments: [bountyQuestion.address],
         contract: "src/contracts/Protocol/QuestionStateController.sol:QuestionStateController",
       });
     } catch (error) {
@@ -79,7 +81,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: actionCostController.address,
-        constructorArguments: [whichMetricAddress],
+        constructorArguments: [metric.address],
         contract: "src/contracts/Protocol/ActionCostController.sol:ActionCostController",
       });
     } catch (error) {
@@ -99,7 +101,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: vault.address,
-        constructorArguments: [whichMetricAddress, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
+        constructorArguments: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
         contract: "src/contracts/Protocol/Vault.sol:Vault",
       });
     } catch (error) {

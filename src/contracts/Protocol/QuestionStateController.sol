@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 // Enums
 import "./Enums/QuestionStateEnum.sol";
@@ -15,13 +16,17 @@ import "./modifiers/OnlyAPI.sol";
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     // Mapping for all questions that are upvoted by the user?
     mapping(address => mapping(uint256 => bool)) public hasVoted;
+    // TODO rename this to be more clear
     mapping(address => mapping(uint256 => uint256)) public questionIndex;
-
     mapping(uint256 => QuestionStats) public questionByState;
 
-    //TODO mapping     mapping(STATE => uint256[]) public questionState;
+    IBountyQuestion private _bountyQuestion;
 
     // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
+
+    constructor(address bountyQuestion) {
+        _bountyQuestion = IBountyQuestion(bountyQuestion);
+    }
 
     /**
      * @notice Initializes a question to draft.
@@ -129,10 +134,22 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return arr;
     }
 
+    //------------------------------------------------------ OWNER FUNCTIONS
+
+    /**
+     * @notice Allows the owner to set the BountyQuestion contract address.
+     * @param newQuestion The address of the new BountyQuestion contract.
+     */
+    function setQuestionProxy(address newQuestion) public onlyOwner {
+        if (newQuestion == address(0)) revert InvalidAddress();
+        _bountyQuestion = IBountyQuestion(newQuestion);
+    }
+
     //------------------------------------------------------ Errors
     error HasNotVotedForQuestion();
     error HasAlreadyVotedForQuestion();
     error InvalidStateTransition();
+    error InvalidAddress();
 
     //------------------------------------------------------ Structs
     modifier onlyState(STATE required, uint256 questionId) {

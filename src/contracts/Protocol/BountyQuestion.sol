@@ -16,10 +16,6 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
     // This maps the author to the list of question IDs they have created
     mapping(address => uint256[]) public authors;
 
-    // This maps the question ID to the question data
-    mapping(uint256 => QuestionMetaData) public questions;
-
-    // TODO THIS REFACTORING IS IN PROGRESS and is meant to replace the above mapping with all state
     mapping(uint256 => QuestionData) public questionData;
 
     constructor() {
@@ -30,7 +26,7 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        questions[questionId] = QuestionMetaData({author: author, tokenId: questionId, url: uri});
+        // questions[questionId] = QuestionMetaData({author: author, tokenId: questionId, url: uri});
         questionData[questionId].author = author;
         questionData[questionId].questionId = questionId;
         questionData[questionId].uri = uri;
@@ -39,18 +35,19 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
         return questionId;
     }
 
-    function getAuthor(address user) public view returns (QuestionMetaData[] memory) {
+    function getAuthor(address user) public view returns (QuestionData[] memory) {
         uint256[] memory created = authors[user];
 
-        QuestionMetaData[] memory ret = new QuestionMetaData[](created.length);
+        QuestionData[] memory ret = new QuestionData[](created.length);
+
         for (uint256 i = 0; i < created.length; i++) {
-            ret[i] = questions[created[i]];
+            ret[i] = questionData[created[i]];
         }
         return ret;
     }
 
     function getAuthorOfQuestion(uint256 questionId) public view returns (address) {
-        return questions[questionId].author;
+        return questionData[questionId].author;
     }
 
     function getMostRecentQuestion() public view returns (uint256) {

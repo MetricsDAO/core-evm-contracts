@@ -95,7 +95,7 @@ describe("Question API Contract", function () {
 
       const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
       expect(authorWithSeveralQuestions.length).to.equal(3);
-      expect(authorWithSeveralQuestions[2].tokenId).to.equal(3);
+      expect(authorWithSeveralQuestions[2].questionId).to.equal(3);
     });
 
     it("the factory should setup State Controller when creating a question", async function () {
@@ -113,13 +113,13 @@ describe("Question API Contract", function () {
 
       const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
 
-      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
+      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].questionId;
 
       const questionStateLatestQuestion = await questionStateController.getState(latestQuestionID);
       expect(questionStateLatestQuestion).to.equal(new BN(questionState.VOTING));
     });
 
-    it("the facotry should enable voting once a question is created", async () => {
+    it("the factory should enable voting once a question is created", async () => {
       // no votes
       let votes = await questionStateController.getTotalVotes(0);
       expect(votes).to.equal(new BN(0));
@@ -132,7 +132,7 @@ describe("Question API Contract", function () {
       // // question state should now be VOTING state
       const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
 
-      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
+      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].questionId;
 
       const questionStateLatestQuestion = await questionStateController.getState(latestQuestionID);
       expect(questionStateLatestQuestion).to.equal(new BN(questionState.VOTING));
@@ -154,7 +154,7 @@ describe("Question API Contract", function () {
 
       // unvoting
       await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestionID);
-      totalVotesForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
+      const totalVotesForQuestion = await questionStateController.getTotalVotes(latestQuestionID);
       expect(totalVotesForQuestion).to.equal(1);
     });
 
@@ -164,9 +164,7 @@ describe("Question API Contract", function () {
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
       await questionIDtx.wait();
 
-      const questionIDtx1 = await questionAPI
-        .connect(xmetricaddr1)
-        .createQuestion("metricsdao.xyz");
+      const questionIDtx1 = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
       await questionIDtx1.wait();
 
       const questionIDtx2 = await questionAPI.connect(xmetricaddr1).callStatic.createQuestion("metricsdao.xyz");
@@ -183,9 +181,7 @@ describe("Question API Contract", function () {
 
       await questionIDtx.wait();
 
-      const questionIDtx1 = await questionAPI
-        .connect(xmetricaddr1)
-        .createQuestion("metricsdao.xyz");
+      const questionIDtx1 = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
       await questionIDtx1.wait();
 
       const questionIDtxbad = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
@@ -196,7 +192,7 @@ describe("Question API Contract", function () {
 
       const authorWithSeveralQuestions = await bountyQuestion.getAuthor(xmetricaddr1.address);
 
-      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].tokenId;
+      const latestQuestionID = authorWithSeveralQuestions[authorWithSeveralQuestions.length - 1].questionId;
 
       await questionAPI.connect(xmetricaddr3).upvoteQuestion(latestQuestionID);
       await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestionID);
@@ -217,9 +213,7 @@ describe("Question API Contract", function () {
       const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
       await questionIDtx.wait();
 
-      const questionIDtx1 = await questionAPI
-        .connect(xmetricaddr1)
-        .createQuestion("metricsdao.xyz");
+      const questionIDtx1 = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
       await questionIDtx1.wait();
 
       const questionIDtx2 = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
