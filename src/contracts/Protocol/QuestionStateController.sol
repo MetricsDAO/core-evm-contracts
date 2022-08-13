@@ -24,7 +24,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     mapping(uint256 => QuestionStats) public questionByState;
 
     mapping(STATE => uint256[]) public questionIDByState;
-    mapping(STATE => mapping(uint256 => uint256)) public questionIndexByIDByState;
+    mapping(STATE => mapping(uint256 => uint256)) public questionIndexgsByIDByState;
 
     IBountyQuestion private _bountyQuestion;
 
@@ -119,11 +119,19 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         STATE state,
         uint256 offset,
         uint256 limit
-    ) public view {
+    ) public view returns (QuestionData[] memory questions) {
         uint256 highestQuestion = _bountyQuestion.getMostRecentQuestion();
         if (limit > highestQuestion) limit = highestQuestion;
         if (offset > highestQuestion) offset = highestQuestion;
-        uint256 sizeOfArray = limit - offset;
+
+        uint256[] storage stateIds = questionIDByState[state];
+        questions = new QuestionData[](limit);
+
+        for (uint256 i = 0; i < limit; i++) {
+            questions[i] = _bountyQuestion.getQuestionData(stateIds[offset + i]);
+        }
+
+        return questions;
     }
 
     function getQuestionsByState(
