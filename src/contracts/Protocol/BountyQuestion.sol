@@ -27,7 +27,6 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateControlle
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        // questions[questionId] = QuestionMetaData({author: author, tokenId: questionId, url: uri});
         questionData[questionId].author = author;
         questionData[questionId].questionId = questionId;
         questionData[questionId].uri = uri;
@@ -62,12 +61,5 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateControlle
 
     function getQuestionData(uint256 questionId) public view returns (QuestionData memory) {
         return questionData[questionId];
-    }
-
-    // TODO delete this
-    struct QuestionMetaData {
-        address author;
-        uint256 tokenId;
-        string url;
     }
 }

@@ -99,7 +99,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Initialize the question
-        _questionStateController.initializeQuestion(questionId, uri);
+        _questionStateController.initializeQuestion(questionId);
 
         // Pay to create a question
         _costController.payForAction(_msgSender(), questionId, ACTION.CREATE);

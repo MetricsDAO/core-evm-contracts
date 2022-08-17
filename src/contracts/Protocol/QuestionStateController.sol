@@ -37,7 +37,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      * @notice Initializes a question to draft.
      * @param questionId The id of the question
      */
-    function initializeQuestion(uint256 questionId, string calldata uri) public onlyApi {
+    function initializeQuestion(uint256 questionId) public onlyApi {
         _bountyQuestion.updateState(questionId, STATE.VOTING);
 
         votes[questionId].totalVotes = 1;
@@ -177,14 +177,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (required != getState(questionId)) revert InvalidStateTransition();
         _;
     }
-
-    // struct QuestionStats {
-    //     uint256 questionId;
-    //     string uri;
-    //     address[] voters;
-    //     uint256 totalVotes;
-    //     STATE questionState;
-    // }
 
     struct Votes {
         address[] voters;
