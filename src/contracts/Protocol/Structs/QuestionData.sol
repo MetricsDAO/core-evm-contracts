@@ -7,7 +7,7 @@ struct QuestionData {
     uint256 questionId;
     address author;
     string uri;
-    address[] voters;
+    // address[] voters;
     uint256 totalVotes;
     STATE questionState;
 }

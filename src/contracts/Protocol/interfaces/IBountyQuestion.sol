@@ -7,4 +7,6 @@ interface IBountyQuestion {
     function getQuestionData(uint256 questionId) external view returns (QuestionData memory);
 
     function getMostRecentQuestion() external view returns (uint256);
+
+    function updateState(uint256 questionId, STATE newState) external;
 }

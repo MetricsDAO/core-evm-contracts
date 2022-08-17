@@ -45,6 +45,9 @@ module.exports = async (hre) => {
   tx = await actionCostController.setQuestionApi(questionAPI.address);
   await tx.wait();
 
+  tx = await bountyQuestion.setStateController(questionStateController.address);
+  await tx.wait();
+
   if (whichMetric === "Xmetric") {
     tx = await liveMetric.setTransactor(vault.address, true);
     await tx.wait();

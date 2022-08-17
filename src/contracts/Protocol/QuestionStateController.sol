@@ -19,16 +19,15 @@ import "./modifiers/OnlyAPI.sol";
 contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     // Mapping for all questions that are upvoted by the user?
     mapping(address => mapping(uint256 => bool)) public hasVoted;
-    // TODO rename this to be more clear
-    mapping(address => mapping(uint256 => uint256)) public questionIndex;
-    mapping(uint256 => QuestionStats) public questionByState;
 
-    mapping(STATE => uint256[]) public questionIDByState;
-    mapping(STATE => mapping(uint256 => uint256)) public questionIndexgsByIDByState;
+    /// @notice For a given address and a given question, tracks the index of their vote in the votes[]
+    mapping(address => mapping(uint256 => uint256)) public questionIndex; // TODO userVoteIndex
+
+    mapping(uint256 => Votes) public votes;
 
     IBountyQuestion private _bountyQuestion;
 
-    // TODO do we want user to lose their metric if a question is closed? they voted on somethjing bad
+    // TODO do we want user to lose their metric if a question is closed? they voted on something bad
 
     constructor(address bountyQuestion) {
         _bountyQuestion = IBountyQuestion(bountyQuestion);
@@ -39,20 +38,14 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      * @param questionId The id of the question
      */
     function initializeQuestion(uint256 questionId, string calldata uri) public onlyApi {
-        QuestionStats memory question;
+        _bountyQuestion.updateState(questionId, STATE.VOTING);
 
-        question.questionId = questionId;
-        question.uri = uri;
-        question.totalVotes = 1;
-        question.questionState = STATE.VOTING;
-
-        questionByState[questionId] = question;
+        votes[questionId].totalVotes = 1;
     }
 
     function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
         // if some voting barrier is passed, we can publish the question
-        QuestionStats storage _question = questionByState[questionId];
-        _question.questionState = STATE.PUBLISHED;
+        _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
     }
 
     function voteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
@@ -60,12 +53,12 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
 
         // Effects
-        QuestionStats storage _question = questionByState[questionId];
-        _question.totalVotes += 1;
-
         hasVoted[_user][questionId] = true;
-        _question.voters.push(_user);
-        questionIndex[_user][questionId] = _question.voters.length - 1;
+
+        votes[questionId].totalVotes++;
+        votes[questionId].voters.push(_user);
+
+        questionIndex[_user][questionId] = votes[questionId].voters.length - 1;
 
         // Interactions
     }
@@ -75,11 +68,10 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (!hasVoted[_user][questionId]) revert HasNotVotedForQuestion();
 
         // Effects
-        QuestionStats storage _question = questionByState[questionId];
-        _question.totalVotes -= 1;
+        votes[questionId].totalVotes--;
 
         uint256 index = questionIndex[_user][questionId];
-        delete _question.voters[index];
+        delete votes[questionId].voters[index];
 
         hasVoted[_user][questionId] = false;
 
@@ -87,8 +79,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     }
 
     function setDisqualifiedState(uint256 questionId) public onlyApi {
-        QuestionStats storage _question = questionByState[questionId];
-        _question.questionState = STATE.DISQUALIFIED;
+        _bountyQuestion.updateState(questionId, STATE.DISQUALIFIED);
     }
 
     // TODO batch voting and batch operations and look into arrays as parameters security risk
@@ -96,19 +87,15 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     //------------------------------------------------------ View Functions
 
     function getState(uint256 questionId) public view returns (STATE currentState) {
-        // return _bountyQuestion.getQuestionData(questionId).questionState;
-        QuestionStats memory _question = questionByState[questionId];
-        return _question.questionState;
+        return _bountyQuestion.getQuestionData(questionId).questionState;
     }
 
     function getVoters(uint256 questionId) public view returns (address[] memory voters) {
-        QuestionStats memory _question = questionByState[questionId];
-        return _question.voters;
+        return votes[questionId].voters;
     }
 
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
-        QuestionStats memory _question = questionByState[questionId];
-        return _question.totalVotes;
+        return votes[questionId].totalVotes;
     }
 
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool) {
@@ -124,11 +111,18 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (limit > highestQuestion) limit = highestQuestion;
         if (offset > highestQuestion) offset = highestQuestion;
 
-        uint256[] storage stateIds = questionIDByState[state];
         questions = new QuestionData[](limit);
 
-        for (uint256 i = 0; i < limit; i++) {
-            questions[i] = _bountyQuestion.getQuestionData(stateIds[offset + i]);
+        uint256 found = 0;
+        QuestionData memory cur;
+
+        for (uint256 i = 0; i < highestQuestion; i++) {
+            cur = _bountyQuestion.getQuestionData(i);
+            if (cur.questionState == state) {
+                questions[found] = cur;
+                found++;
+                if (found == limit) break;
+            }
         }
 
         return questions;
@@ -138,7 +132,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         STATE currentState,
         uint256 currentQuestionId,
         uint256 offset
-    ) public view returns (QuestionStats[] memory) {
+    ) public view returns (QuestionData[] memory found) {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;
@@ -150,14 +144,15 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
             limit = 1;
             sizeOfArray = currentQuestionId;
         }
-        QuestionStats[] memory arr = new QuestionStats[](sizeOfArray);
+        found = new QuestionData[](sizeOfArray);
         for (uint256 i = currentQuestionId; i >= limit; i--) {
-            if (questionByState[i].questionState == currentState) {
-                arr[j] = questionByState[i];
+            if (_bountyQuestion.getQuestionData(i).questionState == currentState) {
+                found[j] = _bountyQuestion.getQuestionData(i);
+                found[j].totalVotes = votes[i].totalVotes;
                 j++;
             }
         }
-        return arr;
+        return found;
     }
 
     //------------------------------------------------------ OWNER FUNCTIONS
@@ -183,11 +178,16 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         _;
     }
 
-    struct QuestionStats {
-        uint256 questionId;
-        string uri;
+    // struct QuestionStats {
+    //     uint256 questionId;
+    //     string uri;
+    //     address[] voters;
+    //     uint256 totalVotes;
+    //     STATE questionState;
+    // }
+
+    struct Votes {
         address[] voters;
         uint256 totalVotes;
-        STATE questionState;
     }
 }

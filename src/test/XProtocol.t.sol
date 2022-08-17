@@ -54,6 +54,7 @@ contract XProtocolTest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _vault.setCostController(address(_costController));
+        _bountyQuestion.setStateController(address(_questionStateController));
 
         _xMetric.setTransactor(address(_vault), true);
         _xMetric.transfer(other, 100e18);
@@ -81,6 +82,7 @@ contract XProtocolTest is Test {
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _vault.setCostController(address(_costController));
+        _bountyQuestion.setStateController(address(_questionStateController));
 
         _metricToken.transfer(other, 100e18);
         vm.stopPrank();

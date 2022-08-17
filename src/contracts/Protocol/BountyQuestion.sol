@@ -4,11 +4,12 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
+import "./modifiers/OnlyStateController.sol";
 import "./Structs/QuestionData.sol";
 import "./interfaces/IBountyQuestion.sol";
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
+contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateController {
     using Counters for Counters.Counter;
 
     Counters.Counter private _questionIdCounter;
@@ -35,6 +36,11 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
         return questionId;
     }
 
+    function updateState(uint256 questionId, STATE newState) public onlyStateController {
+        QuestionData storage question = questionData[questionId];
+        question.questionState = newState;
+    }
+
     function getAuthor(address user) public view returns (QuestionData[] memory) {
         uint256[] memory created = authors[user];
 
@@ -58,6 +64,7 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi {
         return questionData[questionId];
     }
 
+    // TODO delete this
     struct QuestionMetaData {
         address author;
         uint256 tokenId;
