@@ -7,7 +7,7 @@ struct QuestionData {
     uint256 questionId;
     address author;
     string uri;
-    address[] voters;
+    // TODO this is only used for our bulk read functions and is not actively tracked, it shouldn't be here.
     uint256 totalVotes;
     STATE questionState;
 }

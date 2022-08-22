@@ -76,7 +76,7 @@ contract QuestionAPITest is Test {
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
-        _questionStateController = new QuestionStateController();
+        _questionStateController = new QuestionStateController(address(_bountyQuestion));
         _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
         _costController = new ActionCostController(address(_metricToken), address(_vault));
         _questionAPI = new QuestionAPI(
@@ -93,6 +93,7 @@ contract QuestionAPITest is Test {
         _vault.setCostController(address(_costController));
         _vault.setClaimController(address(_claimController));
         _vault.setBountyQuestion(address(_bountyQuestion));
+        _bountyQuestion.setStateController(address(_questionStateController));
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
