@@ -259,8 +259,6 @@ contract QuestionAPITest is Test {
         _questionAPI.publishQuestion(questionId, 25);
 
         vm.prank(other);
-        vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
-
         _questionAPI.publishQuestion(questionId, 25);
     }
 
@@ -272,6 +270,14 @@ contract QuestionAPITest is Test {
         _questionAPI.addHolderRole(ADMIN_ROLE, address(0));
     }
 
+    function test_OnlyManagerCanDirectlyCreateChallenge() public {
+        console.log("Only the manager should be able to directly create a challenge.");
+
+        vm.prank(other);
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.createChallenge("ipfs://XYZ", 5);
+    }
+
     function test_FunctionLock() public {
         console.log("All locked functions should be locked.");
 
@@ -280,9 +286,10 @@ contract QuestionAPITest is Test {
 
         vm.startPrank(other);
         uint256 q = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(q, 25);
 
         vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
-        _questionAPI.publishQuestion(q, 25);
+        _questionAPI.answerQuestion(q, "ipfs://XYZ");
 
         vm.stopPrank();
     }

@@ -163,7 +163,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param claimLimit The amount of claims per question.
      */
 
-    function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) functionLocked {
+    function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publish(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
@@ -175,7 +175,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Allows anm analyst to claim a question and submit an answer before the dealine.
      * @param questionId The questionId of the question to disqualify
      */
-    function claimQuestion(uint256 questionId) public functionLocked {
+    function claimQuestion(uint256 questionId) public {
         // Check if the question is published and is therefore claimable
         if (_questionStateController.getState(questionId) != STATE.PUBLISHED) revert ClaimsNotOpen();
 
@@ -188,7 +188,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         emit QuestionClaimed(questionId, _msgSender());
     }
 
-    function releaseClaim(uint256 questionId) public functionLocked {
+    function releaseClaim(uint256 questionId) public {
         _claimController.releaseClaim(_msgSender(), questionId);
     }
 
