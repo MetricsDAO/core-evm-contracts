@@ -44,6 +44,10 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
     }
 
+    function getActionCost(ACTION action) public view returns (uint256) {
+        return actionCost[action];
+    }
+
     // ------------------------------- Admin
 
     /**

@@ -17,7 +17,7 @@ import "../../contracts/Protocol/Enums/VaultEnum.sol";
 import "../../contracts/Protocol/Enums/QuestionStateEnum.sol";
 import "../../contracts/Protocol/Enums/ClaimEnum.sol";
 
-contract QuestionAPITest is Test {
+contract ClaimTest is Test {
     // Roles
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");

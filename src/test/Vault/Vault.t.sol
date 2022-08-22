@@ -17,7 +17,7 @@ import "../../contracts/Protocol/Enums/VaultEnum.sol";
 import "../../contracts/Protocol/Enums/QuestionStateEnum.sol";
 import "../../contracts/Protocol/Enums/ClaimEnum.sol";
 
-contract QuestionAPITest is Test {
+contract VaultTest is Test {
     // Roles
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -425,6 +425,42 @@ contract QuestionAPITest is Test {
         vm.expectRevert(Vault.UserHasNotUnvoted.selector);
         _vault.withdrawMetric(questionId, STAGE.UNVOTE);
 
+        vm.stopPrank();
+    }
+
+    function test_withdrawAfterClaiming() public {
+        console.log("A user should be able to withdraw their funds after claiming.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(questionId, 25);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+
+        // Verify balance updates
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+        assertEq(_vault.getMetricTotalLockedBalance(), 2e18);
+
+        // Make sure we cant withdraw without question being in review.
+        vm.expectRevert(Vault.QuestionNotInReview.selector);
+        _vault.withdrawMetric(questionId, STAGE.CLAIM_AND_ANSWER);
+
+        // Make sure we cant withdraw without the question first being released.
+        vm.expectRevert(Vault.ClaimNotReleased.selector);
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        // Release the claim
+        _questionAPI.releaseClaim(questionId);
+
+        // Withdraw
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        // Verify balance updates
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+        assertEq(_vault.getMetricTotalLockedBalance(), 1e18);
         vm.stopPrank();
     }
 

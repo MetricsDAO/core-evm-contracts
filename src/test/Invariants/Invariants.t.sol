@@ -50,7 +50,7 @@ contract InvariantTest {
     }
 }
 
-contract QuestionAPITest is Test, InvariantTest {
+contract InvariantTesting is Test, InvariantTest {
     // Roles
     bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -170,22 +170,10 @@ contract QuestionAPITest is Test, InvariantTest {
         addTargetContract(address(_vault));
 
         // Add target senders
-        address[3] memory users = [other, other2, other3];
+        address[4] memory users = [other, other2, other3, manager];
 
         for (uint256 i; i < users.length; ++i) {
             addTargetSender(users[i]);
-        }
-
-        // Add target selectors
-        bytes4[4] memory selectors = [
-            Vault.withdrawMetric.selector,
-            QuestionAPI.createQuestion.selector,
-            QuestionAPI.upvoteQuestion.selector,
-            QuestionAPI.unvoteQuestion.selector
-        ];
-
-        for (uint256 i; i < selectors.length; ++i) {
-            addTargetSelector(selectors[i]);
         }
     }
 
@@ -216,7 +204,10 @@ contract QuestionAPITest is Test, InvariantTest {
 
         if (_questionStateController.getState(questionId) == STATE.VOTING) {
             address[] memory voters = _questionStateController.getVoters(questionId);
-            assertTrue(_vault.lockedMetricByQuestion(questionId) == ((voters.length * 1e18) + 1e18));
+            assertTrue(
+                _vault.lockedMetricByQuestion(questionId) ==
+                    ((voters.length * _costController.getActionCost(ACTION.VOTE)) + _costController.getActionCost(ACTION.CREATE))
+            );
         }
     }
 }
