@@ -1,11 +1,81 @@
+<<<<<<< Updated upstream:src/test/Vault/Vault.t.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
+=======
+pragma solidity ^0.8.0;
+
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
+import "../contracts/Protocol/Vault.sol";
+import "../contracts/MetricToken.sol";
+import "@contracts/Protocol/QuestionAPI.sol";
+import "@contracts/Protocol/ActionCostController.sol";
+import "@contracts/Protocol/ClaimController.sol";
+import "@contracts/Protocol/Vault.sol";
+import {MockAuthNFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
+
+import "../contracts/Protocol/Enums/VaultEnum.sol";
+
+contract vaultTest is Test {
+    bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    // Accounts
+    address owner = address(0x0a);
+    address other = address(0x0b);
+    address other2 = address(0x0d);
+    address other3 = address(0x0e);
+    address manager = address(0x0c);
+    address treasury = address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c);
+
+    MetricToken _metricToken;
+    Vault _vault;
+    QuestionAPI _questionAPI;
+    ClaimController _claimController;
+    BountyQuestion _bountyQuestion;
+    ActionCostController _costController;
+    QuestionStateController _questionStateController;
+    MockAuthNFT _mockAuthNFTManager;
+    MockAuthNFT _mockAuthNFTAdmin;
+>>>>>>> Stashed changes:src/test/Vault.t.sol
 
 import "../Helpers/QuickSetup.sol";
 
+<<<<<<< Updated upstream:src/test/Vault/Vault.t.sol
 contract VaultTest is QuickSetup {
     function setUp() public {
         quickSetup();
+=======
+        vm.startPrank(owner);
+        _mockAuthNFTManager = new MockAuthNFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new MockAuthNFT("Auth", "Auth");
+        _metricToken = new MetricToken();
+        _bountyQuestion = new BountyQuestion();
+        _claimController = new ClaimController();
+        _questionStateController = new QuestionStateController(address(_bountyQuestion));
+        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
+        _costController = new ActionCostController(address(_metricToken), address(_vault));
+        _questionAPI = new QuestionAPI(
+            address(_bountyQuestion),
+            address(_questionStateController),
+            address(_claimController),
+            address(_costController)
+        );
+
+        _claimController.setQuestionApi(address(_questionAPI));
+        _costController.setQuestionApi(address(_questionAPI));
+        _questionStateController.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setStateController(address(_questionStateController));
+        _vault.setCostController(address(_costController));
+
+        _metricToken.transfer(other, 100e18);
+        _metricToken.transfer(other2, 100e18);
+        _metricToken.transfer(other3, 100e18);
+
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFTManager));
+        _questionAPI.addHolderRole(ADMIN_ROLE, address(_mockAuthNFTAdmin));
+>>>>>>> Stashed changes:src/test/Vault.t.sol
 
         vm.prank(owner);
         _mockAuthNFTAdmin.mintTo(owner);
