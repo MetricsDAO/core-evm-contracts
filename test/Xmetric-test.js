@@ -44,7 +44,7 @@ describe("xMETRIC", async function () {
 
     // deploy State Controller
     const stateContract = await ethers.getContractFactory("QuestionStateController");
-    questionStateController = await stateContract.deploy();
+    questionStateController = await stateContract.deploy(bountyQuestion.address);
 
     const VaultContract = await ethers.getContractFactory("Vault");
     const vault = await VaultContract.deploy(xMetric.address, questionStateController.address, treasury.address);
