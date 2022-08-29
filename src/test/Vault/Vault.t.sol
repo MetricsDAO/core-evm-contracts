@@ -1,91 +1,17 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
-import "../contracts/Protocol/Vault.sol";
-import "../contracts/MetricToken.sol";
-import "@contracts/Protocol/QuestionAPI.sol";
-import "@contracts/Protocol/ActionCostController.sol";
-import "@contracts/Protocol/ClaimController.sol";
-import "@contracts/Protocol/Vault.sol";
-import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
+import "../Helpers/QuickSetup.sol";
 
-import "../contracts/Protocol/Enums/VaultEnum.sol";
-
-contract vaultTest is Test {
-    bytes32 public constant PROGRAM_MANAGER_ROLE = keccak256("PROGRAM_MANAGER_ROLE");
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
-    // Accounts
-    address owner = address(0x0a);
-    address other = address(0x0b);
-    address other2 = address(0x0d);
-    address other3 = address(0x0e);
-    address manager = address(0x0c);
-    address treasury = address(0x4faFB87de15cFf7448bD0658112F4e4B0d53332c);
-
-    MetricToken _metricToken;
-    Vault _vault;
-    QuestionAPI _questionAPI;
-    ClaimController _claimController;
-    BountyQuestion _bountyQuestion;
-    ActionCostController _costController;
-    QuestionStateController _questionStateController;
-    NFT _mockAuthNFTManager;
-    NFT _mockAuthNFTAdmin;
-
+contract VaultTest is QuickSetup {
     function setUp() public {
-        // Labeling
-        vm.label(owner, "Owner");
-        vm.label(other, "User");
-        vm.label(other2, "User 2");
-        vm.label(other3, "User 3");
-        vm.label(manager, "Manager");
+        quickSetup();
 
-        vm.startPrank(owner);
-        _mockAuthNFTManager = new NFT("Auth", "Auth");
-        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
-        _metricToken = new MetricToken();
-        _bountyQuestion = new BountyQuestion();
-        _claimController = new ClaimController();
-        _questionStateController = new QuestionStateController(address(_bountyQuestion));
-        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
-        _costController = new ActionCostController(address(_metricToken), address(_vault));
-        _questionAPI = new QuestionAPI(
-            address(_bountyQuestion),
-            address(_questionStateController),
-            address(_claimController),
-            address(_costController)
-        );
-
-        _claimController.setQuestionApi(address(_questionAPI));
-        _costController.setQuestionApi(address(_questionAPI));
-        _questionStateController.setQuestionApi(address(_questionAPI));
-        _bountyQuestion.setQuestionApi(address(_questionAPI));
-        _bountyQuestion.setStateController(address(_questionStateController));
-        _vault.setCostController(address(_costController));
-
-        _metricToken.transfer(other, 100e18);
-        _metricToken.transfer(other2, 100e18);
-        _metricToken.transfer(other3, 100e18);
-
-        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFTManager));
-        _questionAPI.addHolderRole(ADMIN_ROLE, address(_mockAuthNFTAdmin));
-
+        vm.prank(owner);
         _mockAuthNFTAdmin.mintTo(owner);
-        _mockAuthNFTManager.mintTo(manager);
-        _mockAuthNFTAdmin.mintTo(other);
-
-        vm.stopPrank();
-
-        //Approve Transfers
-        vm.startPrank(address(_vault));
-        _metricToken.approve(address(other), _metricToken.balanceOf(address(_vault)));
-        _metricToken.approve(address(treasury), _metricToken.balanceOf(address(_vault)));
-        vm.stopPrank();
     }
 
-    // ---------------------- General functionality testing
+    // ---------------------- General tests ----------------------
 
     function test_lockMetric() public {
         console.log("Should lock Metric.");
@@ -149,7 +75,6 @@ contract vaultTest is Test {
     //     assertEq(_metricToken.balanceOf(treasury), 0.5e18);
     // }
 
-    // // ---------------------- Access control testing
     // function test_onlyOwnerCanSlashMetric() public {
     //     console.log("Only owner should be able to slash a question");
 
@@ -182,48 +107,6 @@ contract vaultTest is Test {
     //     _vault.slashMetric(questionId);
     //     vm.stopPrank();
     // }
-
-    function test_onlyOwnerCanSetSensitiveAddresses() public {
-        console.log("Only owner should be able to set sensitive addresses");
-
-        vm.startPrank(other);
-        // Attempt to set sensitive addresses
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.setQuestionStateController(address(0x1));
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.setTreasury(address(0x1));
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.setMetric(address(0x1));
-        vm.stopPrank();
-
-        vm.stopPrank();
-
-        vm.startPrank(owner);
-        _vault.setQuestionStateController(address(0x1));
-        _vault.setTreasury(address(0x1));
-        _vault.setMetric(address(0x1));
-
-        assertEq(address(_vault.questionStateController()), address(0x1));
-        assertEq(_vault.treasury(), address(0x1));
-        assertEq(address(_vault.metric()), address(0x1));
-    }
-
-    function test_sensitiveAddressesCannotBeSetToNullAddress() public {
-        console.log("Sensitive addresses cannot be set to null.");
-
-        vm.startPrank(owner);
-        vm.expectRevert(Vault.InvalidAddress.selector);
-        _vault.setQuestionStateController(address(0x0));
-
-        // This should be allowed as at some point the treasury might wannt to burn tokens or something.
-        _vault.setTreasury(address(0x0));
-
-        vm.expectRevert(Vault.InvalidAddress.selector);
-        _vault.setMetric(address(0x0));
-        vm.stopPrank();
-    }
 
     function test_cannotWithdrawUnpublishedQuestion() public {
         console.log("Should not withdraw Metric");
@@ -397,5 +280,119 @@ contract vaultTest is Test {
         assertEq(_metricToken.balanceOf(other), 100e18);
         assertEq(_metricToken.balanceOf(other2), 100e18);
         assertEq(_metricToken.balanceOf(other3), 100e18);
+    }
+
+    function test_WithdrawAfterUnvoting() public {
+        console.log("A user should be able to withdraw their funds after unvoting.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId);
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+
+        // Unvote the question
+        _questionAPI.unvoteQuestion(questionId);
+
+        // Verify balance updates
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+        vm.stopPrank();
+
+        vm.startPrank(other3);
+        // Vote for the question
+        _questionAPI.upvoteQuestion(questionId);
+        assertEq(_metricToken.balanceOf(other3), 99e18);
+
+        // Verify user cannot withdraw funds
+        vm.expectRevert(Vault.UserHasNotUnvoted.selector);
+        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+
+        vm.stopPrank();
+    }
+
+    function test_withdrawAfterClaiming() public {
+        console.log("A user should be able to withdraw their funds after claiming.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(questionId, 25);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        // Claim the question
+        _questionAPI.claimQuestion(questionId);
+
+        // Verify balance updates
+        assertEq(_metricToken.balanceOf(other2), 99e18);
+        assertEq(_vault.getMetricTotalLockedBalance(), 2e18);
+
+        // Make sure we cant withdraw without question being in review.
+        vm.expectRevert(Vault.QuestionNotInReview.selector);
+        _vault.withdrawMetric(questionId, STAGE.CLAIM_AND_ANSWER);
+
+        // Make sure we cant withdraw without the question first being released.
+        vm.expectRevert(Vault.ClaimNotReleased.selector);
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        // Release the claim
+        _questionAPI.releaseClaim(questionId);
+
+        // Withdraw
+        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        // Verify balance updates
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+        assertEq(_vault.getMetricTotalLockedBalance(), 1e18);
+        vm.stopPrank();
+    }
+
+    // ---------------------- Access control tests ----------------------
+
+    function test_sensitiveAddressesCannotBeSetToNullAddress() public {
+        console.log("Sensitive addresses cannot be set to null.");
+
+        vm.startPrank(owner);
+        vm.expectRevert(Vault.InvalidAddress.selector);
+        _vault.setQuestionStateController(address(0x0));
+
+        // This should be allowed as at some point the treasury might wannt to burn tokens or something.
+        _vault.setTreasury(address(0x0));
+
+        vm.expectRevert(Vault.InvalidAddress.selector);
+        _vault.setMetric(address(0x0));
+        vm.stopPrank();
+    }
+
+    function test_onlyOwnerCanSetSensitiveAddresses() public {
+        console.log("Only owner should be able to set sensitive addresses");
+
+        vm.startPrank(other);
+        // Attempt to set sensitive addresses
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setQuestionStateController(address(0x1));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setTreasury(address(0x1));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _vault.setMetric(address(0x1));
+        vm.stopPrank();
+
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        _vault.setQuestionStateController(address(0x1));
+        _vault.setTreasury(address(0x1));
+        _vault.setMetric(address(0x1));
+
+        assertEq(address(_vault.questionStateController()), address(0x1));
+        assertEq(_vault.treasury(), address(0x1));
+        assertEq(address(_vault.metric()), address(0x1));
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "../contracts/Xmetric.sol";
+import "../../contracts/Xmetric.sol";
 
 /// @notice Throughout the contract we assume that Bob is the owner, Alice is any user
 contract xMetricTest is Test {
@@ -22,6 +22,7 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
+    // ---------------------- General tests ----------------------
     function testExample() public {
         assertTrue(true);
     }
@@ -76,16 +77,6 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
-    function test_AliceCannotSetTransactor() public {
-        // Alice should not have permission to add a transactor
-        vm.startPrank(alice);
-        assertEq(metricToken.isTransactor(address(0x777)), false);
-        vm.expectRevert("Ownable: caller is not the owner");
-        metricToken.setTransactor(address(0x777), true);
-        assertEq(metricToken.isTransactor(address(0x777)), false);
-        vm.stopPrank();
-    }
-
     function test_BobCanTransact() public {
         // Bob sends money to alice
         vm.startPrank(bob);
@@ -96,34 +87,6 @@ contract xMetricTest is Test {
         assertEq(metricToken.balanceOf(alice), sendAmount);
         assertEq((startBal), metricToken.balanceOf(bob));
         vm.stopPrank();
-    }
-
-    function test_AliceCannotTransact() public {
-        // Bob sends some money to alice
-        vm.startPrank(bob);
-        uint256 sendAmount = 10 * 10**18;
-        metricToken.setTransactor(bob, true);
-        metricToken.transfer(alice, sendAmount);
-        vm.stopPrank();
-
-        // Alice should not be able to transfer this out -- both through transfer and transferFrom
-        vm.startPrank(alice);
-        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
-
-        // Through transfer
-        metricToken.transfer(bob, sendAmount);
-
-        // Through transferFrom
-        metricToken.approve(address(0xa2), sendAmount);
-        vm.stopPrank();
-
-        vm.prank(address(0xa2));
-        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
-        metricToken.transferFrom(alice, bob, sendAmount);
-
-        vm.prank(bob);
-        vm.expectRevert("ERC20: insufficient allowance");
-        metricToken.transferFrom(alice, bob, sendAmount);
     }
 
     function test_ChefCanTransact() public {
@@ -171,6 +134,16 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
+    function test_ToggleTransactor() public {
+        vm.startPrank(bob);
+        metricToken.setTransactor(address(0x777), true);
+        assertEq(metricToken.isTransactor(address(0x777)), true);
+        metricToken.setTransactor(address(0x777), false);
+        assertEq(metricToken.isTransactor(address(0x777)), false);
+    }
+
+    // ---------------------- Access control tests ----------------------
+
     function test_AliceCannotBurnBobsTokens() public {
         vm.prank(bob);
         metricToken.transfer(alice, 100e18);
@@ -185,11 +158,41 @@ contract xMetricTest is Test {
         vm.stopPrank();
     }
 
-    function test_ToggleTransactor() public {
+    function test_AliceCannotTransact() public {
+        // Bob sends some money to alice
         vm.startPrank(bob);
-        metricToken.setTransactor(address(0x777), true);
-        assertEq(metricToken.isTransactor(address(0x777)), true);
-        metricToken.setTransactor(address(0x777), false);
+        uint256 sendAmount = 10 * 10**18;
+        metricToken.setTransactor(bob, true);
+        metricToken.transfer(alice, sendAmount);
+        vm.stopPrank();
+
+        // Alice should not be able to transfer this out -- both through transfer and transferFrom
+        vm.startPrank(alice);
+        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
+
+        // Through transfer
+        metricToken.transfer(bob, sendAmount);
+
+        // Through transferFrom
+        metricToken.approve(address(0xa2), sendAmount);
+        vm.stopPrank();
+
+        vm.prank(address(0xa2));
+        vm.expectRevert(Xmetric.AddressCannotTransact.selector);
+        metricToken.transferFrom(alice, bob, sendAmount);
+
+        vm.prank(bob);
+        vm.expectRevert("ERC20: insufficient allowance");
+        metricToken.transferFrom(alice, bob, sendAmount);
+    }
+
+    function test_AliceCannotSetTransactor() public {
+        // Alice should not have permission to add a transactor
+        vm.startPrank(alice);
         assertEq(metricToken.isTransactor(address(0x777)), false);
+        vm.expectRevert("Ownable: caller is not the owner");
+        metricToken.setTransactor(address(0x777), true);
+        assertEq(metricToken.isTransactor(address(0x777)), false);
+        vm.stopPrank();
     }
 }

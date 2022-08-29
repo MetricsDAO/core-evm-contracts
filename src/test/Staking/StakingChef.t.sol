@@ -2,8 +2,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "../contracts/StakingChef.sol";
-import "../contracts/MetricToken.sol";
+import "../../contracts/StakingChef.sol";
+import "../../contracts/MetricToken.sol";
 
 /// @notice Translation of https://github.com/MetricsDAO/core-evm-contracts/blob/main/test/stakingChef-test.js to foundry
 contract StakingChefTest is Test {
