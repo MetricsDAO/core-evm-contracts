@@ -2,6 +2,8 @@
 
 This repo contains the smart contracts for the Metrics DAO implementatin running on EVM-compatible blockchains.
 
+Contract documentation can be found in the [Gitbook](https://metricsdao.gitbook.io/product-documentation/contracts/questionapi)
+
 ## Vesting Design [WIP]
 
 Vesting leverages block-height based distribution of $METRIC based on a share distribution. This mechanism is layered and therefore abstracted - so while there is a Vesting Contract which handles the primary vesting schedule and distribution, the Vesting Contract will distribute tokens to the Rewards-Payout contract which will also need to handle vesting schedules and distrubtions to the various mechanims for rewards payouts.
