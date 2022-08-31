@@ -39,8 +39,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      */
     function initializeQuestion(uint256 questionId) public onlyApi {
         _bountyQuestion.updateState(questionId, STATE.VOTING);
-
-        votes[questionId].totalVotes = 1;
+        _bountyQuestion.updateVotes(questionId, 1);
     }
 
     function initializeChallenge(uint256 questionId) public onlyApi {
@@ -63,7 +62,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // Effects
         hasVoted[_user][questionId] = true;
 
-        votes[questionId].totalVotes++;
+        _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) + 1));
         votes[questionId].voters.push(_user);
 
         questionIndex[_user][questionId] = votes[questionId].voters.length - 1;
@@ -76,7 +75,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (!hasVoted[_user][questionId]) revert HasNotVotedForQuestion();
 
         // Effects
-        votes[questionId].totalVotes--;
+        _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) - 1));
 
         uint256 index = questionIndex[_user][questionId];
         delete votes[questionId].voters[index];
@@ -102,8 +101,9 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return votes[questionId].voters;
     }
 
+    // LOOK HERE ISSUE
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
-        return votes[questionId].totalVotes;
+        return _bountyQuestion.getQuestionData(questionId).totalVotes;
     }
 
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool) {
@@ -144,7 +144,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;
-        currentQuestionId -= 1;
+        currentQuestionId;
         if (currentQuestionId > offset) {
             limit = currentQuestionId - offset;
             sizeOfArray = (currentQuestionId - offset) + 1;
@@ -156,7 +156,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         for (uint256 i = currentQuestionId; i >= limit; i--) {
             if (_bountyQuestion.getQuestionData(i).questionState == currentState) {
                 found[j] = _bountyQuestion.getQuestionData(i);
-                found[j].totalVotes = votes[i].totalVotes;
+                found[j].totalVotes = _bountyQuestion.getQuestionData(i).totalVotes;
                 j++;
             }
         }

@@ -40,6 +40,11 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateControlle
         question.questionState = newState;
     }
 
+    function updateVotes(uint256 questionId, uint256 newVotes) public onlyStateController {
+        QuestionData storage question = questionData[questionId];
+        question.totalVotes = newVotes;
+    }
+
     function getAuthor(address user) public view returns (QuestionData[] memory) {
         uint256[] memory created = authors[user];
 
@@ -56,7 +61,7 @@ contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateControlle
     }
 
     function getMostRecentQuestion() public view returns (uint256) {
-        return _questionIdCounter.current();
+        return _questionIdCounter.current() - 1;
     }
 
     function getQuestionData(uint256 questionId) public view returns (QuestionData memory) {
