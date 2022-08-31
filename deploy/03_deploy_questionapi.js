@@ -33,7 +33,7 @@ module.exports = async (hre) => {
 
   const vault = await deploy("Vault", {
     from: deployer,
-    args: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
+    args: [metric.address, questionStateController.address, treasury],
     log: true,
   });
 

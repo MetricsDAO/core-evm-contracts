@@ -5,10 +5,10 @@ if (!process.env.metric) {
 }
 
 module.exports = async (hre) => {
-  const { getNamedAccounts, deployments, getChainId } = hre;
-  const { deploy } = deployments;
-  const { deployer, treasury } = await getNamedAccounts();
-  const chainId = await getChainId();
+  // const { getNamedAccounts, deployments, getChainId } = hre;
+  // const { deploy } = deployments;
+  // const { deployer, treasury } = await getNamedAccounts();
+  // const chainId = await getChainId();
 
   let network = hre.network.name;
   if (network === "hardhat") {
