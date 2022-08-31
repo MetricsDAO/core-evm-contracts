@@ -4,9 +4,12 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./modifiers/OnlyAPI.sol";
+import "./modifiers/OnlyStateController.sol";
+import "./Structs/QuestionData.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is Ownable, OnlyApi {
+contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateController {
     using Counters for Counters.Counter;
 
     Counters.Counter private _questionIdCounter;
@@ -14,8 +17,7 @@ contract BountyQuestion is Ownable, OnlyApi {
     // This maps the author to the list of question IDs they have created
     mapping(address => uint256[]) public authors;
 
-    // This maps the question ID to the question data
-    mapping(uint256 => QuestionData) public questions;
+    mapping(uint256 => QuestionData) public questionData;
 
     constructor() {
         _questionIdCounter.increment();
@@ -25,32 +27,39 @@ contract BountyQuestion is Ownable, OnlyApi {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
 
-        questions[questionId] = QuestionData({author: author, tokenId: questionId, url: uri});
+        questionData[questionId].author = author;
+        questionData[questionId].questionId = questionId;
+        questionData[questionId].uri = uri;
+
         authors[author].push(questionId);
         return questionId;
+    }
+
+    function updateState(uint256 questionId, STATE newState) public onlyStateController {
+        QuestionData storage question = questionData[questionId];
+        question.questionState = newState;
     }
 
     function getAuthor(address user) public view returns (QuestionData[] memory) {
         uint256[] memory created = authors[user];
 
         QuestionData[] memory ret = new QuestionData[](created.length);
+
         for (uint256 i = 0; i < created.length; i++) {
-            ret[i] = questions[created[i]];
+            ret[i] = questionData[created[i]];
         }
         return ret;
     }
 
     function getAuthorOfQuestion(uint256 questionId) public view returns (address) {
-        return questions[questionId].author;
+        return questionData[questionId].author;
     }
 
     function getMostRecentQuestion() public view returns (uint256) {
         return _questionIdCounter.current();
     }
 
-    struct QuestionData {
-        address author;
-        uint256 tokenId;
-        string url;
+    function getQuestionData(uint256 questionId) public view returns (QuestionData memory) {
+        return questionData[questionId];
     }
 }

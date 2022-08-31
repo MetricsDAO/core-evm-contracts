@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "../Enums/ActionEnum.sol";
+
 interface IActionCostController {
-    function payForCreateQuestion(address _user, uint256 questionId) external;
+    function setActionCost(ACTION action, uint256 cost) external;
 
-    function setCreateCost(uint256 _cost) external;
-
-    function payForVoting(address user, uint256 questionId) external;
+    function payForAction(
+        address _user,
+        uint256 questionId,
+        ACTION action
+    ) external;
 }

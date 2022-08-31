@@ -9,6 +9,10 @@ import "./Vault.sol";
 // Interfaces
 import "./interfaces/IActionCostController.sol";
 
+// Enums
+import "./Enums/VaultEnum.sol";
+import "./Enums/ActionEnum.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
@@ -16,53 +20,42 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     IERC20 private metric;
     Vault private vault;
 
-    uint256 public createCost;
-    uint256 public voteCost;
+    mapping(ACTION => uint256) public actionCost;
+    mapping(ACTION => STAGE) public actionStage;
 
     constructor(address _metric, address _vault) {
         metric = IERC20(_metric);
         vault = Vault(_vault);
-        createCost = 1e18;
-        voteCost = 1e18;
+
+        actionCost[ACTION.CREATE] = 1e18;
+        actionCost[ACTION.VOTE] = 1e18;
+        actionCost[ACTION.CLAIM] = 1e18;
+
+        actionStage[ACTION.CREATE] = STAGE.CREATE_AND_VOTE;
+        actionStage[ACTION.VOTE] = STAGE.CREATE_AND_VOTE;
+        actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
     }
 
-    /**
-    * @notice Makes a user pay for creating a question. 
-            We transfer the funds from the user executing the function to 
-            the contract.
-    * @param _user The address of the user who wants to pay for creating a question.
-    */
-    function payForCreateQuestion(address _user, uint256 questionId) external onlyApi {
-        vault.lockMetric(_user, createCost, questionId, 0);
+    function payForAction(
+        address _user,
+        uint256 questionId,
+        ACTION action
+    ) external onlyApi {
+        vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
     }
 
-    /**
-    * @notice Makes a user pay for voting on a question. 
-            We transfer the funds from the user executing the function to 
-            the contract.
-    * @param user The address of the user who wants to pay for voting on a question.
-    */
-    function payForVoting(address user, uint256 questionId) external onlyApi {
-        vault.lockMetric(user, voteCost, questionId, 0);
+    function getActionCost(ACTION action) public view returns (uint256) {
+        return actionCost[action];
     }
 
-    // ------------------------------- Getter
     // ------------------------------- Admin
 
     /**
      * @notice Changes the cost of creating a question
-     * @param _cost The new cost of creating a question
+     * @param cost The new cost of creating a question
      */
-    function setCreateCost(uint256 _cost) external onlyOwner {
-        createCost = _cost;
-    }
-
-    /**
-     * @notice Changes the cost of voting for a question
-     * @param _cost The new cost of voting for a question
-     */
-    function setVoteCost(uint256 _cost) external onlyOwner {
-        voteCost = _cost;
+    function setActionCost(ACTION action, uint256 cost) external onlyOwner {
+        actionCost[action] = cost;
     }
 
     function setMetric(address _metric) public onlyOwner {

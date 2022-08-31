@@ -20,4 +20,4 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["xMetricToken"];
+module.exports.tags = ["Xmetric"];

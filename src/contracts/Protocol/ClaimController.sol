@@ -6,12 +6,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // Interfaces
 import "./interfaces/IClaimController.sol";
 
+// Enums
+import "./Enums/ClaimEnum.sol";
+
+// Structs
+import "./Structs/AnswerStruct.sol";
+
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
 contract ClaimController is Ownable, IClaimController, OnlyApi {
     /// @notice Keeps track of claim limits per question
     mapping(uint256 => uint256) public claimLimits;
+
+    /// @notice Keeps track of claim counts per question
+    mapping(uint256 => uint256) public claimCounts;
 
     /// @notice maps answers to the question they belong to
     mapping(uint256 => mapping(address => Answer)) public answers;
@@ -30,23 +39,8 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
     /// @notice Throw if analyst tries to claim a question multiple times
     error AlreadyClaimed();
 
-    //------------------------------------------------------ STRUCTS
-
-    struct Answer {
-        STATE state;
-        address author;
-        string answerURL;
-        uint256 finalGrade;
-        string scoringMetaDataURI; // store heuristics and such on ipfs
-    }
-
-    // ------------------------------------------------------ ENUMS
-
-    enum STATE {
-        UNINT,
-        CLAIMED,
-        ANSWERED
-    }
+    /// @notice Throw if analyst tries to release a claim it did not claim
+    error NoClaimToRelease();
 
     // ------------------------------------------------------ FUNCTIONS
 
@@ -60,12 +54,21 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
     }
 
     function claim(address user, uint256 questionId) public onlyApi {
-        if (claims[questionId].length >= claimLimits[questionId]) revert ClaimLimitReached();
+        if (claimCounts[questionId] >= claimLimits[questionId]) revert ClaimLimitReached();
         if (answers[questionId][user].author == user) revert AlreadyClaimed();
 
-        claims[questionId].push(user);
-        Answer memory _answer = Answer({state: STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
+        ++claimCounts[questionId];
+        Answer memory _answer = Answer({state: CLAIM_STATE.CLAIMED, author: user, answerURL: "", scoringMetaDataURI: "", finalGrade: 0});
         answers[questionId][user] = _answer;
+    }
+
+    function releaseClaim(address user, uint256 questionId) public onlyApi {
+        if (answers[questionId][user].author != user) revert NoClaimToRelease();
+
+        answers[questionId][user].state = CLAIM_STATE.RELEASED;
+        answers[questionId][user].author = address(0);
+
+        --claimCounts[questionId];
     }
 
     function answer(
@@ -73,7 +76,7 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
         uint256 questionId,
         string calldata answerURL
     ) public onlyOwner {
-        if (answers[questionId][user].state != STATE.CLAIMED) revert NeedClaimToAnswer();
+        if (answers[questionId][user].state != CLAIM_STATE.CLAIMED) revert NeedClaimToAnswer();
         answers[questionId][user].answerURL = answerURL;
     }
 
@@ -87,5 +90,9 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
 
     function getClaimDataForUser(uint256 questionId, address user) public view returns (Answer memory _answer) {
         return answers[questionId][user];
+    }
+
+    function getQuestionClaimState(uint256 questionId, address user) public view returns (CLAIM_STATE claimState) {
+        return answers[questionId][user].state;
     }
 }

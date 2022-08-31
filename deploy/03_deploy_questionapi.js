@@ -1,16 +1,17 @@
+const { getContract } = require("../test/utils");
+
+const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
+
 module.exports = async (hre) => {
   const { getNamedAccounts, deployments, getChainId } = hre;
   const { deploy } = deployments;
   const { deployer, treasury } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  const whichMetric = process.env.metric === "metric" ? "MetricToken" : "Xmetric";
   let network = hre.network.name;
   if (network === "hardhat") {
     network = "localhost";
   }
-
-  const { address: whichMetricAddress } = require(`../deployments/${network}/${whichMetric}.json`);
 
   const bountyQuestion = await deploy("BountyQuestion", {
     from: deployer,
@@ -25,17 +26,20 @@ module.exports = async (hre) => {
   const questionStateController = await deploy("QuestionStateController", {
     from: deployer,
     log: true,
+    args: [bountyQuestion.address],
   });
+
+  const metric = await getContract(whichMetric);
 
   const vault = await deploy("Vault", {
     from: deployer,
-    args: [whichMetricAddress, questionStateController.address, treasury],
+    args: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
     log: true,
   });
 
   const actionCostController = await deploy("ActionCostController", {
     from: deployer,
-    args: [whichMetricAddress, vault.address],
+    args: [metric.address, vault.address],
     log: true,
   });
 
@@ -67,6 +71,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: questionStateController.address,
+        constructorArguments: [bountyQuestion.address],
         contract: "src/contracts/Protocol/QuestionStateController.sol:QuestionStateController",
       });
     } catch (error) {
@@ -76,8 +81,8 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: actionCostController.address,
-        constructorArguments: [whichMetricAddress],
-        contract: "src/contracts/Protocol/QuestionStateController.sol:QuestionStateController",
+        constructorArguments: [metric.address],
+        contract: "src/contracts/Protocol/ActionCostController.sol:ActionCostController",
       });
     } catch (error) {
       console.log("error:", error.message);
@@ -96,7 +101,7 @@ module.exports = async (hre) => {
     try {
       await hre.run("verify:verify", {
         address: vault.address,
-        constructorArguments: [whichMetricAddress, questionStateController.address, treasury],
+        constructorArguments: [metric.address, questionStateController.address, "0xD3603df4BC1A9df587155bc03eeb166874d6077C"],
         contract: "src/contracts/Protocol/Vault.sol:Vault",
       });
     } catch (error) {
@@ -104,5 +109,5 @@ module.exports = async (hre) => {
     }
   }
 };
-module.exports.tags = ["QuestionAPI"];
-module.exports.dependencies = ["BountyQuestion", "QuestionStateController", "Vault", "ClaimController", "ActionCostController"];
+module.exports.tags = ["questionAPI"];
+module.exports.dependencies = ["Xmetric"];

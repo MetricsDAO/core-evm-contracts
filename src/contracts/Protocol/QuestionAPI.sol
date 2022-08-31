@@ -9,6 +9,10 @@ import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
 
+// Enums
+import "./Enums/ActionEnum.sol";
+import "./Enums/QuestionStateEnum.sol";
+
 // Modifiers
 import "./modifiers/NFTLocked.sol";
 import "./modifiers/FunctionLocked.sol";
@@ -88,19 +92,17 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     /**
      * @notice Creates a question.
      * @param uri The IPFS hash of the question.
-     * @param claimLimit The limit for the amount of people that can claim the question.
      * @return The question id
      */
-    function createQuestion(string calldata uri, uint256 claimLimit) public returns (uint256) {
+    function createQuestion(string calldata uri) public returns (uint256) {
         // Mint a new question
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
-        // Pay to create a question
-        _costController.payForCreateQuestion(_msgSender(), questionId);
-
         // Initialize the question
-        _questionStateController.initializeQuestion(questionId, uri);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _questionStateController.initializeQuestion(questionId);
+
+        // Pay to create a question
+        _costController.payForAction(_msgSender(), questionId, ACTION.CREATE);
 
         emit QuestionCreated(questionId, _msgSender());
 
@@ -118,7 +120,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Initialize the question
-        _questionStateController.initializeQuestion(questionId, uri);
+        _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
 
         // Publish the question
@@ -140,7 +142,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         _questionStateController.voteFor(_msgSender(), questionId);
 
         // Pay to upvote a question
-        _costController.payForVoting(_msgSender(), questionId);
+        _costController.payForAction(_msgSender(), questionId, ACTION.VOTE);
 
         emit QuestionUpvoted(questionId, _msgSender());
     }
@@ -158,11 +160,13 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     /**
      * @notice Publishes a question and allows it to be claimed and receive answers.
      * @param questionId The questionId of the question to publish
+     * @param claimLimit The amount of claims per question.
      */
 
-    function publishQuestion(uint256 questionId) public onlyHolder(ADMIN_ROLE) functionLocked{
+    function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publish(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit);
 
         emit QuestionPublished(questionId, _msgSender());
     }
@@ -171,14 +175,21 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Allows anm analyst to claim a question and submit an answer before the dealine.
      * @param questionId The questionId of the question to disqualify
      */
-    function claimQuestion(uint256 questionId) public functionLocked {
+    function claimQuestion(uint256 questionId) public {
         // Check if the question is published and is therefore claimable
-        if (_questionStateController.getState(questionId) != uint256(IQuestionStateController.STATE.PUBLISHED)) revert ClaimsNotOpen();
+        if (_questionStateController.getState(questionId) != STATE.PUBLISHED) revert ClaimsNotOpen();
 
         // Claim the question
         _claimController.claim(_msgSender(), questionId);
 
+        // Pay for claiming a question
+        _costController.payForAction(_msgSender(), questionId, ACTION.CLAIM);
+
         emit QuestionClaimed(questionId, _msgSender());
+    }
+
+    function releaseClaim(uint256 questionId) public {
+        _claimController.releaseClaim(_msgSender(), questionId);
     }
 
     /**

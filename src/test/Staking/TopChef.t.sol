@@ -2,8 +2,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "../contracts/TopChef.sol";
-import "../contracts/MetricToken.sol";
+import "../../contracts/TopChef.sol";
+import "../../contracts/MetricToken.sol";
 
 /// @notice Translation of https://github.com/MetricsDAO/core-evm-contracts/blob/main/test/chef-test.js to foundry
 contract topChefTest is Test {
