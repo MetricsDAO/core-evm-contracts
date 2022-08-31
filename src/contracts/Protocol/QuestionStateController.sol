@@ -43,8 +43,16 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         votes[questionId].totalVotes = 1;
     }
 
+    function initializeChallenge(uint256 questionId) public onlyApi {
+        _bountyQuestion.updateState(questionId, STATE.PENDING);
+    }
+
     function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
         // if some voting barrier is passed, we can publish the question
+        _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
+    }
+
+    function publishChallenge(uint256 questionId) public onlyApi onlyState(STATE.PENDING, questionId) {
         _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
     }
 

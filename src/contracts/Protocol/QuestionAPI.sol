@@ -66,6 +66,9 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     /// @notice Emitted when a question is unvoted.
     event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
 
+    /// @notice Emitted when a challenge is proposed.
+    event ChallengeProposed(uint256 indexed questionId, address indexed proposer);
+
     //------------------------------------------------------ CONSTRUCTOR
 
     /**
@@ -110,10 +113,30 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     }
 
     /**
+     * @notice Creates a challenge.
+     * @param uri The IPFS hash of the challenge.
+     * @return The challenge id
+     */
+    function proposeChallenge(string calldata uri) public returns (uint256) {
+        // Mint a new question
+        uint256 questionId = _question.mintQuestion(_msgSender(), uri);
+
+        // Initialize the question
+        _questionStateController.initializeChallenge(questionId);
+
+        // Burn METRIC
+        _costController.burnForAction(_msgSender(), ACTION.CHALLENGE_BURN);
+
+        emit ChallengeProposed(questionId, _msgSender());
+
+        return questionId;
+    }
+
+    /**
      * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
      * @param uri The IPFS hash of the challenge
      * @param claimLimit The limit for the amount of people that can claim the challenge
-     * @return questionId The question id
+     * @return The challenge id
      */
     function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
         // Mint a new question
@@ -166,6 +189,14 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publish(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit);
+
+        emit QuestionPublished(questionId, _msgSender());
+    }
+
+    function publishChallenge(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
+        // Publish the question
+        _questionStateController.publishChallenge(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
 
         emit QuestionPublished(questionId, _msgSender());

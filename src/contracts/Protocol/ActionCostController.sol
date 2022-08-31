@@ -30,6 +30,7 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         actionCost[ACTION.CREATE] = 1e18;
         actionCost[ACTION.VOTE] = 1e18;
         actionCost[ACTION.CLAIM] = 1e18;
+        actionCost[ACTION.CHALLENGE_BURN] = 1000e18;
 
         actionStage[ACTION.CREATE] = STAGE.CREATE_AND_VOTE;
         actionStage[ACTION.VOTE] = STAGE.CREATE_AND_VOTE;
@@ -42,6 +43,10 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         ACTION action
     ) external onlyApi {
         vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
+    }
+
+    function burnForAction(address _user, ACTION action) external onlyApi {
+        vault.burnMetric(_user, actionCost[action]);
     }
 
     function getActionCost(ACTION action) public view returns (uint256) {

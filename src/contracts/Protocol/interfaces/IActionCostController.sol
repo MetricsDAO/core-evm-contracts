@@ -11,4 +11,6 @@ interface IActionCostController {
         uint256 questionId,
         ACTION action
     ) external;
+
+    function burnForAction(address _user, ACTION action) external;
 }
