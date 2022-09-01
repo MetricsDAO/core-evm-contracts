@@ -115,13 +115,17 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param claimLimit The limit for the amount of people that can claim the challenge
      * @return questionId The question id
      */
-    function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
+    function createChallenge(
+        string calldata uri,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
         // Mint a new question
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         // Publish the question
         _questionStateController.publish(questionId);
@@ -163,10 +167,14 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param claimLimit The amount of claims per question.
      */
 
-    function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
+    function publishQuestion(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publish(questionId);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         emit QuestionPublished(questionId, _msgSender());
     }

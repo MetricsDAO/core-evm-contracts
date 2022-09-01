@@ -4,7 +4,11 @@ pragma solidity 0.8.13;
 import "../Structs/AnswerStruct.sol";
 
 interface IClaimController {
-    function initializeQuestion(uint256 questionId, uint256 claimLimit) external;
+    function initializeQuestion(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) external;
 
     function claim(address user, uint256 questionId) external;
 
@@ -19,4 +23,6 @@ interface IClaimController {
     function getClaimDataForUser(uint256 questionId, address user) external view returns (Answer memory _answer);
 
     function getQuestionClaimState(uint256 questionId, address user) external view returns (CLAIM_STATE claimState);
+
+    function getMetricThreshold(uint256 questionId) external view returns (uint256);
 }

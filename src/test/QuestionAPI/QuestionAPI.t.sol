@@ -63,7 +63,7 @@ contract QuestionAPITest is QuickSetup {
 
         // Create a challenge from the manager
         vm.prank(manager);
-        uint256 questionId = _questionAPI.createChallenge("ipfs://XYZ", 25);
+        uint256 questionId = _questionAPI.createChallenge("ipfs://XYZ", 25, 1e18);
 
         // Verify that challenge is published
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.PUBLISHED));
@@ -76,7 +76,7 @@ contract QuestionAPITest is QuickSetup {
         // Make sure that not any user can create a challenge
         vm.prank(other);
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
-        _questionAPI.createChallenge("ipfs://XYZ", 25);
+        _questionAPI.createChallenge("ipfs://XYZ", 25, 1e18);
     }
 
     function test_VerifyEventsEmitted() public {
@@ -107,7 +107,7 @@ contract QuestionAPITest is QuickSetup {
         // Publish the question
         vm.expectEmit(true, true, false, false);
         emit QuestionPublished(questionId, address(other));
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         // Claim the question
         vm.expectEmit(true, true, false, false);
@@ -121,7 +121,7 @@ contract QuestionAPITest is QuickSetup {
         vm.expectEmit(true, true, false, false);
         emit ChallengeCreated(2, address(manager));
         vm.prank(manager);
-        _questionAPI.createChallenge("ipfs://XYZ", 5);
+        _questionAPI.createChallenge("ipfs://XYZ", 5, 1e18);
 
         // Disqualify question
         vm.expectEmit(true, false, false, false);
@@ -142,10 +142,10 @@ contract QuestionAPITest is QuickSetup {
         // Attempt to publish the question
         vm.prank(other2);
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         vm.prank(other);
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
     }
 
     function test_OnlyOwnerCanMintPermissionedNFTs() public {
@@ -161,7 +161,7 @@ contract QuestionAPITest is QuickSetup {
 
         vm.prank(other);
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
-        _questionAPI.createChallenge("ipfs://XYZ", 5);
+        _questionAPI.createChallenge("ipfs://XYZ", 5, 1e18);
     }
 
     function test_FunctionLock() public {
@@ -172,7 +172,7 @@ contract QuestionAPITest is QuickSetup {
 
         vm.startPrank(other);
         uint256 q = _questionAPI.createQuestion("ipfs://XYZ");
-        _questionAPI.publishQuestion(q, 25);
+        _questionAPI.publishQuestion(q, 25, 1e18);
 
         vm.expectRevert(FunctionLocked.FunctionIsLocked.selector);
         _questionAPI.answerQuestion(q, "ipfs://XYZ");

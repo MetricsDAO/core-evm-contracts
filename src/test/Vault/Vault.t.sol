@@ -48,7 +48,7 @@ contract VaultTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish question
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         //withdraw Metric
         _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
@@ -131,7 +131,7 @@ contract VaultTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish question
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         // Withdraw Metric
         _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
@@ -227,9 +227,9 @@ contract VaultTest is QuickSetup {
 
         // Publish the questions
         vm.prank(owner);
-        _questionAPI.publishQuestion(questionIdOne, 25);
+        _questionAPI.publishQuestion(questionIdOne, 25, 1e18);
         vm.prank(owner);
-        _questionAPI.publishQuestion(questionIdTwo, 25);
+        _questionAPI.publishQuestion(questionIdTwo, 25, 1e18);
 
         // Verify that everyone can withdraw and accounting is done properly.
         vm.prank(other);
@@ -321,7 +321,7 @@ contract VaultTest is QuickSetup {
 
         vm.startPrank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
         vm.stopPrank();
 
         vm.startPrank(other2);

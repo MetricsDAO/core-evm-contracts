@@ -17,7 +17,7 @@ contract ClaimControllerTest is QuickSetup {
 
         vm.prank(other);
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _claimController.initializeQuestion(1, 10);
+        _claimController.initializeQuestion(1, 10, 10e18);
 
         vm.prank(other);
         vm.expectRevert(OnlyApi.NotTheApi.selector);
