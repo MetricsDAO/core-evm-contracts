@@ -84,7 +84,7 @@ contract InvariantTesting is QuickSetup, InvariantTest {
     }
 
     function invariant_no_premature_withdrawals_for_voting() public {
-        uint256 questionId = (_bountyQuestion.getMostRecentQuestion() - 1);
+        uint256 questionId = (_bountyQuestion.getMostRecentQuestion());
 
         if (_questionStateController.getState(questionId) == STATE.VOTING) {
             address[] memory voters = _questionStateController.getVoters(questionId);

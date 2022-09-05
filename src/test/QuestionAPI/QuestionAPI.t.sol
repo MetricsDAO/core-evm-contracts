@@ -79,6 +79,63 @@ contract QuestionAPITest is QuickSetup {
         _questionAPI.createChallenge("ipfs://XYZ", 25);
     }
 
+    function test_proposeChallenge() public {
+        console.log("Should correctly propose a challenge");
+
+        // Send other enough balance
+        vm.prank(owner);
+        _metricToken.transfer(other2, 10_000e18);
+
+        vm.prank(other2);
+        _metricToken.approve(address(_vault), 10_000e18);
+
+        uint256 balanceBefore = _metricToken.balanceOf(other2);
+
+        // Propose a challenge -- bypassing the queue
+        vm.prank(other2);
+        uint256 challengeId = _questionAPI.proposeChallenge("ipfs://XYZ");
+
+        // See that correct state is set
+        assertEq(uint256(_questionStateController.getState(challengeId)), uint256(STATE.PENDING));
+
+        // Check that balance is updated correctly
+        assertEq(_metricToken.balanceOf(other2), balanceBefore - _costController.getActionCost(ACTION.CHALLENGE_BURN));
+
+        // Check that tokens are burned
+        assertEq(_metricToken.balanceOf(treasury), _costController.getActionCost(ACTION.CHALLENGE_BURN));
+
+        // Check that you cannot interact with the challenge as user
+        vm.prank(other2);
+        vm.expectRevert(QuestionAPI.CannotVoteForOwnQuestion.selector);
+        _questionAPI.upvoteQuestion(challengeId);
+
+        vm.prank(other2);
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.unvoteQuestion(challengeId);
+
+        vm.prank(other2);
+        vm.expectRevert(Vault.QuestionNotPublished.selector);
+        _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
+
+        // You cannot publish question yourself
+        vm.prank(other2);
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.publishChallenge(challengeId, 25);
+
+        vm.prank(other);
+        _questionAPI.publishChallenge(challengeId, 25);
+        assertEq(uint256(_questionStateController.getState(challengeId)), uint256(STATE.PUBLISHED));
+
+        // Still cannot withdraw
+        vm.prank(other2);
+        vm.expectRevert(Vault.NotTheDepositor.selector);
+        _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
+
+        // Can now claim
+        vm.prank(other);
+        _questionAPI.claimQuestion(challengeId);
+    }
+
     function test_VerifyEventsEmitted() public {
         console.log("All events should be emitted correctly.");
 

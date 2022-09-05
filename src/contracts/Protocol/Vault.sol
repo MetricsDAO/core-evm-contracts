@@ -124,6 +124,10 @@ contract Vault is Ownable, OnlyCostController {
         depositAccounting(user, amount, questionId, stage);
     }
 
+    function burnMetric(address user, uint256 amount) external onlyCostController {
+        metric.transferFrom(user, treasury, amount);
+    }
+
     /**
      * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
      * @param questionId The question id

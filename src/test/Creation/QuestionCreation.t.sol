@@ -13,14 +13,14 @@ contract CreationTest is QuickSetup {
         console.log("Anyone should be able to create a question");
         vm.prank(other);
         _questionAPI.createQuestion("ipfs://A");
-        assertEq(1, _bountyQuestion.getMostRecentQuestion() - 1);
+        assertEq(1, _bountyQuestion.getMostRecentQuestion());
 
         vm.prank(other2);
         _questionAPI.createQuestion("ipfs://B");
-        assertEq(2, _bountyQuestion.getMostRecentQuestion() - 1);
+        assertEq(2, _bountyQuestion.getMostRecentQuestion());
 
         vm.prank(other3);
         _questionAPI.createQuestion("ipfs://C");
-        assertEq(3, _bountyQuestion.getMostRecentQuestion() - 1);
+        assertEq(3, _bountyQuestion.getMostRecentQuestion());
     }
 }

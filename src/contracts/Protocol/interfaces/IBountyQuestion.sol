@@ -9,4 +9,6 @@ interface IBountyQuestion {
     function getMostRecentQuestion() external view returns (uint256);
 
     function updateState(uint256 questionId, STATE newState) external;
+
+    function updateVotes(uint256 questionId, uint256 newVotes) external;
 }
