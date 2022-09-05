@@ -102,7 +102,7 @@ contract QuestionAPITest is QuickSetup {
         assertEq(_metricToken.balanceOf(other2), balanceBefore - _costController.getActionCost(ACTION.CHALLENGE_BURN));
 
         // Check that tokens are burned
-        assertEq(_metricToken.balanceOf(treasury), _costController.getActionCost(ACTION.CHALLENGE_BURN));
+        assertEq(_metricToken.balanceOf(0x000000000000000000000000000000000000dEaD), _costController.getActionCost(ACTION.CHALLENGE_BURN));
 
         // Check that you cannot interact with the challenge as user
         vm.prank(other2);
