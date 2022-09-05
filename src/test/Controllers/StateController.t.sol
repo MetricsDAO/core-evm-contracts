@@ -20,7 +20,7 @@ contract CostControllerTest is QuickSetup {
 
         vm.prank(other);
         vm.expectRevert(OnlyApi.NotTheApi.selector);
-        _questionStateController.publish(1);
+        _questionStateController.publishFromQuestion(1);
 
         vm.prank(other);
         vm.expectRevert(OnlyApi.NotTheApi.selector);
