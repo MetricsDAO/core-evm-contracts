@@ -23,7 +23,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     /// @notice For a given address and a given question, tracks the index of their vote in the votes[]
     mapping(address => mapping(uint256 => uint256)) public questionIndex; // TODO userVoteIndex
 
-    mapping(uint256 => Votes) public votes;
+    mapping(uint256 => address[]) public votes;
 
     IBountyQuestion private _bountyQuestion;
 
@@ -63,9 +63,9 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         hasVoted[_user][questionId] = true;
 
         _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) + 1));
-        votes[questionId].voters.push(_user);
+        votes[questionId].push(_user);
 
-        questionIndex[_user][questionId] = votes[questionId].voters.length - 1;
+        questionIndex[_user][questionId] = votes[questionId].length - 1;
 
         // Interactions
     }
@@ -78,7 +78,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) - 1));
 
         uint256 index = questionIndex[_user][questionId];
-        delete votes[questionId].voters[index];
+        delete votes[questionId][index];
 
         hasVoted[_user][questionId] = false;
 
@@ -97,8 +97,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return _bountyQuestion.getQuestionData(questionId).questionState;
     }
 
-    function getVoters(uint256 questionId) public view returns (address[] memory voters) {
-        return votes[questionId].voters;
+    function getVoters(uint256 questionId) public view returns (address[] memory) {
+        return votes[questionId];
     }
 
     // LOOK HERE ISSUE
@@ -184,10 +184,5 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     modifier onlyState(STATE required, uint256 questionId) {
         if (required != getState(questionId)) revert InvalidStateTransition();
         _;
-    }
-
-    struct Votes {
-        address[] voters;
-        uint256 totalVotes;
     }
 }
