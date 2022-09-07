@@ -39,6 +39,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     error InvalidAddress();
     /// @notice Throw if user tries to vote for own question
     error CannotVoteForOwnQuestion();
+    /// @notice Throw if action is executed on a question that does not exist.
+    error QuestionDoesNotExist();
 
     //------------------------------------------------------ EVENTS
 
@@ -65,6 +67,9 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
 
     /// @notice Emitted when a question is unvoted.
     event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
+
+    /// @notice Emitted when a challenge is proposed.
+    event ChallengeProposed(uint256 indexed questionId, address indexed proposer);
 
     //------------------------------------------------------ CONSTRUCTOR
 
@@ -110,6 +115,26 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     }
 
     /**
+     * @notice Creates a challenge.
+     * @param uri The IPFS hash of the challenge.
+     * @return The challenge id
+     */
+    function proposeChallenge(string calldata uri) public returns (uint256) {
+        // Mint a new question
+        uint256 questionId = _question.mintQuestion(_msgSender(), uri);
+
+        // Initialize the question
+        _questionStateController.initializeChallenge(questionId);
+
+        // Burn METRIC
+        _costController.burnForAction(_msgSender(), ACTION.CHALLENGE_BURN);
+
+        emit ChallengeProposed(questionId, _msgSender());
+
+        return questionId;
+    }
+
+    /**
      * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
      * @param uri The IPFS hash of the challenge
      * @param claimLimit The limit for the amount of people that can claim the challenge
@@ -129,7 +154,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         // Publish the question
-        _questionStateController.publish(questionId);
+        _questionStateController.publishFromQuestion(questionId);
 
         emit ChallengeCreated(questionId, _msgSender());
 
@@ -175,7 +200,19 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         uint256 threshold
     ) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
-        _questionStateController.publish(questionId);
+        _questionStateController.publishFromQuestion(questionId);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
+
+        emit QuestionPublished(questionId, _msgSender());
+    }
+
+    function publishChallenge(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(ADMIN_ROLE) {
+        // Publish the question
+        _questionStateController.publishFromChallenge(questionId);
         _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         emit QuestionPublished(questionId, _msgSender());
@@ -218,6 +255,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionId The questionId of the question to disqualify.
      */
     function disqualifyQuestion(uint256 questionId) public onlyOwner functionLocked {
+        if (questionId > _question.getMostRecentQuestion()) revert QuestionDoesNotExist();
         _questionStateController.setDisqualifiedState(questionId);
 
         emit QuestionDisqualified(questionId, _msgSender());

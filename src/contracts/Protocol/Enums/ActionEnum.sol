@@ -4,5 +4,6 @@ pragma solidity ^0.8.13;
 enum ACTION {
     CREATE,
     VOTE,
-    CLAIM
+    CLAIM,
+    CHALLENGE_BURN
 }

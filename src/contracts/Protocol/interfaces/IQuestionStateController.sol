@@ -6,11 +6,15 @@ import "../Enums/QuestionStateEnum.sol";
 interface IQuestionStateController {
     function initializeQuestion(uint256 questionId) external;
 
+    function initializeChallenge(uint256 questionId) external;
+
     function voteFor(address _user, uint256 questionId) external;
 
     function unvoteFor(address _user, uint256 questionId) external;
 
-    function publish(uint256 question) external;
+    function publishFromQuestion(uint256 question) external;
+
+    function publishFromChallenge(uint256 question) external;
 
     function getState(uint256 quesitonId) external view returns (STATE currentState);
 

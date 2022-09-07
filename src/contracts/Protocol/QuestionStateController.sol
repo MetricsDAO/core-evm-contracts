@@ -23,7 +23,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     /// @notice For a given address and a given question, tracks the index of their vote in the votes[]
     mapping(address => mapping(uint256 => uint256)) public questionIndex; // TODO userVoteIndex
 
-    mapping(uint256 => Votes) public votes;
+    mapping(uint256 => address[]) public votes;
 
     IBountyQuestion private _bountyQuestion;
 
@@ -39,12 +39,19 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
      */
     function initializeQuestion(uint256 questionId) public onlyApi {
         _bountyQuestion.updateState(questionId, STATE.VOTING);
-
-        votes[questionId].totalVotes = 1;
+        _bountyQuestion.updateVotes(questionId, 1);
     }
 
-    function publish(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
+    function initializeChallenge(uint256 questionId) public onlyApi {
+        _bountyQuestion.updateState(questionId, STATE.PENDING);
+    }
+
+    function publishFromQuestion(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
         // if some voting barrier is passed, we can publish the question
+        _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
+    }
+
+    function publishFromChallenge(uint256 questionId) public onlyApi onlyState(STATE.PENDING, questionId) {
         _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
     }
 
@@ -55,10 +62,10 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         // Effects
         hasVoted[_user][questionId] = true;
 
-        votes[questionId].totalVotes++;
-        votes[questionId].voters.push(_user);
+        _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) + 1));
+        votes[questionId].push(_user);
 
-        questionIndex[_user][questionId] = votes[questionId].voters.length - 1;
+        questionIndex[_user][questionId] = votes[questionId].length - 1;
 
         // Interactions
     }
@@ -68,10 +75,10 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         if (!hasVoted[_user][questionId]) revert HasNotVotedForQuestion();
 
         // Effects
-        votes[questionId].totalVotes--;
+        _bountyQuestion.updateVotes(questionId, (getTotalVotes(questionId) - 1));
 
         uint256 index = questionIndex[_user][questionId];
-        delete votes[questionId].voters[index];
+        delete votes[questionId][index];
 
         hasVoted[_user][questionId] = false;
 
@@ -90,12 +97,13 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return _bountyQuestion.getQuestionData(questionId).questionState;
     }
 
-    function getVoters(uint256 questionId) public view returns (address[] memory voters) {
-        return votes[questionId].voters;
+    function getVoters(uint256 questionId) public view returns (address[] memory) {
+        return votes[questionId];
     }
 
+    // LOOK HERE ISSUE
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
-        return votes[questionId].totalVotes;
+        return _bountyQuestion.getQuestionData(questionId).totalVotes;
     }
 
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool) {
@@ -136,7 +144,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         uint256 j = 0;
         uint256 limit;
         uint256 sizeOfArray;
-        currentQuestionId -= 1;
+        currentQuestionId;
         if (currentQuestionId > offset) {
             limit = currentQuestionId - offset;
             sizeOfArray = (currentQuestionId - offset) + 1;
@@ -148,7 +156,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         for (uint256 i = currentQuestionId; i >= limit; i--) {
             if (_bountyQuestion.getQuestionData(i).questionState == currentState) {
                 found[j] = _bountyQuestion.getQuestionData(i);
-                found[j].totalVotes = votes[i].totalVotes;
+                found[j].totalVotes = _bountyQuestion.getQuestionData(i).totalVotes;
                 j++;
             }
         }
@@ -176,10 +184,5 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     modifier onlyState(STATE required, uint256 questionId) {
         if (required != getState(questionId)) revert InvalidStateTransition();
         _;
-    }
-
-    struct Votes {
-        address[] voters;
-        uint256 totalVotes;
     }
 }

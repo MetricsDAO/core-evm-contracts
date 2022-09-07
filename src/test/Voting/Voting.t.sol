@@ -159,5 +159,14 @@ contract VotingTest is QuickSetup {
         vm.stopPrank();
     }
 
+    function test_TotalVotesShouldInitializeToOne() public {
+        console.log("Voting should initialize to zero.");
+
+        vm.prank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+
+        assertEq(_questionStateController.getTotalVotes(questionId), 1);
+    }
+
     // ---------------------- Access control tests ----------------------
 }
