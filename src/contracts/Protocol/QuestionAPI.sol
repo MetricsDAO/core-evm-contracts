@@ -147,7 +147,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         _claimController.initializeQuestion(questionId, claimLimit);
 
         // Publish the question
-        _questionStateController.publish(questionId);
+        _questionStateController.publishFromQuestion(questionId);
 
         emit ChallengeCreated(questionId, _msgSender());
 
@@ -188,7 +188,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
 
     function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
-        _questionStateController.publish(questionId);
+        _questionStateController.publishFromQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
 
         emit QuestionPublished(questionId, _msgSender());
@@ -196,7 +196,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
 
     function publishChallenge(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
-        _questionStateController.publishChallenge(questionId);
+        _questionStateController.publishFromChallenge(questionId);
         _claimController.initializeQuestion(questionId, claimLimit);
 
         emit QuestionPublished(questionId, _msgSender());
