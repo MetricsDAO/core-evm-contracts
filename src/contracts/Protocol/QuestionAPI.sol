@@ -113,6 +113,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
      * @param uri The IPFS hash of the challenge
      * @param claimLimit The limit for the amount of people that can claim the challenge
+     * @param threshold The METRIC holding threshold required to claim the question.
      * @return questionId The question id
      */
     function createChallenge(
@@ -165,6 +166,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Publishes a question and allows it to be claimed and receive answers.
      * @param questionId The questionId of the question to publish
      * @param claimLimit The amount of claims per question.
+     * @param threshold The METRIC holding threshold required to claim the question.
      */
 
     function publishQuestion(

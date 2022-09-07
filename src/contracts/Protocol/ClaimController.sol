@@ -52,6 +52,7 @@ contract ClaimController is Ownable, OnlyApi, TokenBar {
      * @notice Initializes a question to receive claims
      * @param questionId The id of the question
      * @param claimLimit The limit for the amount of people that can claim the question
+     * @param threshold The METRIC holding threshold required to claim the question.
      */
     function initializeQuestion(
         uint256 questionId,
