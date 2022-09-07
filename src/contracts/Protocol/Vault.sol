@@ -28,6 +28,7 @@ contract Vault is Ownable, OnlyCostController {
 
     /// @notice Address to the MetricsDAO treasury.
     address public treasury;
+    address private constant BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
     /// @notice Keeps track of the quantity of deposits per user.
     mapping(address => uint256[]) public depositsByWithdrawers;
@@ -125,7 +126,7 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     function burnMetric(address user, uint256 amount) external onlyCostController {
-        metric.transferFrom(user, treasury, amount);
+        metric.transferFrom(user, BURN_ADDRESS, amount);
     }
 
     /**

@@ -102,7 +102,7 @@ contract QuestionAPITest is QuickSetup {
         assertEq(_metricToken.balanceOf(other2), balanceBefore - _costController.getActionCost(ACTION.CHALLENGE_BURN));
 
         // Check that tokens are burned
-        assertEq(_metricToken.balanceOf(treasury), _costController.getActionCost(ACTION.CHALLENGE_BURN));
+        assertEq(_metricToken.balanceOf(0x000000000000000000000000000000000000dEaD), _costController.getActionCost(ACTION.CHALLENGE_BURN));
 
         // Check that you cannot interact with the challenge as user
         vm.prank(other2);
@@ -235,5 +235,45 @@ contract QuestionAPITest is QuickSetup {
         _questionAPI.answerQuestion(q, "ipfs://XYZ");
 
         vm.stopPrank();
+    }
+
+    function test_RunningNonExistantQuestionIdsDoesNotHurt() public {
+        console.log("Running non existant question ids should not hurt.");
+
+        // Doesnt hold nft roles
+        vm.prank(other2);
+
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.upvoteQuestion(777);
+
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.unvoteQuestion(777);
+
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.publishQuestion(777, 25);
+
+        vm.expectRevert(NFTLocked.DoesNotHold.selector);
+        _questionAPI.publishChallenge(777, 25);
+
+        vm.expectRevert(QuestionAPI.ClaimsNotOpen.selector);
+        _questionAPI.claimQuestion(777);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _questionAPI.disqualifyQuestion(777);
+        vm.stopPrank();
+
+        // Holds nft roles
+        vm.prank(other);
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.publishQuestion(777, 25);
+
+        vm.prank(other);
+        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        _questionAPI.publishChallenge(777, 25);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        vm.expectRevert(QuestionAPI.QuestionDoesNotExist.selector);
+        _questionAPI.disqualifyQuestion(777);
     }
 }

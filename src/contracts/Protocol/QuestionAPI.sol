@@ -39,6 +39,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     error InvalidAddress();
     /// @notice Throw if user tries to vote for own question
     error CannotVoteForOwnQuestion();
+    /// @notice Throw if action is executed on a question that does not exist.
+    error QuestionDoesNotExist();
 
     //------------------------------------------------------ EVENTS
 
@@ -239,6 +241,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionId The questionId of the question to disqualify.
      */
     function disqualifyQuestion(uint256 questionId) public onlyOwner functionLocked {
+        if (questionId > _question.getMostRecentQuestion()) revert QuestionDoesNotExist();
         _questionStateController.setDisqualifiedState(questionId);
 
         emit QuestionDisqualified(questionId, _msgSender());
