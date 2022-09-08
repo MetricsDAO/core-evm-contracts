@@ -353,46 +353,19 @@ contract VaultTest is QuickSetup {
     }
 
     // ---------------------- Access control tests ----------------------
-
-    function test_sensitiveAddressesCannotBeSetToNullAddress() public {
-        console.log("Sensitive addresses cannot be set to null.");
-
-        vm.startPrank(owner);
-        vm.expectRevert(Vault.InvalidAddress.selector);
-        _vault.setQuestionStateController(address(0x0));
-
-        // This should be allowed as at some point the treasury might wannt to burn tokens or something.
-        _vault.setTreasury(address(0x0));
-
-        vm.expectRevert(Vault.InvalidAddress.selector);
-        _vault.setMetric(address(0x0));
-        vm.stopPrank();
-    }
-
     function test_onlyOwnerCanSetSensitiveAddresses() public {
         console.log("Only owner should be able to set sensitive addresses");
 
         vm.startPrank(other);
-        // Attempt to set sensitive addresses
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.setQuestionStateController(address(0x1));
 
         vm.expectRevert("Ownable: caller is not the owner");
         _vault.setTreasury(address(0x1));
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        _vault.setMetric(address(0x1));
-        vm.stopPrank();
 
         vm.stopPrank();
 
         vm.startPrank(owner);
-        _vault.setQuestionStateController(address(0x1));
         _vault.setTreasury(address(0x1));
-        _vault.setMetric(address(0x1));
 
-        assertEq(address(_vault.questionStateController()), address(0x1));
         assertEq(_vault.treasury(), address(0x1));
-        assertEq(address(_vault.metric()), address(0x1));
     }
 }

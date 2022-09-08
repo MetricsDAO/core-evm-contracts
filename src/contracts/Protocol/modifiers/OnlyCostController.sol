@@ -2,17 +2,19 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IQuestionAPI.sol";
 
 contract OnlyCostController is Ownable {
     address public costController;
+    IQuestionAPI public questionAPI;
 
     // ------------------------------- Setter
-    /**
-     * @notice Sets the address of the ActionCostController.
-     * @param _newCostController The new address of the ActionCostController.
-     */
-    function setCostController(address _newCostController) external onlyOwner {
-        costController = _newCostController;
+    function updateCostController() public {
+        costController = questionAPI.getCostController();
+    }
+
+    function setQuestionApi(address _questionAPI) public onlyOwner {
+        questionAPI = IQuestionAPI(_questionAPI);
     }
 
     // ------------------------ Modifiers

@@ -3,12 +3,11 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./QuestionStateController.sol";
-import "./BountyQuestion.sol";
 
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IClaimController.sol";
+import "./interfaces/IBountyQuestion.sol";
 
 // Enums
 import "./Enums/VaultEnum.sol";
@@ -22,7 +21,7 @@ contract Vault is Ownable, OnlyCostController {
     IERC20 public metric;
     IQuestionStateController public questionStateController;
     IClaimController public claimController;
-    BountyQuestion private _question;
+    IBountyQuestion public question;
 
     STATUS public status;
 
@@ -88,17 +87,9 @@ contract Vault is Ownable, OnlyCostController {
 
     /**
      * @notice Constructor sets the question Metric token, QuestionStateController and the treasury.
-     * @param metricTokenAddress The Metric token address
-     * @param questionStateControllerAddress The QuestionStateController address.
      * @param treasuryAddress The treasury address.
      */
-    constructor(
-        address metricTokenAddress,
-        address questionStateControllerAddress,
-        address treasuryAddress
-    ) {
-        metric = IERC20(metricTokenAddress);
-        questionStateController = IQuestionStateController(questionStateControllerAddress);
+    constructor(address treasuryAddress) {
         treasury = treasuryAddress;
     }
 
@@ -146,7 +137,7 @@ contract Vault is Ownable, OnlyCostController {
             withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.UNVOTE) {
             // Check that user has a voting index, has not voted and the question state is VOTING.
-            if (_question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotUnvoteOwnQuestion();
+            if (question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotUnvoteOwnQuestion();
             if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
             if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
 
@@ -287,34 +278,28 @@ contract Vault is Ownable, OnlyCostController {
     //------------------------------------------------------ OWNER FUNCTIONS
 
     /**
-     * @notice Allows owner to update the QuestionStateController.
+     * @notice Allows anyone to update the controllers.
      */
-    function setQuestionStateController(address _questionStateController) public onlyOwner {
-        if (_questionStateController == address(0)) revert InvalidAddress();
-        questionStateController = IQuestionStateController(_questionStateController);
+    function updateStateController() public {
+        questionStateController = IQuestionStateController(questionAPI.getQuestionStateController());
     }
 
-    function setClaimController(address _claimController) public onlyOwner {
-        if (_claimController == address(0)) revert InvalidAddress();
-        claimController = IClaimController(_claimController);
+    function updateClaimController() public {
+        claimController = IClaimController(questionAPI.getClaimController());
+    }
+
+    function updateBountyQuestion() public {
+        question = IBountyQuestion(questionAPI.getBountyQuestion());
+    }
+
+    function updateMetric() public {
+        metric = IERC20(questionAPI.getMetricToken());
     }
 
     /**
-     * @notice Allows owner to update the treasury address.
+     * @notice Allows owner to update the treasury address and questionApi.
      */
     function setTreasury(address _treasury) public onlyOwner {
         treasury = _treasury;
-    }
-
-    function setBountyQuestion(address _bountyQuestion) public onlyOwner {
-        _question = BountyQuestion(_bountyQuestion);
-    }
-
-    /**
-     * @notice Allows owner to update the Metric token address.
-     */
-    function setMetric(address _metric) public onlyOwner {
-        if (_metric == address(0)) revert InvalidAddress();
-        metric = IERC20(_metric);
     }
 }

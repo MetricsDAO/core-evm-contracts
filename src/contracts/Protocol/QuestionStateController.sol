@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // Interfaces
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IBountyQuestion.sol";
+import "./interfaces/IQuestionAPI.sol";
 
 // Enums
 import "./Enums/QuestionStateEnum.sol";
@@ -27,11 +28,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
 
     IBountyQuestion private _bountyQuestion;
 
-    // TODO do we want user to lose their metric if a question is closed? they voted on something bad
-
-    constructor(address bountyQuestion) {
-        _bountyQuestion = IBountyQuestion(bountyQuestion);
-    }
+    constructor() {}
 
     /**
      * @notice Initializes a question to draft.
@@ -163,15 +160,8 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return found;
     }
 
-    //------------------------------------------------------ OWNER FUNCTIONS
-
-    /**
-     * @notice Allows the owner to set the BountyQuestion contract address.
-     * @param newQuestion The address of the new BountyQuestion contract.
-     */
-    function setQuestionProxy(address newQuestion) public onlyOwner {
-        if (newQuestion == address(0)) revert InvalidAddress();
-        _bountyQuestion = IBountyQuestion(newQuestion);
+    function updateBountyQuestion() public {
+        _bountyQuestion = IBountyQuestion(IQuestionAPI(questionApi).getBountyQuestion());
     }
 
     //------------------------------------------------------ Errors

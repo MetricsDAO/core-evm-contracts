@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "@contracts/MetricToken.sol";
+import "@contracts/Xmetric.sol";
 import "@contracts/Protocol/QuestionAPI.sol";
 import "@contracts/Protocol/ClaimController.sol";
 import "@contracts/Protocol/QuestionStateController.sol";
@@ -30,6 +31,7 @@ abstract contract QuickSetup is Test {
     address other3 = address(0x0f);
 
     MetricToken _metricToken;
+    Xmetric _xmetric;
     QuestionAPI _questionAPI;
     BountyQuestion _bountyQuestion;
     ClaimController _claimController;
@@ -70,29 +72,40 @@ abstract contract QuickSetup is Test {
         vm.label(manager, "Manager");
 
         vm.startPrank(owner);
+        // Deploy all contracts
         _mockAuthNFTManager = new NFT("Auth", "Auth");
         _mockAuthNFTAdmin = new NFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
-        _questionStateController = new QuestionStateController(address(_bountyQuestion));
-        _vault = new Vault(address(_metricToken), address(_questionStateController), treasury);
-        _costController = new ActionCostController(address(_metricToken), address(_vault));
+        _questionStateController = new QuestionStateController();
+        _vault = new Vault(treasury);
+        _costController = new ActionCostController(address(_vault));
         _questionAPI = new QuestionAPI(
             address(_bountyQuestion),
             address(_questionStateController),
             address(_claimController),
-            address(_costController)
+            address(_costController),
+            address(_metricToken)
         );
 
+        // Make required calls
         _claimController.setQuestionApi(address(_questionAPI));
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
-        _vault.setCostController(address(_costController));
-        _vault.setClaimController(address(_claimController));
-        _vault.setBountyQuestion(address(_bountyQuestion));
-        _bountyQuestion.setStateController(address(_questionStateController));
+        _bountyQuestion.setQuestionApiSC(address(_questionAPI));
+        _vault.setQuestionApi(address(_questionAPI));
+
+        _bountyQuestion.updateStateController();
+
+        _questionStateController.updateBountyQuestion();
+
+        _vault.updateStateController();
+        _vault.updateClaimController();
+        _vault.updateCostController();
+        _vault.updateBountyQuestion();
+        _vault.updateMetric();
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
@@ -120,5 +133,77 @@ abstract contract QuickSetup is Test {
 
         vm.prank(other3);
         _metricToken.approve(address(_vault), 100e18);
+    }
+
+    function quickSetupXmetric() public {
+        // Labeling
+        vm.label(owner, "Owner");
+        vm.label(other, "User");
+        vm.label(manager, "Manager");
+
+        vm.startPrank(owner);
+        // Deploy all contracts
+        _mockAuthNFTManager = new NFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
+        _xmetric = new Xmetric();
+        _bountyQuestion = new BountyQuestion();
+        _claimController = new ClaimController();
+        _questionStateController = new QuestionStateController();
+        _vault = new Vault(treasury);
+        _costController = new ActionCostController(address(_vault));
+        _questionAPI = new QuestionAPI(
+            address(_bountyQuestion),
+            address(_questionStateController),
+            address(_claimController),
+            address(_costController),
+            address(_xmetric)
+        );
+
+        // Make required calls
+        _claimController.setQuestionApi(address(_questionAPI));
+        _costController.setQuestionApi(address(_questionAPI));
+        _questionStateController.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setQuestionApi(address(_questionAPI));
+        _bountyQuestion.setQuestionApiSC(address(_questionAPI));
+        _vault.setQuestionApi(address(_questionAPI));
+
+        _bountyQuestion.updateStateController();
+
+        _questionStateController.updateBountyQuestion();
+
+        _vault.updateStateController();
+        _vault.updateClaimController();
+        _vault.updateCostController();
+        _vault.updateBountyQuestion();
+        _vault.updateMetric();
+
+        _xmetric.transfer(other, 100e18);
+        _xmetric.transfer(other2, 100e18);
+        _xmetric.transfer(other3, 100e18);
+
+        _questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, address(_mockAuthNFTManager));
+        _questionAPI.addHolderRole(ADMIN_ROLE, address(_mockAuthNFTAdmin));
+
+        _mockAuthNFTManager.mintTo(manager);
+        _mockAuthNFTAdmin.mintTo(other);
+
+        _xmetric.setTransactor(address(_vault), true);
+
+        vm.stopPrank();
+
+        vm.prank(owner);
+        _xmetric.approve(address(_vault), 100e18);
+
+        vm.prank(manager);
+        _xmetric.approve(address(_vault), 100e18);
+
+        vm.prank(other);
+        _xmetric.approve(address(_vault), 100e18);
+
+        vm.prank(other2);
+        _xmetric.approve(address(_vault), 100e18);
+
+        vm.prank(other3);
+        _xmetric.approve(address(_vault), 100e18);
     }
 }
