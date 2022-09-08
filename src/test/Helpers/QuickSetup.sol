@@ -93,6 +93,7 @@ abstract contract QuickSetup is Test {
         _vault.setClaimController(address(_claimController));
         _vault.setBountyQuestion(address(_bountyQuestion));
         _bountyQuestion.setStateController(address(_questionStateController));
+        _claimController.setMetricToken(address(_metricToken));
 
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);

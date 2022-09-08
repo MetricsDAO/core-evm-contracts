@@ -14,8 +14,9 @@ import "./Structs/AnswerStruct.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
+import "./modifiers/TokenBar.sol";
 
-contract ClaimController is Ownable, IClaimController, OnlyApi {
+contract ClaimController is Ownable, OnlyApi, TokenBar {
     /// @notice Keeps track of claim limits per question
     mapping(uint256 => uint256) public claimLimits;
 
@@ -27,6 +28,9 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
 
     /// @notice maps all claimers to a question
     mapping(uint256 => address[]) public claims;
+
+    /// @notice Maps the metric token threshold to a question
+    mapping(uint256 => uint256) public metricThresholds;
 
     //------------------------------------------------------ ERRORS
 
@@ -48,12 +52,18 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
      * @notice Initializes a question to receive claims
      * @param questionId The id of the question
      * @param claimLimit The limit for the amount of people that can claim the question
+     * @param threshold The METRIC holding threshold required to claim the question.
      */
-    function initializeQuestion(uint256 questionId, uint256 claimLimit) public onlyApi {
+    function initializeQuestion(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyApi {
         claimLimits[questionId] = claimLimit;
+        metricThresholds[questionId] = threshold;
     }
 
-    function claim(address user, uint256 questionId) public onlyApi {
+    function claim(address user, uint256 questionId) public onlyApi tokenThreshold(user, questionId) {
         if (claimCounts[questionId] >= claimLimits[questionId]) revert ClaimLimitReached();
         if (answers[questionId][user].author == user) revert AlreadyClaimed();
 
@@ -94,5 +104,9 @@ contract ClaimController is Ownable, IClaimController, OnlyApi {
 
     function getQuestionClaimState(uint256 questionId, address user) public view returns (CLAIM_STATE claimState) {
         return answers[questionId][user].state;
+    }
+
+    function getMetricThreshold(uint256 questionId) public view returns (uint256) {
+        return metricThresholds[questionId];
     }
 }
