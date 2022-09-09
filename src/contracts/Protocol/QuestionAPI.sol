@@ -142,15 +142,20 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Directly creates a challenge, this is an optional feature for program managers that would like to create challenges directly (skipping the voting stage).
      * @param uri The IPFS hash of the challenge
      * @param claimLimit The limit for the amount of people that can claim the challenge
-     * @return The challenge id
+     * @param threshold The METRIC holding threshold required to claim the question.
+     * @return questionId The question id
      */
-    function createChallenge(string calldata uri, uint256 claimLimit) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
+    function createChallenge(
+        string calldata uri,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(PROGRAM_MANAGER_ROLE) returns (uint256) {
         // Mint a new question
         uint256 questionId = _question.mintQuestion(_msgSender(), uri);
 
         // Initialize the question
         _questionStateController.initializeQuestion(questionId);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         // Publish the question
         _questionStateController.publishFromQuestion(questionId);
@@ -190,20 +195,29 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @notice Publishes a question and allows it to be claimed and receive answers.
      * @param questionId The questionId of the question to publish
      * @param claimLimit The amount of claims per question.
+     * @param threshold The METRIC holding threshold required to claim the question.
      */
 
-    function publishQuestion(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
+    function publishQuestion(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publishFromQuestion(questionId);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         emit QuestionPublished(questionId, _msgSender());
     }
 
-    function publishChallenge(uint256 questionId, uint256 claimLimit) public onlyHolder(ADMIN_ROLE) {
+    function publishChallenge(
+        uint256 questionId,
+        uint256 claimLimit,
+        uint256 threshold
+    ) public onlyHolder(ADMIN_ROLE) {
         // Publish the question
         _questionStateController.publishFromChallenge(questionId);
-        _claimController.initializeQuestion(questionId, claimLimit);
+        _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
         emit QuestionPublished(questionId, _msgSender());
     }

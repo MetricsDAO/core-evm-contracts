@@ -29,7 +29,7 @@ contract ClaimTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId, 1);
+        _questionAPI.publishQuestion(questionId, 1, 1e18);
 
         // Attempt claim
         _questionAPI.claimQuestion(questionId);
@@ -48,7 +48,7 @@ contract ClaimTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         // Claim the question
         _questionAPI.claimQuestion(questionId);
@@ -65,7 +65,7 @@ contract ClaimTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Publish the question
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         // Verify that everything is updated correctly
         _claimController.getClaimDataForUser(questionId, other);
@@ -92,7 +92,7 @@ contract ClaimTest is QuickSetup {
 
         vm.startPrank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
         vm.stopPrank();
 
         vm.startPrank(other2);
@@ -122,7 +122,7 @@ contract ClaimTest is QuickSetup {
 
         vm.startPrank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
-        _questionAPI.publishQuestion(questionId, 25);
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
         vm.stopPrank();
 
         vm.startPrank(other2);
@@ -135,6 +135,26 @@ contract ClaimTest is QuickSetup {
 
         vm.expectRevert(Vault.ClaimNotReleased.selector);
         _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+
+        vm.stopPrank();
+    }
+
+    function test_CannotClaimIfLowerThanThreshold() public {
+        console.log("A user shouldnt be able to claim a question if they have less than the threshold.");
+
+        vm.startPrank(other);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+        _questionAPI.publishQuestion(questionId, 25, 777777777e18);
+        vm.stopPrank();
+
+        vm.startPrank(other2);
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        assertTrue(_metricToken.balanceOf(other2) < 777777777e18);
+
+        // Claim the question
+        vm.expectRevert(TokenBar.NotEnoughTokens.selector);
+        _questionAPI.claimQuestion(questionId);
 
         vm.stopPrank();
     }
