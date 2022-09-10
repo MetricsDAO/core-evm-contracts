@@ -21,9 +21,25 @@ describe("Question API Contract", function () {
   const questionState = {
     UNINIT: 0,
     VOTING: 1,
-    PUBLISHED: 2,
-    COMPLETED: 3,
+    PENDING: 2,
+    PUBLISHED: 3,
     DISQUALIFIED: 4,
+    COMPLETED: 5,
+  };
+
+  const vaultStage = {
+    CREATE_AND_VOTE: 0,
+    UNVOTE: 1,
+    CLAIM_AND_ANSWER: 2,
+    RELEASE_CLAIM: 3,
+    REVIEW: 4,
+  };
+
+  const actionCost = {
+    CREATE: 0,
+    VOTE: 1,
+    CLAIM: 2,
+    CHALLENGE_BURN: 3,
   };
 
   beforeEach(async function () {
@@ -243,10 +259,10 @@ describe("Question API Contract", function () {
 
     it("should enable unvoting and refund metric after a question has been upvoted", async () => {
       await vault.setBountyQuestion(bountyQuestion.address);
-      let tx = await costController.setActionCost(BN(0), utils.parseEther("1"));
+      let tx = await costController.setActionCost(BN(actionCost.CREATE), utils.parseEther("1"));
       await tx.wait();
 
-      tx = await costController.setActionCost(BN(1), utils.parseEther("1"));
+      tx = await costController.setActionCost(BN(actionCost.VOTE), utils.parseEther("1"));
       await tx.wait();
 
       await metricToken.transfer(xmetricaddr1.address, utils.parseEther("200"));
@@ -262,7 +278,7 @@ describe("Question API Contract", function () {
       expect(balance).to.equal(utils.parseEther("19"));
 
       await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestion);
-      await vault.connect(xmetricaddr2).withdrawMetric(latestQuestion, BN("1"));
+      await vault.connect(xmetricaddr2).withdrawMetric(latestQuestion, BN(vaultStage.UNVOTE));
 
       const balanceTwo = await metricToken.balanceOf(xmetricaddr2.address);
       expect(balanceTwo).to.equal(utils.parseEther("20"));
