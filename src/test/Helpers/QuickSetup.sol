@@ -91,11 +91,14 @@ abstract contract QuickSetup is Test {
 
         // Make required calls
         _claimController.setQuestionApi(address(_questionAPI));
+        _claimController.setQuestionApiMT(address(_questionAPI));
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApiSC(address(_questionAPI));
         _vault.setQuestionApi(address(_questionAPI));
+
+        _claimController.updateMetric();
 
         _bountyQuestion.updateStateController();
 
