@@ -292,8 +292,8 @@ describe("Question API Contract", function () {
 
       await metricToken.transfer(xmetricaddr1.address, utils.parseEther("200"));
 
-      const mockAuthNFT = await ethers.getContractFactory("MockAuthNFT");
-      const mockNFT = await mockAuthNFT.deploy("AuthAdmin", "AuthAdmin");
+      const PseudoAuthNFT = await ethers.getContractFactory("PseudoAuthNFT");
+      const mockNFT = await PseudoAuthNFT.deploy("AuthAdmin", "AuthAdmin");
 
       const ADMIN_ROLE = utils.keccak256(utils.toUtf8Bytes("ADMIN_ROLE"));
 
