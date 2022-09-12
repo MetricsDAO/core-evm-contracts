@@ -17,19 +17,33 @@ describe("Question API Contract", function () {
   let xmetricaddr1;
   let xmetricaddr2;
   let xmetricaddr3;
-  let treasury;
-  let addrs;
 
   const questionState = {
     UNINIT: 0,
     VOTING: 1,
-    PUBLISHED: 2,
-    COMPLETED: 3,
+    PENDING: 2,
+    PUBLISHED: 3,
     DISQUALIFIED: 4,
+    COMPLETED: 5,
+  };
+
+  const vaultStage = {
+    CREATE_AND_VOTE: 0,
+    UNVOTE: 1,
+    CLAIM_AND_ANSWER: 2,
+    RELEASE_CLAIM: 3,
+    REVIEW: 4,
+  };
+
+  const actionCost = {
+    CREATE: 0,
+    VOTE: 1,
+    CLAIM: 2,
+    CHALLENGE_BURN: 3,
   };
 
   beforeEach(async function () {
-    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3, treasury, ...addrs] = await ethers.getSigners();
+    [owner, metricaddr1, xmetricaddr1, xmetricaddr2, xmetricaddr3] = await ethers.getSigners();
     // Set To TRUE as tests are based on hardhat.config
     await network.provider.send("evm_setAutomine", [true]);
 
@@ -241,6 +255,32 @@ describe("Question API Contract", function () {
 
       const allquestionsByStateAgain = await questionStateController.getQuestionsByState(new BN(questionState.VOTING), latestQuestion, new BN(4));
       expect(allquestionsByStateAgain.length).to.equal(allquestionsbyLengthAgain);
+    });
+
+    it("should enable unvoting and refund metric after a question has been upvoted", async () => {
+      let tx = await costController.setActionCost(BN(actionCost.CREATE), utils.parseEther("1"));
+      await tx.wait();
+
+      tx = await costController.setActionCost(BN(actionCost.VOTE), utils.parseEther("1"));
+      await tx.wait();
+
+      await metricToken.transfer(xmetricaddr1.address, utils.parseEther("200"));
+
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("metricsdao.xyz");
+      await questionIDtx.wait();
+
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
+      await metricToken.connect(xmetricaddr2).approve(vault.address, utils.parseEther("30"));
+      await questionAPI.connect(xmetricaddr2).upvoteQuestion(latestQuestion);
+
+      const balance = await metricToken.balanceOf(xmetricaddr2.address);
+      expect(balance).to.equal(utils.parseEther("19"));
+
+      await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestion);
+      await vault.connect(xmetricaddr2).withdrawMetric(latestQuestion, BN(vaultStage.UNVOTE));
+
+      const balanceTwo = await metricToken.balanceOf(xmetricaddr2.address);
+      expect(balanceTwo).to.equal(utils.parseEther("20"));
     });
   });
 });

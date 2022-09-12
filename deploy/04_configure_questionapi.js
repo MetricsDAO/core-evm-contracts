@@ -1,3 +1,4 @@
+const { ethers } = require("hardhat");
 const { getContract } = require("../test/utils");
 
 if (!process.env.metric) {
@@ -74,10 +75,10 @@ module.exports = async (hre) => {
     await tx.wait();
   }
 
-  tx = await actionCostController.setActionCost(0, 0);
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(0), ethers.utils.parseEther("0"));
   await tx.wait();
 
-  tx = await actionCostController.setActionCost(1, 0);
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(1), ethers.utils.parseEther("0"));
   await tx.wait();
 };
 module.exports.tags = ["MVP1"];

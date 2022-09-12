@@ -110,4 +110,4 @@ module.exports = async (hre) => {
   }
 };
 module.exports.tags = ["questionAPI"];
-module.exports.dependencies = ["Xmetric"];
+module.exports.dependencies = ["Xmetric", "MetricToken"];
