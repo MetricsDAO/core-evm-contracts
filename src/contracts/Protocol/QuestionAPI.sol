@@ -28,6 +28,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
+    address private _metricToken;
 
     //------------------------------------------------------ ERRORS
 
@@ -79,17 +80,20 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      * @param questionStateController The question state controller address.
      * @param claimController The claim controller address.
      * @param costController The action cost controller address.
+     * @param metricToken The address of the METRIC token.
      */
     constructor(
         address bountyQuestion,
         address questionStateController,
         address claimController,
-        address costController
+        address costController,
+        address metricToken
     ) {
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
+        _metricToken = metricToken;
     }
 
     //------------------------------------------------------ FUNCTIONS
@@ -261,6 +265,26 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         emit QuestionDisqualified(questionId, _msgSender());
     }
 
+    function getMetricToken() public view returns (address) {
+        return _metricToken;
+    }
+
+    function getQuestionStateController() public view returns (address) {
+        return address(_questionStateController);
+    }
+
+    function getClaimController() public view returns (address) {
+        return address(_claimController);
+    }
+
+    function getCostController() public view returns (address) {
+        return address(_costController);
+    }
+
+    function getBountyQuestion() public view returns (address) {
+        return address(_question);
+    }
+
     //------------------------------------------------------ OWNER FUNCTIONS
 
     /**
@@ -297,5 +321,10 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     function setCostController(address newCost) public onlyOwner {
         if (newCost == address(0)) revert InvalidAddress();
         _costController = IActionCostController(newCost);
+    }
+
+    function setMetrictoken(address newMetric) public onlyOwner {
+        if (newMetric == address(0)) revert InvalidAddress();
+        _metricToken = newMetric;
     }
 }

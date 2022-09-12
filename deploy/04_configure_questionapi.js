@@ -31,22 +31,40 @@ module.exports = async (hre) => {
 
   const claimController = await getContract("ClaimController");
 
-  let tx = await vault.setCostController(actionCostController.address);
+  let tx = await vault.setQuestionApi(questionAPI.address);
   await tx.wait();
 
   tx = await bountyQuestion.setQuestionApi(questionAPI.address);
   await tx.wait();
 
-  tx = await questionStateController.setQuestionApi(questionAPI.address);
+  tx = await bountyQuestion.setQuestionApiSC(questionAPI.address);
   await tx.wait();
 
-  tx = await claimController.setQuestionApi(questionAPI.address);
+  tx = await questionStateController.setQuestionApi(questionAPI.address);
   await tx.wait();
 
   tx = await actionCostController.setQuestionApi(questionAPI.address);
   await tx.wait();
 
-  tx = await bountyQuestion.setStateController(questionStateController.address);
+  tx = await bountyQuestion.updateStateController();
+  await tx.wait();
+
+  tx = await questionStateController.updateBountyQuestion();
+  await tx.wait();
+
+  tx = await vault.updateCostController();
+  await tx.wait();
+
+  tx = await vault.updateStateController();
+  await tx.wait();
+
+  tx = await vault.updateBountyQuestion();
+  await tx.wait();
+
+  tx = await vault.updateClaimController();
+  await tx.wait();
+
+  tx = await vault.updateMetric();
   await tx.wait();
 
   if (whichMetric === "Xmetric") {
