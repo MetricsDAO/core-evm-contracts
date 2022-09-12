@@ -258,7 +258,6 @@ describe("Question API Contract", function () {
     });
 
     it("should enable unvoting and refund metric after a question has been upvoted", async () => {
-      await vault.setBountyQuestion(bountyQuestion.address);
       let tx = await costController.setActionCost(BN(actionCost.CREATE), utils.parseEther("1"));
       await tx.wait();
 
