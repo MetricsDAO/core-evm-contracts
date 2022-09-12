@@ -11,7 +11,7 @@ import "@contracts/Protocol/QuestionStateController.sol";
 import "@contracts/Protocol/BountyQuestion.sol";
 import "@contracts/Protocol/ActionCostController.sol";
 import "@contracts/Protocol/Vault.sol";
-import {NFT} from "@contracts/Protocol/Extra/MockAuthNFT.sol";
+import "@contracts/Protocol/Extra/MockAuthNFT.sol";
 
 import "../../contracts/Protocol/Enums/ActionEnum.sol";
 import "../../contracts/Protocol/Enums/VaultEnum.sol";
@@ -38,8 +38,8 @@ abstract contract QuickSetup is Test {
     ActionCostController _costController;
     QuestionStateController _questionStateController;
     Vault _vault;
-    NFT _mockAuthNFTManager;
-    NFT _mockAuthNFTAdmin;
+    MockAuthNFT _mockAuthNFTManager;
+    MockAuthNFT _mockAuthNFTAdmin;
 
     /// @notice Emitted when a question is created.
     event QuestionCreated(uint256 indexed questionId, address indexed creator);
@@ -73,8 +73,8 @@ abstract contract QuickSetup is Test {
 
         vm.startPrank(owner);
         // Deploy all contracts
-        _mockAuthNFTManager = new NFT("Auth", "Auth");
-        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
+        _mockAuthNFTManager = new MockAuthNFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new MockAuthNFT("Auth", "Auth");
         _metricToken = new MetricToken();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();
@@ -146,8 +146,8 @@ abstract contract QuickSetup is Test {
 
         vm.startPrank(owner);
         // Deploy all contracts
-        _mockAuthNFTManager = new NFT("Auth", "Auth");
-        _mockAuthNFTAdmin = new NFT("Auth", "Auth");
+        _mockAuthNFTManager = new MockAuthNFT("Auth", "Auth");
+        _mockAuthNFTAdmin = new MockAuthNFT("Auth", "Auth");
         _xmetric = new Xmetric();
         _bountyQuestion = new BountyQuestion();
         _claimController = new ClaimController();

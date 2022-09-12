@@ -282,5 +282,34 @@ describe("Question API Contract", function () {
       const balanceTwo = await metricToken.balanceOf(xmetricaddr2.address);
       expect(balanceTwo).to.equal(utils.parseEther("20"));
     });
+
+    it("should allow you to publish a question", async () => {
+      let tx = await costController.setActionCost(BN(actionCost.CREATE), utils.parseEther("1"));
+      await tx.wait();
+
+      tx = await costController.setActionCost(BN(actionCost.VOTE), utils.parseEther("1"));
+      await tx.wait();
+
+      await metricToken.transfer(xmetricaddr1.address, utils.parseEther("200"));
+
+      const mockAuthNFT = await ethers.getContractFactory("MockAuthNFT");
+      const mockNFT = await mockAuthNFT.deploy("AuthAdmin", "AuthAdmin");
+
+      const ADMIN_ROLE = utils.keccak256(utils.toUtf8Bytes("ADMIN_ROLE"));
+
+      await questionAPI.addHolderRole(ADMIN_ROLE, mockNFT.address);
+
+      await mockNFT.mintTo(xmetricaddr2.address);
+
+      const questionIDtx = await questionAPI.connect(xmetricaddr1).createQuestion("ipfs//");
+      await questionIDtx.wait();
+
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
+
+      await questionAPI.connect(xmetricaddr2).publishQuestion(latestQuestion, BN(25), utils.parseEther("1"));
+
+      const questionStateLatestQuestion = await questionStateController.getState(latestQuestion);
+      expect(questionStateLatestQuestion).to.equal(questionState.PUBLISHED);
+    });
   });
 });
