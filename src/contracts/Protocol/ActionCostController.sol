@@ -3,7 +3,6 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../MetricToken.sol";
 import "./Vault.sol";
 
 // Interfaces
@@ -17,14 +16,12 @@ import "./Enums/ActionEnum.sol";
 import "./modifiers/OnlyAPI.sol";
 
 contract ActionCostController is Ownable, OnlyApi, IActionCostController {
-    IERC20 private metric;
     Vault private vault;
 
     mapping(ACTION => uint256) public actionCost;
     mapping(ACTION => STAGE) public actionStage;
 
-    constructor(address _metric, address _vault) {
-        metric = IERC20(_metric);
+    constructor(address _vault) {
         vault = Vault(_vault);
 
         actionCost[ACTION.CREATE] = 1e18;
@@ -61,9 +58,5 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
      */
     function setActionCost(ACTION action, uint256 cost) external onlyOwner {
         actionCost[action] = cost;
-    }
-
-    function setMetric(address _metric) public onlyOwner {
-        metric = IERC20(_metric);
     }
 }

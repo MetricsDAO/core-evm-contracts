@@ -11,4 +11,6 @@ interface IBountyQuestion {
     function updateState(uint256 questionId, STATE newState) external;
 
     function updateVotes(uint256 questionId, uint256 newVotes) external;
+
+    function getAuthorOfQuestion(uint256 questionId) external view returns (address);
 }

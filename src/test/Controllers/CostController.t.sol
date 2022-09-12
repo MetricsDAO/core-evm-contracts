@@ -63,12 +63,4 @@ contract CostControllerTest is QuickSetup {
         vm.expectRevert(OnlyApi.NotTheApi.selector);
         _costController.payForAction(address(0), 1, ACTION.CREATE);
     }
-
-    function test_OnlyOwnerCanSetMetricToken() public {
-        console.log("Should only allow the owner to set the metric token.");
-
-        vm.prank(other);
-        vm.expectRevert("Ownable: caller is not the owner");
-        _costController.setMetric(address(456));
-    }
 }

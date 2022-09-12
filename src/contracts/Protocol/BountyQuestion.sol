@@ -3,13 +3,19 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+
+// Interfaces
+import "./interfaces/IQuestionAPI.sol";
+
+// Modifiers
 import "./modifiers/OnlyAPI.sol";
 import "./modifiers/OnlyStateController.sol";
+
+// Structs
 import "./Structs/QuestionData.sol";
-import "./interfaces/IBountyQuestion.sol";
 
 /// @custom:security-contact contracts@metricsdao.xyz
-contract BountyQuestion is IBountyQuestion, Ownable, OnlyApi, OnlyStateController {
+contract BountyQuestion is Ownable, OnlyApi, OnlyStateController {
     using Counters for Counters.Counter;
 
     Counters.Counter private _questionIdCounter;
