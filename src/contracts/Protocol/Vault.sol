@@ -1,23 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Interfaces
-import "./interfaces/IQuestionStateController.sol";
-import "./interfaces/IClaimController.sol";
-import "./interfaces/IBountyQuestion.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IQuestionStateController} from "./interfaces/IQuestionStateController.sol";
+import {IClaimController} from "./interfaces/IClaimController.sol";
+import {IBountyQuestion} from "./interfaces/IBountyQuestion.sol";
 
 // Enums
-import "./Enums/VaultEnum.sol";
-import "./Enums/QuestionStateEnum.sol";
-import "./Enums/ClaimEnum.sol";
+import {STAGE, STATUS} from "./Enums/VaultEnum.sol";
+import {STATE} from "./Enums/QuestionStateEnum.sol";
+import {CLAIM_STATE} from "./Enums/ClaimEnum.sol";
+
+// Structs
+import {lockAttributes} from "./Structs/LockAttributes.sol";
+
+// Errors
+import {VaultEventsAndErrors} from "./EventsAndErrors/VaultEventsAndErrors.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
 
-contract Vault is Ownable, OnlyCostController {
+contract Vault is Ownable, OnlyCostController, VaultEventsAndErrors {
     IERC20 public metric;
     IQuestionStateController public questionStateController;
     IClaimController public claimController;
@@ -40,48 +46,6 @@ contract Vault is Ownable, OnlyCostController {
 
     /// @notice Keeps track of the quantity of withdrawals per user.
     mapping(uint256 => mapping(STAGE => mapping(address => lockAttributes))) public lockedMetric;
-
-    //------------------------------------------------------ ERRORS
-
-    /// @notice Throw if user tries to withdraw Metric from a question it does not own.
-    error NotTheDepositor();
-    /// @notice Throw if user tries to withdraw Metric without having first deposited.
-    error NoMetricDeposited();
-    /// @notice Throw if user tries to lock Metric for a question that has a different state than UNINT.
-    error QuestionHasInvalidStatus();
-    /// @notice Throw if user tries to claim Metric for unvoting on a question that is not in the VOTING state.
-    error QuestionNotInVoting();
-    /// @notice Throw if user tries to claim Metric for a question that has not been published (yet).
-    error QuestionNotPublished();
-    /// @notice Throw if user tries to claim Metric for a question that was not unvoted
-    error UserHasNotUnvoted();
-    /// @notice Throw if user tries to withdraw Metric from a question that is not in the review state.
-    error QuestionNotInReview();
-    /// @notice Throw if user tries to withdraw Metric from a claim that is not released.
-    error ClaimNotReleased();
-    /// @notice Throw if creator of question tries to unvote
-    error CannotUnvoteOwnQuestion();
-    /// @notice Throw if the same question is slashed twice.
-    error AlreadySlashed();
-    /// @notice Throw if address is equal to address(0).
-    error InvalidAddress();
-    /// @notice Throw if user tries to lock METRIC for a stage that does not require locking.
-    error InvalidStage();
-
-    //------------------------------------------------------ STRUCTS
-
-    struct lockAttributes {
-        address user;
-        uint256 amount;
-        STATUS status;
-    }
-
-    //------------------------------------------------------ EVENTS
-
-    /// @notice Event emitted when Metric is withdrawn.
-    event Withdraw(address indexed user, uint256 indexed amount);
-    /// @notice Event emitted when a question is slashed.
-    event Slashed(address indexed user, uint256 indexed questionId);
 
     //------------------------------------------------------ CONSTRUCTOR
 
@@ -201,6 +165,25 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     /**
+     * @notice Allows anyone to update the controllers.
+     */
+    function updateStateController() public {
+        questionStateController = IQuestionStateController(questionAPI.getQuestionStateController());
+    }
+
+    function updateClaimController() public {
+        claimController = IClaimController(questionAPI.getClaimController());
+    }
+
+    function updateBountyQuestion() public {
+        question = IBountyQuestion(questionAPI.getBountyQuestion());
+    }
+
+    function updateMetric() public {
+        metric = IERC20(questionAPI.getMetricToken());
+    }
+
+    /**
      * @notice Allows onlyOwner to slash a question -- halfing the METRIC locked for the question.
      * @param questionId The question id
      */
@@ -218,6 +201,8 @@ contract Vault is Ownable, OnlyCostController {
 
     //     emit Slashed(lockedMetric[questionId][0].user, questionId);
     // }
+
+    //------------------------------------------------------ VIEW FUNCTIONS
 
     /**
      * @notice Gets the questions that a user has created.
@@ -276,25 +261,6 @@ contract Vault is Ownable, OnlyCostController {
     }
 
     //------------------------------------------------------ OWNER FUNCTIONS
-
-    /**
-     * @notice Allows anyone to update the controllers.
-     */
-    function updateStateController() public {
-        questionStateController = IQuestionStateController(questionAPI.getQuestionStateController());
-    }
-
-    function updateClaimController() public {
-        claimController = IClaimController(questionAPI.getClaimController());
-    }
-
-    function updateBountyQuestion() public {
-        question = IBountyQuestion(questionAPI.getBountyQuestion());
-    }
-
-    function updateMetric() public {
-        metric = IERC20(questionAPI.getMetricToken());
-    }
 
     /**
      * @notice Allows owner to update the treasury address and questionApi.

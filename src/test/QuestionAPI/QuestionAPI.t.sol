@@ -70,7 +70,7 @@ contract QuestionAPITest is QuickSetup {
 
         // Make sure we cannot vote for the challenge
         vm.prank(other);
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.upvoteQuestion(questionId);
 
         // Make sure that not any user can create a challenge
@@ -106,15 +106,15 @@ contract QuestionAPITest is QuickSetup {
 
         // Check that you cannot interact with the challenge as user
         vm.prank(other2);
-        vm.expectRevert(QuestionAPI.CannotVoteForOwnQuestion.selector);
+        vm.expectRevert(ApiEventsAndErrors.CannotVoteForOwnQuestion.selector);
         _questionAPI.upvoteQuestion(challengeId);
 
         vm.prank(other2);
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.unvoteQuestion(challengeId);
 
         vm.prank(other2);
-        vm.expectRevert(Vault.QuestionNotPublished.selector);
+        vm.expectRevert(VaultEventsAndErrors.QuestionNotPublished.selector);
         _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
 
         // You cannot publish question yourself
@@ -128,7 +128,7 @@ contract QuestionAPITest is QuickSetup {
 
         // Still cannot withdraw
         vm.prank(other2);
-        vm.expectRevert(Vault.NotTheDepositor.selector);
+        vm.expectRevert(VaultEventsAndErrors.NotTheDepositor.selector);
         _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
 
         // Can now claim
@@ -243,10 +243,10 @@ contract QuestionAPITest is QuickSetup {
         // Doesnt hold nft roles
         vm.prank(other2);
 
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.upvoteQuestion(777);
 
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.unvoteQuestion(777);
 
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
@@ -255,7 +255,7 @@ contract QuestionAPITest is QuickSetup {
         vm.expectRevert(NFTLocked.DoesNotHold.selector);
         _questionAPI.publishChallenge(777, 25, 1e18);
 
-        vm.expectRevert(QuestionAPI.ClaimsNotOpen.selector);
+        vm.expectRevert(ApiEventsAndErrors.ClaimsNotOpen.selector);
         _questionAPI.claimQuestion(777);
 
         vm.expectRevert("Ownable: caller is not the owner");
@@ -264,16 +264,16 @@ contract QuestionAPITest is QuickSetup {
 
         // Holds nft roles
         vm.prank(other);
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.publishQuestion(777, 25, 1e18);
 
         vm.prank(other);
-        vm.expectRevert(QuestionStateController.InvalidStateTransition.selector);
+        vm.expectRevert(StateEventsAndErrors.InvalidStateTransition.selector);
         _questionAPI.publishChallenge(777, 25, 1e18);
         vm.stopPrank();
 
         vm.prank(owner);
-        vm.expectRevert(QuestionAPI.QuestionDoesNotExist.selector);
+        vm.expectRevert(ApiEventsAndErrors.QuestionDoesNotExist.selector);
         _questionAPI.disqualifyQuestion(777);
     }
 }

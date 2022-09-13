@@ -2,16 +2,19 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./BountyQuestion.sol";
 
 // Interfaces
-import "./interfaces/IClaimController.sol";
-import "./interfaces/IQuestionStateController.sol";
-import "./interfaces/IActionCostController.sol";
+import {IClaimController} from "./interfaces/IClaimController.sol";
+import {IQuestionStateController} from "./interfaces/IQuestionStateController.sol";
+import {IActionCostController} from "./interfaces/IActionCostController.sol";
+import {IBountyQuestion} from "./interfaces/IBountyQuestion.sol";
 
 // Enums
-import "./Enums/ActionEnum.sol";
-import "./Enums/QuestionStateEnum.sol";
+import {ACTION} from "./Enums/ActionEnum.sol";
+import {STATE} from "./Enums/QuestionStateEnum.sol";
+
+// Events & Errors
+import {ApiEventsAndErrors} from "./EventsAndErrors/ApiEventsAndErrors.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";
@@ -23,54 +26,12 @@ import "./modifiers/FunctionLocked.sol";
  * @notice This contract is an API for MetricsDAO that allows for interacting with questions & challenges.
  */
 
-contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
-    BountyQuestion private _question;
+contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
+    IBountyQuestion private _question;
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
     address private _metricToken;
-
-    //------------------------------------------------------ ERRORS
-
-    /// @notice Throw if analysts tries to claim a question that is not published.
-    error ClaimsNotOpen();
-    /// @notice Throw if a question has not reached the benchmark for being published (yet).
-    error NotAtBenchmark();
-    /// @notice Throw if address is equal to address(0).
-    error InvalidAddress();
-    /// @notice Throw if user tries to vote for own question
-    error CannotVoteForOwnQuestion();
-    /// @notice Throw if action is executed on a question that does not exist.
-    error QuestionDoesNotExist();
-
-    //------------------------------------------------------ EVENTS
-
-    /// @notice Emitted when a question is created.
-    event QuestionCreated(uint256 indexed questionId, address indexed creator);
-
-    /// @notice Emitted when a challenge is created.
-    event ChallengeCreated(uint256 indexed questionId, address indexed challengeCreator);
-
-    /// @notice Emitted when a question is published.
-    event QuestionPublished(uint256 indexed questionId, address indexed publisher);
-
-    /// @notice Emitted when a question is claimed.
-    event QuestionClaimed(uint256 indexed questionId, address indexed claimant);
-
-    /// @notice Emitted when a question is answered.
-    event QuestionAnswered(uint256 indexed questionId, address indexed answerer);
-
-    /// @notice Emitted when a question is disqualified.
-    event QuestionDisqualified(uint256 indexed questionId, address indexed disqualifier);
-
-    /// @notice Emitted when a question is upvoted.
-    event QuestionUpvoted(uint256 indexed questionId, address indexed voter);
-
-    /// @notice Emitted when a question is unvoted.
-    event QuestionUnvoted(uint256 indexed questionId, address indexed voter);
-
-    /// @notice Emitted when a challenge is proposed.
-    event ChallengeProposed(uint256 indexed questionId, address indexed proposer);
 
     //------------------------------------------------------ CONSTRUCTOR
 
@@ -89,7 +50,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         address costController,
         address metricToken
     ) {
-        _question = BountyQuestion(bountyQuestion);
+        _question = IBountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
@@ -265,6 +226,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         emit QuestionDisqualified(questionId, _msgSender());
     }
 
+    // ------------------------------------------------------ VIEW FUNCTIONS
+
     function getMetricToken() public view returns (address) {
         return _metricToken;
     }
@@ -293,7 +256,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
      */
     function setQuestionProxy(address newQuestion) public onlyOwner {
         if (newQuestion == address(0)) revert InvalidAddress();
-        _question = BountyQuestion(newQuestion);
+        _question = IBountyQuestion(newQuestion);
     }
 
     /**
