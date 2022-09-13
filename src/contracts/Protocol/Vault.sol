@@ -133,7 +133,7 @@ contract Vault is Ownable, OnlyCostController, OnlyApi {
         STAGE stage
     ) external onlyApi {
         // Checks if Metric is withdrawn for a valid stage.
-        if (uint8(stage) >= 5) revert InvalidStage();
+        if (uint8(stage) > uint8(STAGE.REVIEW)) revert InvalidStage();
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
