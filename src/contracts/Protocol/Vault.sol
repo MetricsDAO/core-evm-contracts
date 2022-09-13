@@ -16,8 +16,9 @@ import "./Enums/ClaimEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyCostController.sol";
+import "./modifiers/OnlyAPI.sol";
 
-contract Vault is Ownable, OnlyCostController {
+contract Vault is Ownable, OnlyCostController, OnlyApi {
     IERC20 public metric;
     IQuestionStateController public questionStateController;
     IClaimController public claimController;
@@ -122,40 +123,45 @@ contract Vault is Ownable, OnlyCostController {
 
     /**
      * @notice Allows a user to withdraw METRIC locked for a question, after the question is published.
+     * @param user The address of the user withdrawing the METRIC
      * @param questionId The question id
      * @param stage The stage for which the user is withdrawing metric from a question.
      */
-    function withdrawMetric(uint256 questionId, STAGE stage) external {
+    function withdrawMetric(
+        address user,
+        uint256 questionId,
+        STAGE stage
+    ) external onlyApi {
         // Checks if Metric is withdrawn for a valid stage.
-        if (uint8(stage) >= 5) revert InvalidStage();
+        if (uint8(stage) > uint8(STAGE.REVIEW)) revert InvalidStage();
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
             if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
 
             // Accounting & changes
-            withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
+            withdrawalAccounting(user, questionId, STAGE.CREATE_AND_VOTE);
         } else if (stage == STAGE.UNVOTE) {
             // Check that user has a voting index, has not voted and the question state is VOTING.
-            if (question.getAuthorOfQuestion(questionId) == _msgSender()) revert CannotUnvoteOwnQuestion();
-            if (questionStateController.getHasUserVoted(_msgSender(), questionId) == true) revert UserHasNotUnvoted();
+            if (question.getAuthorOfQuestion(questionId) == user) revert CannotUnvoteOwnQuestion();
+            if (questionStateController.getHasUserVoted(user, questionId) == true) revert UserHasNotUnvoted();
             if (questionStateController.getState(questionId) != STATE.VOTING) revert QuestionNotInVoting();
 
             // Accounting & changes
-            withdrawalAccounting(questionId, STAGE.CREATE_AND_VOTE);
+            withdrawalAccounting(user, questionId, STAGE.CREATE_AND_VOTE);
 
-            lockedMetric[questionId][STAGE.CREATE_AND_VOTE][_msgSender()].status = STATUS.UNINT;
+            lockedMetric[questionId][STAGE.CREATE_AND_VOTE][user].status = STATUS.UNINT;
         } else if (stage == STAGE.CLAIM_AND_ANSWER) {
             if (questionStateController.getState(questionId) != STATE.COMPLETED) revert QuestionNotInReview();
 
-            withdrawalAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
+            withdrawalAccounting(user, questionId, STAGE.CLAIM_AND_ANSWER);
         } else if (stage == STAGE.RELEASE_CLAIM) {
             if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
-            if (claimController.getQuestionClaimState(questionId, _msgSender()) != CLAIM_STATE.RELEASED) revert ClaimNotReleased();
+            if (claimController.getQuestionClaimState(questionId, user) != CLAIM_STATE.RELEASED) revert ClaimNotReleased();
 
-            withdrawalAccounting(questionId, STAGE.CLAIM_AND_ANSWER);
+            withdrawalAccounting(user, questionId, STAGE.CLAIM_AND_ANSWER);
 
-            lockedMetric[questionId][STAGE.CLAIM_AND_ANSWER][_msgSender()].status = STATUS.UNINT;
+            lockedMetric[questionId][STAGE.CLAIM_AND_ANSWER][user].status = STATUS.UNINT;
         } else {
             // if (reviewPeriod == active) revert ReviewPeriodActive();
         }
@@ -182,22 +188,26 @@ contract Vault is Ownable, OnlyCostController {
         metric.transferFrom(user, address(this), amount);
     }
 
-    function withdrawalAccounting(uint256 questionId, STAGE stage) internal {
-        if (_msgSender() != lockedMetric[questionId][stage][_msgSender()].user) revert NotTheDepositor();
-        if (lockedMetric[questionId][stage][_msgSender()].status != STATUS.DEPOSITED) revert NoMetricDeposited();
+    function withdrawalAccounting(
+        address user,
+        uint256 questionId,
+        STAGE stage
+    ) internal {
+        if (user != lockedMetric[questionId][stage][user].user) revert NotTheDepositor();
+        if (lockedMetric[questionId][stage][user].status != STATUS.DEPOSITED) revert NoMetricDeposited();
 
-        uint256 toWithdraw = lockedMetric[questionId][stage][_msgSender()].amount;
+        uint256 toWithdraw = lockedMetric[questionId][stage][user].amount;
 
-        lockedMetric[questionId][stage][_msgSender()].status = STATUS.WITHDRAWN;
-        lockedMetric[questionId][stage][_msgSender()].amount = 0;
+        lockedMetric[questionId][stage][user].status = STATUS.WITHDRAWN;
+        lockedMetric[questionId][stage][user].amount = 0;
 
         lockedMetricByQuestion[questionId] -= toWithdraw;
-        totalLockedInVaults[_msgSender()] -= toWithdraw;
+        totalLockedInVaults[user] -= toWithdraw;
 
         // Transfers Metric from the vault to the user.
-        metric.transfer(_msgSender(), toWithdraw);
+        metric.transfer(user, toWithdraw);
 
-        emit Withdraw(_msgSender(), toWithdraw);
+        emit Withdraw(user, toWithdraw);
     }
 
     /**

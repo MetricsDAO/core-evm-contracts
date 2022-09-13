@@ -60,7 +60,8 @@ describe("xMETRIC", async function () {
       questionStateController.address,
       claimController.address,
       costController.address,
-      xMetric.address
+      xMetric.address,
+      vault.address
     );
   });
 

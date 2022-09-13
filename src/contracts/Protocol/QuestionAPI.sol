@@ -8,10 +8,11 @@ import "./BountyQuestion.sol";
 import "./interfaces/IClaimController.sol";
 import "./interfaces/IQuestionStateController.sol";
 import "./interfaces/IActionCostController.sol";
-
+import "./interfaces/IVault.sol";
 // Enums
 import "./Enums/ActionEnum.sol";
 import "./Enums/QuestionStateEnum.sol";
+import "./Enums/VaultEnum.sol";
 
 // Modifiers
 import "./modifiers/NFTLocked.sol";
@@ -28,6 +29,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
+    IVault private _vault;
     address private _metricToken;
 
     //------------------------------------------------------ ERRORS
@@ -87,13 +89,15 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
         address questionStateController,
         address claimController,
         address costController,
-        address metricToken
+        address metricToken,
+        address vault
     ) {
         _question = BountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
         _metricToken = metricToken;
+        _vault = IVault(vault);
     }
 
     //------------------------------------------------------ FUNCTIONS
@@ -188,6 +192,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
     function unvoteQuestion(uint256 questionId) public {
         _questionStateController.unvoteFor(_msgSender(), questionId);
 
+        _vault.withdrawMetric(_msgSender(), questionId, STAGE.UNVOTE);
+
         emit QuestionUnvoted(questionId, _msgSender());
     }
 
@@ -241,6 +247,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
 
     function releaseClaim(uint256 questionId) public {
         _claimController.releaseClaim(_msgSender(), questionId);
+
+        _vault.withdrawMetric(_msgSender(), questionId, STAGE.RELEASE_CLAIM);
     }
 
     /**
@@ -264,6 +272,12 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked {
 
         emit QuestionDisqualified(questionId, _msgSender());
     }
+
+    function withdrawFromVault(uint256 questionId, STAGE stage) public {
+        _vault.withdrawMetric(_msgSender(), questionId, stage);
+    }
+
+    //------------------------------------------------------
 
     function getMetricToken() public view returns (address) {
         return _metricToken;

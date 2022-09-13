@@ -86,7 +86,8 @@ abstract contract QuickSetup is Test {
             address(_questionStateController),
             address(_claimController),
             address(_costController),
-            address(_metricToken)
+            address(_metricToken),
+            address(_vault)
         );
 
         // Make required calls
@@ -97,6 +98,7 @@ abstract contract QuickSetup is Test {
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApiSC(address(_questionAPI));
         _vault.setQuestionApi(address(_questionAPI));
+        _vault.setQuestionApiCC(address(_questionAPI));
 
         _claimController.updateMetric();
 
@@ -159,16 +161,19 @@ abstract contract QuickSetup is Test {
             address(_questionStateController),
             address(_claimController),
             address(_costController),
-            address(_xmetric)
+            address(_xmetric),
+            address(_vault)
         );
 
         // Make required calls
         _claimController.setQuestionApi(address(_questionAPI));
+        _claimController.setQuestionApiMT(address(_questionAPI));
         _costController.setQuestionApi(address(_questionAPI));
         _questionStateController.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApi(address(_questionAPI));
         _bountyQuestion.setQuestionApiSC(address(_questionAPI));
         _vault.setQuestionApi(address(_questionAPI));
+        _vault.setQuestionApiCC(address(_questionAPI));
 
         _bountyQuestion.updateStateController();
 

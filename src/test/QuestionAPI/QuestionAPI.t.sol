@@ -115,7 +115,7 @@ contract QuestionAPITest is QuickSetup {
 
         vm.prank(other2);
         vm.expectRevert(Vault.QuestionNotPublished.selector);
-        _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(challengeId, STAGE.CREATE_AND_VOTE);
 
         // You cannot publish question yourself
         vm.prank(other2);
@@ -129,7 +129,7 @@ contract QuestionAPITest is QuickSetup {
         // Still cannot withdraw
         vm.prank(other2);
         vm.expectRevert(Vault.NotTheDepositor.selector);
-        _vault.withdrawMetric(challengeId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(challengeId, STAGE.CREATE_AND_VOTE);
 
         // Can now claim
         vm.prank(other);
@@ -275,5 +275,46 @@ contract QuestionAPITest is QuickSetup {
         vm.prank(owner);
         vm.expectRevert(QuestionAPI.QuestionDoesNotExist.selector);
         _questionAPI.disqualifyQuestion(777);
+    }
+
+    function test_AutomaticWithdrawalsWorkAndUsersCannotWithdrawTwice() public {
+        console.log("Automatic withdrawals should work and users cannot withdraw twice.");
+
+        // Create a question
+        vm.prank(other);
+        uint256 q = _questionAPI.createQuestion("ipfs://XYZ");
+
+        // Balance before
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        // Unvote a question
+        vm.startPrank(other2);
+        _questionAPI.upvoteQuestion(q);
+        _questionAPI.unvoteQuestion(q);
+
+        // Balance updated
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        // Nothing to withdraw
+        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        _questionAPI.withdrawFromVault(q, STAGE.UNVOTE);
+        vm.stopPrank();
+
+        // Publish question
+        vm.prank(other);
+        _questionAPI.publishQuestion(q, 25, 1e18);
+
+        // Do same for claiming and releasing claim
+        vm.startPrank(other2);
+        _questionAPI.claimQuestion(q);
+        _questionAPI.releaseClaim(q);
+
+        // Balance updated
+        assertEq(_metricToken.balanceOf(other2), 100e18);
+
+        // Nothing to withdraw
+        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        _questionAPI.withdrawFromVault(q, STAGE.RELEASE_CLAIM);
+        vm.stopPrank();
     }
 }
