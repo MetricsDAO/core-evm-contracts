@@ -3,11 +3,10 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./Vault.sol";
 
 // Interfaces
 import "./interfaces/IActionCostController.sol";
-
+import "./interfaces/IVault.sol";
 // Enums
 import "./Enums/VaultEnum.sol";
 import "./Enums/ActionEnum.sol";
@@ -16,13 +15,13 @@ import "./Enums/ActionEnum.sol";
 import "./modifiers/OnlyAPI.sol";
 
 contract ActionCostController is Ownable, OnlyApi, IActionCostController {
-    Vault private vault;
+    IVault private vault;
 
     mapping(ACTION => uint256) public actionCost;
     mapping(ACTION => STAGE) public actionStage;
 
     constructor(address _vault) {
-        vault = Vault(_vault);
+        vault = IVault(_vault);
 
         actionCost[ACTION.CREATE] = 1e18;
         actionCost[ACTION.VOTE] = 1e18;

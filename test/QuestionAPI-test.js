@@ -277,7 +277,6 @@ describe("Question API Contract", function () {
       expect(balance).to.equal(utils.parseEther("19"));
 
       await questionAPI.connect(xmetricaddr2).unvoteQuestion(latestQuestion);
-      await vault.connect(xmetricaddr2).withdrawMetric(latestQuestion, BN(vaultStage.UNVOTE));
 
       const balanceTwo = await metricToken.balanceOf(xmetricaddr2.address);
       expect(balanceTwo).to.equal(utils.parseEther("20"));

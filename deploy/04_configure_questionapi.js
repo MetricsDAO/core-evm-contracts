@@ -34,6 +34,9 @@ module.exports = async (hre) => {
   let tx = await vault.setQuestionApi(questionAPI.address);
   await tx.wait();
 
+  tx = await vault.setQuestionApiCC(questionAPI.address);
+  await tx.wait();
+
   tx = await bountyQuestion.setQuestionApi(questionAPI.address);
   await tx.wait();
 

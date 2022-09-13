@@ -103,12 +103,9 @@ contract ClaimTest is QuickSetup {
         assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
         assertEq(_metricToken.balanceOf(other2), 99e18);
 
-        // Release the claim
+        // Release the claim should automatically withdraw
         _questionAPI.releaseClaim(questionId);
         assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.RELEASED));
-
-        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
-        assertEq(_metricToken.balanceOf(other2), 100e18);
 
         _questionAPI.claimQuestion(questionId);
         assertEq(uint256(_claimController.getQuestionClaimState(questionId, other2)), uint256(CLAIM_STATE.CLAIMED));
@@ -134,7 +131,7 @@ contract ClaimTest is QuickSetup {
         assertEq(_metricToken.balanceOf(other2), 99e18);
 
         vm.expectRevert(Vault.ClaimNotReleased.selector);
-        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+        _questionAPI.withdrawFromVault(questionId, STAGE.RELEASE_CLAIM);
 
         vm.stopPrank();
     }
