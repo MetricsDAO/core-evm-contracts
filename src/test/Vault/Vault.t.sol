@@ -51,7 +51,7 @@ contract VaultTest is QuickSetup {
         _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         //withdraw Metric
-        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
         assertEq(_vault.getMetricTotalLockedBalance(), 0);
         vm.stopPrank();
     }
@@ -118,7 +118,7 @@ contract VaultTest is QuickSetup {
 
         //withdraw Metric
         vm.expectRevert(VaultEventsAndErrors.QuestionNotPublished.selector);
-        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
         vm.stopPrank();
     }
 
@@ -134,11 +134,11 @@ contract VaultTest is QuickSetup {
         _questionAPI.publishQuestion(questionId, 25, 1e18);
 
         // Withdraw Metric
-        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
 
         // Withdraw again
         vm.expectRevert(VaultEventsAndErrors.NoMetricDeposited.selector);
-        _vault.withdrawMetric(questionId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
 
         vm.stopPrank();
     }
@@ -233,12 +233,12 @@ contract VaultTest is QuickSetup {
 
         // Verify that everyone can withdraw and accounting is done properly.
         vm.prank(other);
-        _vault.withdrawMetric(questionIdOne, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionIdOne, STAGE.CREATE_AND_VOTE);
 
         // Shouldn't have anything to withdraw here
         vm.prank(other);
         vm.expectRevert(VaultEventsAndErrors.NotTheDepositor.selector);
-        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         // Check everything is updated correctly
         // Should decrease by 1e18
@@ -254,13 +254,13 @@ contract VaultTest is QuickSetup {
 
         // Other users also withdraw
         vm.prank(other2);
-        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         vm.prank(other3);
-        _vault.withdrawMetric(questionIdOne, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionIdOne, STAGE.CREATE_AND_VOTE);
 
         vm.prank(other3);
-        _vault.withdrawMetric(questionIdTwo, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         // Check everything is updated correctly
         // Should decrease by 3e18
@@ -295,11 +295,8 @@ contract VaultTest is QuickSetup {
         _questionAPI.upvoteQuestion(questionId);
         assertEq(_metricToken.balanceOf(other2), 99e18);
 
-        // Unvote the question
+        // Unvote the question should automatically withdraw
         _questionAPI.unvoteQuestion(questionId);
-
-        // Verify balance updates
-        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
 
         assertEq(_metricToken.balanceOf(other2), 100e18);
         vm.stopPrank();
@@ -311,7 +308,7 @@ contract VaultTest is QuickSetup {
 
         // Verify user cannot withdraw funds
         vm.expectRevert(VaultEventsAndErrors.UserHasNotUnvoted.selector);
-        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.UNVOTE);
 
         vm.stopPrank();
     }
@@ -334,17 +331,14 @@ contract VaultTest is QuickSetup {
 
         // Make sure we cant withdraw without question being in review.
         vm.expectRevert(VaultEventsAndErrors.QuestionNotInReview.selector);
-        _vault.withdrawMetric(questionId, STAGE.CLAIM_AND_ANSWER);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CLAIM_AND_ANSWER);
 
         // Make sure we cant withdraw without the question first being released.
         vm.expectRevert(VaultEventsAndErrors.ClaimNotReleased.selector);
-        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
+        _questionAPI.withdrawFromVault(questionId, STAGE.RELEASE_CLAIM);
 
         // Release the claim
         _questionAPI.releaseClaim(questionId);
-
-        // Withdraw
-        _vault.withdrawMetric(questionId, STAGE.RELEASE_CLAIM);
 
         // Verify balance updates
         assertEq(_metricToken.balanceOf(other2), 100e18);

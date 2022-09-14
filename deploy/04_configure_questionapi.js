@@ -34,6 +34,9 @@ module.exports = async (hre) => {
   let tx = await vault.setQuestionApi(questionAPI.address);
   await tx.wait();
 
+  tx = await vault.setQuestionApiCC(questionAPI.address);
+  await tx.wait();
+
   tx = await bountyQuestion.setQuestionApi(questionAPI.address);
   await tx.wait();
 
@@ -44,6 +47,9 @@ module.exports = async (hre) => {
   await tx.wait();
 
   tx = await actionCostController.setQuestionApi(questionAPI.address);
+  await tx.wait();
+
+  tx = await claimController.setQuestionApi(questionAPI.address);
   await tx.wait();
 
   tx = await bountyQuestion.updateStateController();

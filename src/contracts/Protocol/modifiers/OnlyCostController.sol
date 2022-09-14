@@ -14,7 +14,7 @@ contract OnlyCostController is Ownable {
         costController = questionAPI.getCostController();
     }
 
-    function setQuestionApi(address _questionAPI) public onlyOwner {
+    function setQuestionApiCC(address _questionAPI) public onlyOwner {
         questionAPI = IQuestionAPI(_questionAPI);
     }
 

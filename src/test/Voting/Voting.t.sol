@@ -143,8 +143,6 @@ contract VotingTest is QuickSetup {
 
         _questionAPI.unvoteQuestion(questionId);
 
-        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
-
         _questionAPI.upvoteQuestion(questionId);
     }
 
@@ -155,7 +153,7 @@ contract VotingTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         vm.expectRevert(VaultEventsAndErrors.CannotUnvoteOwnQuestion.selector);
-        _vault.withdrawMetric(questionId, STAGE.UNVOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.UNVOTE);
         vm.stopPrank();
     }
 

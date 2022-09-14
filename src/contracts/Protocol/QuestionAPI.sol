@@ -31,6 +31,7 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
     IQuestionStateController private _questionStateController;
     IClaimController private _claimController;
     IActionCostController private _costController;
+    IVault private _vault;
     address private _metricToken;
 
     //------------------------------------------------------ CONSTRUCTOR
@@ -48,13 +49,15 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
         address questionStateController,
         address claimController,
         address costController,
-        address metricToken
+        address metricToken,
+        address vault
     ) {
         _question = IBountyQuestion(bountyQuestion);
         _questionStateController = IQuestionStateController(questionStateController);
         _claimController = IClaimController(claimController);
         _costController = IActionCostController(costController);
         _metricToken = metricToken;
+        _vault = IVault(vault);
     }
 
     //------------------------------------------------------ FUNCTIONS
@@ -149,6 +152,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
     function unvoteQuestion(uint256 questionId) public {
         _questionStateController.unvoteFor(_msgSender(), questionId);
 
+        _vault.withdrawMetric(_msgSender(), questionId, STAGE.UNVOTE);
+
         emit QuestionUnvoted(questionId, _msgSender());
     }
 
@@ -202,6 +207,8 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
 
     function releaseClaim(uint256 questionId) public {
         _claimController.releaseClaim(_msgSender(), questionId);
+
+        _vault.withdrawMetric(_msgSender(), questionId, STAGE.RELEASE_CLAIM);
     }
 
     /**
@@ -224,6 +231,10 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
         _questionStateController.setDisqualifiedState(questionId);
 
         emit QuestionDisqualified(questionId, _msgSender());
+    }
+
+    function withdrawFromVault(uint256 questionId, STAGE stage) public {
+        _vault.withdrawMetric(_msgSender(), questionId, stage);
     }
 
     // ------------------------------------------------------ VIEW FUNCTIONS
