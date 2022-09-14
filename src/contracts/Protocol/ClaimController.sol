@@ -3,20 +3,20 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// Interfaces
-import "./interfaces/IClaimController.sol";
-
 // Enums
-import "./Enums/ClaimEnum.sol";
+import {CLAIM_STATE} from "./Enums/ClaimEnum.sol";
 
 // Structs
-import "./Structs/AnswerStruct.sol";
+import {Answer} from "./Structs/AnswerStruct.sol";
+
+// Events & Errors
+import {ClaimEventsAndErrors} from "./EventsAndErrors/ClaimEventsAndErrors.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 import "./modifiers/TokenBar.sol";
 
-contract ClaimController is Ownable, OnlyApi, TokenBar {
+contract ClaimController is Ownable, OnlyApi, TokenBar, ClaimEventsAndErrors {
     /// @notice Keeps track of claim limits per question
     mapping(uint256 => uint256) public claimLimits;
 
@@ -32,19 +32,9 @@ contract ClaimController is Ownable, OnlyApi, TokenBar {
     /// @notice Maps the metric token threshold to a question
     mapping(uint256 => uint256) public metricThresholds;
 
-    //------------------------------------------------------ ERRORS
+    //------------------------------------------------------ CONSTRUCTOR
 
-    /// @notice Throw if user tries to claim a question that is past its limit
-    error ClaimLimitReached();
-
-    /// @notice Throw if a analyst tries to answer a question that it has not claimed
-    error NeedClaimToAnswer();
-
-    /// @notice Throw if analyst tries to claim a question multiple times
-    error AlreadyClaimed();
-
-    /// @notice Throw if analyst tries to release a claim it did not claim
-    error NoClaimToRelease();
+    constructor() {}
 
     // ------------------------------------------------------ FUNCTIONS
 
@@ -89,6 +79,8 @@ contract ClaimController is Ownable, OnlyApi, TokenBar {
         if (answers[questionId][user].state != CLAIM_STATE.CLAIMED) revert NeedClaimToAnswer();
         answers[questionId][user].answerURL = answerURL;
     }
+
+    // ------------------------------------------------------ VIEW FUNCTIONS
 
     function getClaims(uint256 questionId) public view returns (address[] memory _claims) {
         return claims[questionId];

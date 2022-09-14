@@ -4,15 +4,15 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-// Interfaces
-import "./interfaces/IQuestionAPI.sol";
+// Enums
+import {STATE} from "./Enums/QuestionStateEnum.sol";
+
+// Structs
+import {QuestionData} from "./Structs/QuestionData.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 import "./modifiers/OnlyStateController.sol";
-
-// Structs
-import "./Structs/QuestionData.sol";
 
 /// @custom:security-contact contracts@metricsdao.xyz
 contract BountyQuestion is Ownable, OnlyApi, OnlyStateController {
@@ -20,15 +20,15 @@ contract BountyQuestion is Ownable, OnlyApi, OnlyStateController {
 
     Counters.Counter private _questionIdCounter;
 
-    // This maps the author to the list of question IDs they have created
     mapping(address => uint256[]) public authors;
-
     mapping(uint256 => QuestionData) public questionData;
 
+    //------------------------------------------------------ CONSTRUCTOR
     constructor() {
         _questionIdCounter.increment();
     }
 
+    //------------------------------------------------------ FUNCTIONS
     function mintQuestion(address author, string calldata uri) public onlyApi returns (uint256) {
         uint256 questionId = _questionIdCounter.current();
         _questionIdCounter.increment();
@@ -50,6 +50,8 @@ contract BountyQuestion is Ownable, OnlyApi, OnlyStateController {
         QuestionData storage question = questionData[questionId];
         question.totalVotes = newVotes;
     }
+
+    // ------------------------------------------------------ VIEW FUNCTIONS
 
     function getAuthor(address user) public view returns (QuestionData[] memory) {
         uint256[] memory created = authors[user];

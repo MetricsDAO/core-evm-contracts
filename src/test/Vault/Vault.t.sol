@@ -103,7 +103,7 @@ contract VaultTest is QuickSetup {
     //     _vault.slashMetric(questionId);
 
     //     // Slash again
-    //     vm.expectRevert(Vault.AlreadySlashed.selector);
+    //     vm.expectRevert(VaultEventsAndErrors.AlreadySlashed.selector);
     //     _vault.slashMetric(questionId);
     //     vm.stopPrank();
     // }
@@ -117,7 +117,7 @@ contract VaultTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         //withdraw Metric
-        vm.expectRevert(Vault.QuestionNotPublished.selector);
+        vm.expectRevert(VaultEventsAndErrors.QuestionNotPublished.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
         vm.stopPrank();
     }
@@ -137,7 +137,7 @@ contract VaultTest is QuickSetup {
         _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
 
         // Withdraw again
-        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        vm.expectRevert(VaultEventsAndErrors.NoMetricDeposited.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
 
         vm.stopPrank();
@@ -237,7 +237,7 @@ contract VaultTest is QuickSetup {
 
         // Shouldn't have anything to withdraw here
         vm.prank(other);
-        vm.expectRevert(Vault.NotTheDepositor.selector);
+        vm.expectRevert(VaultEventsAndErrors.NotTheDepositor.selector);
         _questionAPI.withdrawFromVault(questionIdTwo, STAGE.CREATE_AND_VOTE);
 
         // Check everything is updated correctly
@@ -307,7 +307,7 @@ contract VaultTest is QuickSetup {
         assertEq(_metricToken.balanceOf(other3), 99e18);
 
         // Verify user cannot withdraw funds
-        vm.expectRevert(Vault.UserHasNotUnvoted.selector);
+        vm.expectRevert(VaultEventsAndErrors.UserHasNotUnvoted.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.UNVOTE);
 
         vm.stopPrank();
@@ -330,11 +330,11 @@ contract VaultTest is QuickSetup {
         assertEq(_vault.getMetricTotalLockedBalance(), 2e18);
 
         // Make sure we cant withdraw without question being in review.
-        vm.expectRevert(Vault.QuestionNotInReview.selector);
+        vm.expectRevert(VaultEventsAndErrors.QuestionNotInReview.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.CLAIM_AND_ANSWER);
 
         // Make sure we cant withdraw without the question first being released.
-        vm.expectRevert(Vault.ClaimNotReleased.selector);
+        vm.expectRevert(VaultEventsAndErrors.ClaimNotReleased.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.RELEASE_CLAIM);
 
         // Release the claim

@@ -2,26 +2,28 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Interfaces
-import "./interfaces/IActionCostController.sol";
-import "./interfaces/IVault.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IActionCostController} from "./interfaces/IActionCostController.sol";
+import {IVault} from "./interfaces/IVault.sol";
+
 // Enums
-import "./Enums/VaultEnum.sol";
-import "./Enums/ActionEnum.sol";
+import {STAGE} from "./Enums/VaultEnum.sol";
+import {ACTION} from "./Enums/ActionEnum.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
 contract ActionCostController is Ownable, OnlyApi, IActionCostController {
-    IVault private vault;
+    IVault private _vault;
 
     mapping(ACTION => uint256) public actionCost;
     mapping(ACTION => STAGE) public actionStage;
 
-    constructor(address _vault) {
-        vault = IVault(_vault);
+    //------------------------------------------------------ CONSTRUCTOR
+    constructor(address vault) {
+        _vault = IVault(vault);
 
         actionCost[ACTION.CREATE] = 1e18;
         actionCost[ACTION.VOTE] = 1e18;
@@ -33,23 +35,27 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
     }
 
+    // ------------------------------------------------------ FUNCTIONS
+
     function payForAction(
         address _user,
         uint256 questionId,
         ACTION action
     ) external onlyApi {
-        vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
+        _vault.lockMetric(_user, actionCost[action], questionId, actionStage[action]);
     }
 
     function burnForAction(address _user, ACTION action) external onlyApi {
-        vault.burnMetric(_user, actionCost[action]);
+        _vault.burnMetric(_user, actionCost[action]);
     }
+
+    // ------------------------------------------------------ VIEW FUNCTIONS
 
     function getActionCost(ACTION action) public view returns (uint256) {
         return actionCost[action];
     }
 
-    // ------------------------------- Admin
+    //------------------------------------------------------ OWNER FUNCTIONS
 
     /**
      * @notice Changes the cost of creating a question

@@ -2,7 +2,8 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IQuestionAPI.sol";
+
+import {IQuestionAPI} from "../interfaces/IQuestionAPI.sol";
 
 contract OnlyCostController is Ownable {
     address public costController;

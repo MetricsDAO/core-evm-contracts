@@ -69,7 +69,7 @@ contract VotingTest is QuickSetup {
         vm.stopPrank();
 
         vm.startPrank(owner);
-        vm.expectRevert(QuestionStateController.HasNotVotedForQuestion.selector);
+        vm.expectRevert(StateEventsAndErrors.HasNotVotedForQuestion.selector);
 
         // Unvote for the question
         _questionAPI.unvoteQuestion(questionId);
@@ -106,7 +106,7 @@ contract VotingTest is QuickSetup {
         // Vote for the question again
         vm.stopPrank();
         vm.prank(other3);
-        vm.expectRevert(QuestionStateController.HasAlreadyVotedForQuestion.selector);
+        vm.expectRevert(StateEventsAndErrors.HasAlreadyVotedForQuestion.selector);
         _questionAPI.upvoteQuestion(questionId);
 
         // Check that accounting was done properly.
@@ -126,7 +126,7 @@ contract VotingTest is QuickSetup {
         assertEq(uint256(_questionStateController.getState(questionId)), uint256(STATE.VOTING));
 
         // Vote for the question
-        vm.expectRevert(QuestionAPI.CannotVoteForOwnQuestion.selector);
+        vm.expectRevert(ApiEventsAndErrors.CannotVoteForOwnQuestion.selector);
         _questionAPI.upvoteQuestion(questionId);
         vm.stopPrank();
     }
@@ -152,7 +152,7 @@ contract VotingTest is QuickSetup {
         vm.startPrank(other);
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
-        vm.expectRevert(Vault.CannotUnvoteOwnQuestion.selector);
+        vm.expectRevert(VaultEventsAndErrors.CannotUnvoteOwnQuestion.selector);
         _questionAPI.withdrawFromVault(questionId, STAGE.UNVOTE);
         vm.stopPrank();
     }

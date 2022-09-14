@@ -4,9 +4,9 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Interfaces
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "../interfaces/IClaimController.sol";
-import "../interfaces/IQuestionAPI.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IClaimController} from "../interfaces/IClaimController.sol";
+import {IQuestionAPI} from "../interfaces/IQuestionAPI.sol";
 
 abstract contract TokenBar is Ownable {
     address public metricToken;

@@ -4,31 +4,34 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Interfaces
-import "./interfaces/IQuestionStateController.sol";
-import "./interfaces/IBountyQuestion.sol";
-import "./interfaces/IQuestionAPI.sol";
+import {IBountyQuestion} from "./interfaces/IBountyQuestion.sol";
+import {IQuestionAPI} from "./interfaces/IQuestionAPI.sol";
 
 // Enums
-import "./Enums/QuestionStateEnum.sol";
+import {STATE} from "./Enums/QuestionStateEnum.sol";
 
 // Structs
-import "./Structs/QuestionData.sol";
+import {QuestionData} from "./Structs/QuestionData.sol";
+
+// Errors
+import {StateEventsAndErrors} from "./EventsAndErrors/StateEventsAndErrors.sol";
 
 // Modifiers
 import "./modifiers/OnlyAPI.sol";
 
-contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
-    // Mapping for all questions that are upvoted by the user?
+contract QuestionStateController is Ownable, OnlyApi, StateEventsAndErrors {
+    IBountyQuestion private _bountyQuestion;
+
     mapping(address => mapping(uint256 => bool)) public hasVoted;
 
     /// @notice For a given address and a given question, tracks the index of their vote in the votes[]
-    mapping(address => mapping(uint256 => uint256)) public questionIndex; // TODO userVoteIndex
-
+    mapping(address => mapping(uint256 => uint256)) public questionIndex;
     mapping(uint256 => address[]) public votes;
 
-    IBountyQuestion private _bountyQuestion;
-
+    //------------------------------------------------------ CONSTRUCTOR
     constructor() {}
+
+    //------------------------------------------------------ FUNCTIONS
 
     /**
      * @notice Initializes a question to draft.
@@ -44,7 +47,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
     }
 
     function publishFromQuestion(uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
-        // if some voting barrier is passed, we can publish the question
         _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
     }
 
@@ -86,9 +88,11 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         _bountyQuestion.updateState(questionId, STATE.DISQUALIFIED);
     }
 
-    // TODO batch voting and batch operations and look into arrays as parameters security risk
+    function updateBountyQuestion() public {
+        _bountyQuestion = IBountyQuestion(IQuestionAPI(questionApi).getBountyQuestion());
+    }
 
-    //------------------------------------------------------ View Functions
+    // ------------------------------------------------------ VIEW FUNCTIONS
 
     function getState(uint256 questionId) public view returns (STATE currentState) {
         return _bountyQuestion.getQuestionData(questionId).questionState;
@@ -98,7 +102,6 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return votes[questionId];
     }
 
-    // LOOK HERE ISSUE
     function getTotalVotes(uint256 questionId) public view returns (uint256) {
         return _bountyQuestion.getQuestionData(questionId).totalVotes;
     }
@@ -160,17 +163,7 @@ contract QuestionStateController is IQuestionStateController, Ownable, OnlyApi {
         return found;
     }
 
-    function updateBountyQuestion() public {
-        _bountyQuestion = IBountyQuestion(IQuestionAPI(questionApi).getBountyQuestion());
-    }
-
-    //------------------------------------------------------ Errors
-    error HasNotVotedForQuestion();
-    error HasAlreadyVotedForQuestion();
-    error InvalidStateTransition();
-    error InvalidAddress();
-
-    //------------------------------------------------------ Structs
+    // Modifier
     modifier onlyState(STATE required, uint256 questionId) {
         if (required != getState(questionId)) revert InvalidStateTransition();
         _;

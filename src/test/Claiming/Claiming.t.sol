@@ -17,7 +17,7 @@ contract ClaimTest is QuickSetup {
         uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
 
         // Attempt claim
-        vm.expectRevert(QuestionAPI.ClaimsNotOpen.selector);
+        vm.expectRevert(ApiEventsAndErrors.ClaimsNotOpen.selector);
         _questionAPI.claimQuestion(questionId);
         vm.stopPrank();
     }
@@ -39,7 +39,7 @@ contract ClaimTest is QuickSetup {
         vm.startPrank(other2);
 
         // Attempt claim again
-        vm.expectRevert(ClaimController.ClaimLimitReached.selector);
+        vm.expectRevert(ClaimEventsAndErrors.ClaimLimitReached.selector);
         _questionAPI.claimQuestion(questionId);
     }
 
@@ -54,7 +54,7 @@ contract ClaimTest is QuickSetup {
         _questionAPI.claimQuestion(questionId);
 
         // Same user tries to claim again
-        vm.expectRevert(ClaimController.AlreadyClaimed.selector);
+        vm.expectRevert(ClaimEventsAndErrors.AlreadyClaimed.selector);
         _questionAPI.claimQuestion(questionId);
 
         vm.stopPrank();
