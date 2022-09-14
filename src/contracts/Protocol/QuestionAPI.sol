@@ -123,6 +123,9 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
         _questionStateController.initializeQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit, threshold);
 
+        // Pay to create a challenge
+        _costController.payForAction(_msgSender(), questionId, ACTION.CHALLENGE_CREATE);
+
         // Publish the question
         _questionStateController.publishFromQuestion(questionId);
 
@@ -174,6 +177,9 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
         // Publish the question
         _questionStateController.publishFromQuestion(questionId);
         _claimController.initializeQuestion(questionId, claimLimit, threshold);
+
+        // Pay to Publish a question
+        _costController.payForAction(_msgSender(), questionId, ACTION.PUBLISH);
 
         emit QuestionPublished(questionId, _msgSender());
     }

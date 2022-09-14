@@ -5,5 +5,7 @@ enum ACTION {
     CREATE,
     VOTE,
     CLAIM,
-    CHALLENGE_BURN
+    CHALLENGE_BURN,
+    CHALLENGE_CREATE,
+    PUBLISH
 }
