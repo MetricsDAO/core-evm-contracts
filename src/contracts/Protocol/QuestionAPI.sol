@@ -8,10 +8,12 @@ import {IClaimController} from "./interfaces/IClaimController.sol";
 import {IQuestionStateController} from "./interfaces/IQuestionStateController.sol";
 import {IActionCostController} from "./interfaces/IActionCostController.sol";
 import {IBountyQuestion} from "./interfaces/IBountyQuestion.sol";
+import {IVault} from "./interfaces/IVault.sol";
 
 // Enums
 import {ACTION} from "./Enums/ActionEnum.sol";
 import {STATE} from "./Enums/QuestionStateEnum.sol";
+import {STAGE} from "./Enums/VaultEnum.sol";
 
 // Events & Errors
 import {ApiEventsAndErrors} from "./EventsAndErrors/ApiEventsAndErrors.sol";
