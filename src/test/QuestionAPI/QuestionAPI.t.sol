@@ -296,7 +296,7 @@ contract QuestionAPITest is QuickSetup {
         assertEq(_metricToken.balanceOf(other2), 100e18);
 
         // Nothing to withdraw
-        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        vm.expectRevert(VaultEventsAndErrors.NoMetricDeposited.selector);
         _questionAPI.withdrawFromVault(q, STAGE.UNVOTE);
         vm.stopPrank();
 
@@ -313,7 +313,7 @@ contract QuestionAPITest is QuickSetup {
         assertEq(_metricToken.balanceOf(other2), 100e18);
 
         // Nothing to withdraw
-        vm.expectRevert(Vault.NoMetricDeposited.selector);
+        vm.expectRevert(VaultEventsAndErrors.NoMetricDeposited.selector);
         _questionAPI.withdrawFromVault(q, STAGE.RELEASE_CLAIM);
         vm.stopPrank();
     }
