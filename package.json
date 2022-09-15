@@ -30,6 +30,7 @@
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.4.0",
+    "@tableland/evm": "^2.0.4",
     "@typechain/ethers-v5": "^7.2.0",
     "@typechain/hardhat": "^2.3.1",
     "@types/chai": "^4.3.0",
@@ -49,17 +50,17 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.6.1",
     "hardhat": "^2.9.1",
-    "hardhat-deploy": "^0.11.4",
     "hardhat-api-builder": "0.0.5",
+    "hardhat-deploy": "^0.11.4",
     "hardhat-gas-reporter": "^1.0.8",
+    "husky": "^8.0.0",
     "prettier": "^2.6.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.7.20",
     "ts-node": "^10.7.0",
     "typechain": "^5.2.0",
-    "typescript": "^4.6.2",
-    "husky": "^8.0.0"
+    "typescript": "^4.6.2"
   },
   "engines": {
     "node": ">=14"
