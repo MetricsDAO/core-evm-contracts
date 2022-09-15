@@ -76,7 +76,8 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
         // Checks if METRIC is locked for a valid stage.
         if (uint8(stage) >= 5) revert InvalidStage();
         // Checks if there has not been a deposit yet
-        if (lockedMetric[questionId][stage][user].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
+        // TODO remove amount!=0 possibly
+        if (lockedMetric[questionId][stage][user].status != STATUS.UNINT && amount != 0) revert QuestionHasInvalidStatus();
 
         depositAccounting(user, amount, questionId, stage);
     }
