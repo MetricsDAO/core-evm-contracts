@@ -76,7 +76,6 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
         // Checks if METRIC is locked for a valid stage.
         if (uint8(stage) > uint8(STAGE.PUBLISH)) revert InvalidStage();
         // Checks if there has not been a deposit yet
-        // TODO remove amount!=0 possibly
         if (lockedMetric[questionId][stage][user].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
 
         depositAccounting(user, amount, questionId, stage);
@@ -98,7 +97,9 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
         STAGE stage
     ) external onlyApi {
         // Checks if Metric is withdrawn for a valid stage.
-        if (uint8(stage) > uint8(STAGE.REVIEW)) revert InvalidStage();
+        if (uint8(stage) > uint8(STAGE.PUBLISH)) revert InvalidStage();
+
+        // TODO if STAGE.PUBLISH
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
