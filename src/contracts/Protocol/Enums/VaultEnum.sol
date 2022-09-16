@@ -14,6 +14,5 @@ enum STATUS {
     UNINT,
     DEPOSITED,
     WITHDRAWN,
-    SLASHED,
-    PUBLISH
+    SLASHED
 }
