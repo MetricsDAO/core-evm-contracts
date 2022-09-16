@@ -36,7 +36,7 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
         actionStage[ACTION.VOTE] = STAGE.CREATE_AND_VOTE;
         actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
         actionStage[ACTION.CHALLENGE_CREATE] = STAGE.CREATE_AND_VOTE;
-        actionStage[ACTION.PUBLISH] = STAGE.CREATE_AND_VOTE;
+        actionStage[ACTION.PUBLISH] = STAGE.PUBLISH;
     }
 
     // ------------------------------------------------------ FUNCTIONS
