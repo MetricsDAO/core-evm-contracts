@@ -21,4 +21,6 @@ interface IQuestionStateController {
     function getHasUserVoted(address user, uint256 questionId) external view returns (bool);
 
     function setDisqualifiedState(uint256 questionId) external;
+
+    function markComplete(uint256 questionId) external;
 }

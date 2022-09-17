@@ -346,6 +346,40 @@ contract VaultTest is QuickSetup {
         vm.stopPrank();
     }
 
+    function test_DepositAndWithdrawForPublish() public {
+        console.log("A user should be able to deposit and withdraw funds for publishing a question.");
+
+        vm.prank(owner);
+        _costController.setActionCost(ACTION.PUBLISH, 1e18);
+
+        // Deposit funds
+        vm.startPrank(other);
+        uint256 balanceBefore = _metricToken.balanceOf(other);
+
+        // Pay 1e18 to create
+        assertEq(balanceBefore, 100e18);
+        uint256 questionId = _questionAPI.createQuestion("ipfs://XYZ");
+
+        // Pay 1e18 to publish
+        _questionAPI.publishQuestion(questionId, 25, 1e18);
+
+        uint256 balanceAfter = _metricToken.balanceOf(other);
+
+        assertEq(balanceAfter, 98e18);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        _questionAPI.markComplete(questionId);
+
+        // Withdraw the funds
+        vm.startPrank(other);
+        _questionAPI.withdrawFromVault(questionId, STAGE.CREATE_AND_VOTE);
+        _questionAPI.withdrawFromVault(questionId, STAGE.PUBLISH);
+
+        assertEq(_metricToken.balanceOf(other), 100e18);
+        vm.stopPrank();
+    }
+
     // ---------------------- Access control tests ----------------------
     function test_onlyOwnerCanSetSensitiveAddresses() public {
         console.log("Only owner should be able to set sensitive addresses");

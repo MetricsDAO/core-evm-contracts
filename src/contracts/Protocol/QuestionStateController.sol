@@ -54,6 +54,10 @@ contract QuestionStateController is Ownable, OnlyApi, StateEventsAndErrors {
         _bountyQuestion.updateState(questionId, STATE.PUBLISHED);
     }
 
+    function markComplete(uint256 questionId) public onlyApi onlyState(STATE.PUBLISHED, questionId) {
+        _bountyQuestion.updateState(questionId, STATE.COMPLETED);
+    }
+
     function voteFor(address _user, uint256 questionId) public onlyApi onlyState(STATE.VOTING, questionId) {
         // Checks
         if (hasVoted[_user][questionId]) revert HasAlreadyVotedForQuestion();
