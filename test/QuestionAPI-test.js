@@ -40,6 +40,7 @@ describe("Question API Contract", function () {
     VOTE: 1,
     CLAIM: 2,
     CHALLENGE_BURN: 3,
+    CHALLENGE_CREATE: 4,
   };
 
   beforeEach(async function () {
@@ -306,6 +307,55 @@ describe("Question API Contract", function () {
       const latestQuestion = await bountyQuestion.getMostRecentQuestion();
 
       await questionAPI.connect(xmetricaddr2).publishQuestion(latestQuestion, BN(25), utils.parseEther("1"));
+
+      const questionStateLatestQuestion = await questionStateController.getState(latestQuestion);
+      expect(questionStateLatestQuestion).to.equal(questionState.PUBLISHED);
+    });
+  });
+
+  describe("Challenges", () => {
+    it("should bypass question creation and propose challenge to a pending state", async () => {
+      await metricToken.transfer(xmetricaddr1.address, utils.parseEther("5000"));
+      // Challenge Burn cost 1000 token
+      await metricToken.connect(xmetricaddr1).approve(vault.address, utils.parseEther("1000"));
+      const challengeTx = await questionAPI.connect(xmetricaddr1).proposeChallenge("QmZqHJRZRmPwFJ5MgqPVfKCtseUNspSUDJXbvgU5uBVpB3");
+      await challengeTx.wait();
+
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
+      expect(latestQuestion).to.equal(BN("1"));
+
+      const balanceAfterQuestion = await metricToken.balanceOf(xmetricaddr1.address);
+      expect(balanceAfterQuestion).to.equal(utils.parseEther("4000"));
+
+      const questionStateLatestQuestion = await questionStateController.getState(latestQuestion);
+      expect(questionStateLatestQuestion).to.equal(questionState.PENDING);
+    });
+
+    it("should allow gated program managers to publish a challenge into a published state ", async () => {
+      const tx = await costController.setActionCost(BN(actionCost.CHALLENGE_CREATE), utils.parseEther("1"));
+      await tx.wait();
+
+      const PseudoAuthNFT = await ethers.getContractFactory("PseudoAuthNFT");
+      const mockNFT = await PseudoAuthNFT.deploy("ProgramManager", "ProgramManager");
+
+      const PROGRAM_MANAGER_ROLE = utils.keccak256(utils.toUtf8Bytes("PROGRAM_MANAGER_ROLE"));
+
+      await questionAPI.addHolderRole(PROGRAM_MANAGER_ROLE, mockNFT.address);
+
+      await mockNFT.mintTo(xmetricaddr2.address);
+
+      await metricToken.connect(xmetricaddr2).approve(vault.address, utils.parseEther("1"));
+      await questionAPI.connect(xmetricaddr2).createChallenge("QmZqHJRZRmPwFJ5MgqPVfKCtseUNspSUDJXbvgU5uBVpB3", BN(25), utils.parseEther("1"));
+
+      const latestQuestion = await bountyQuestion.getMostRecentQuestion();
+      expect(latestQuestion).to.equal(BN("1"));
+
+      const balance = await metricToken.balanceOf(xmetricaddr2.address);
+      console.log("balance", utils.formatEther(balance));
+
+      const balanceAfterQuestion = await metricToken.balanceOf(xmetricaddr2.address);
+      // Should not cost metric to create challenge
+      expect(balanceAfterQuestion).to.equal(utils.parseEther("19"));
 
       const questionStateLatestQuestion = await questionStateController.getState(latestQuestion);
       expect(questionStateLatestQuestion).to.equal(questionState.PUBLISHED);

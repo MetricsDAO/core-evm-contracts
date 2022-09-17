@@ -6,7 +6,8 @@ enum STAGE {
     UNVOTE,
     CLAIM_AND_ANSWER,
     RELEASE_CLAIM,
-    REVIEW
+    REVIEW,
+    PUBLISH
 }
 
 enum STATUS {
