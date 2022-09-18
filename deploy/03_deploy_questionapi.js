@@ -45,7 +45,19 @@ module.exports = async (hre) => {
 
   const questionAPI = await deploy("QuestionAPI", {
     from: deployer,
-    args: [bountyQuestion.address, questionStateController.address, claimController.address, actionCostController.address, metric.address, vault.address],
+    args: [
+      bountyQuestion.address,
+      questionStateController.address,
+      claimController.address,
+      actionCostController.address,
+      metric.address,
+      vault.address,
+    ],
+    log: true,
+  });
+
+  const metaData = await deploy("MetadataController", {
+    from: deployer,
     log: true,
   });
 

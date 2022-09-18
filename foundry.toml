@@ -7,6 +7,7 @@ gas_reports = ["*"]
 remappings = [
     'ds-test/=lib/ds-test/src/',
     '@openzeppelin/=node_modules/@openzeppelin/',
+    '@tableland/=node_modules/@tableland/',
     '@rari-capital/solmate/=node_modules/@rari-capital/solmate/',
     '@contracts/=src/contracts/',
     'hardhat/=node_modules/hardhat/',
