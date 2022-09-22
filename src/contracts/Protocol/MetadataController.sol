@@ -19,15 +19,19 @@ contract MetadataController is Ownable, OnlyApi {
 
     //------------------------------------------------------ CONSTRUCTOR
 
+    address private tableland_address = address(0); //0xDA8EA22d092307874f30A1F277D1388dca0BA97a;
+
     constructor() {
-        _tableland = ITablelandTables(0xDA8EA22d092307874f30A1F277D1388dca0BA97a);
+        if (tableland_address != address(0)) {
+            _tableland = ITablelandTables(tableland_address);
 
-        _tableId = _tableland.createTable(
-            address(this),
-            string.concat("CREATE TABLE ", _tablePrefix, "_", Strings.toString(block.chainid), " (id int primary key, message text);")
-        );
+            _tableId = _tableland.createTable(
+                address(this),
+                string.concat("CREATE TABLE ", _tablePrefix, "_", Strings.toString(block.chainid), " (id int primary key, message text);")
+            );
 
-        _tableName = string.concat(_tablePrefix, "_", Strings.toString(block.chainid), "_", Strings.toString(_tableId));
+            _tableName = string.concat(_tablePrefix, "_", Strings.toString(block.chainid), "_", Strings.toString(_tableId));
+        }
     }
 
     // ------------------------------------------------------ FUNCTIONS
@@ -45,7 +49,7 @@ contract MetadataController is Ownable, OnlyApi {
         return string.concat(base, "SELECT%20*%20FROM%20", _tableName);
     }
 
-    function claimTableLandNFt() public {
-        _tableland.transfer()
-    }
+    // function claimTableLandNFt() public {
+    // TODO get NFT from tableland, and transfer it to somewhere so that we can re-use the same tableland nft
+    // }
 }
