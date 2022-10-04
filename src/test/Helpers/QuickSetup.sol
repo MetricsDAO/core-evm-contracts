@@ -112,6 +112,11 @@ abstract contract QuickSetup is Test {
         _vault.updateBountyQuestion();
         _vault.updateMetric();
 
+        _costController.setActionCost(ACTION.CREATE, 1e18);
+        _costController.setActionCost(ACTION.VOTE, 1e18);
+        _costController.setActionCost(ACTION.CLAIM, 1e18);
+        _costController.setActionCost(ACTION.CHALLENGE_BURN, 1000e18);
+
         _metricToken.transfer(other, 100e18);
         _metricToken.transfer(other2, 100e18);
         _metricToken.transfer(other3, 100e18);
@@ -184,6 +189,11 @@ abstract contract QuickSetup is Test {
         _vault.updateCostController();
         _vault.updateBountyQuestion();
         _vault.updateMetric();
+
+        _costController.setActionCost(ACTION.CREATE, 1e18);
+        _costController.setActionCost(ACTION.VOTE, 1e18);
+        _costController.setActionCost(ACTION.CLAIM, 1e18);
+        _costController.setActionCost(ACTION.CHALLENGE_BURN, 1000e18);
 
         _xmetric.transfer(other, 100e18);
         _xmetric.transfer(other2, 100e18);
