@@ -1,14 +1,14 @@
 # MetricsDAO Core-EVM-Contracts
 
-This repo contains the smart contracts for the Metrics DAO implementatin running on EVM-compatible blockchains.
+This repo contains the smart contracts for the Metrics DAO implementation running on EVM-compatible blockchains.
 
 Contract documentation can be found in the [Gitbook](https://metricsdao.gitbook.io/product-documentation/contracts/questionapi)
 
 ## Vesting Design [WIP]
 
-Vesting leverages block-height based distribution of $METRIC based on a share distribution. This mechanism is layered and therefore abstracted - so while there is a Vesting Contract which handles the primary vesting schedule and distribution, the Vesting Contract will distribute tokens to the Rewards-Payout contract which will also need to handle vesting schedules and distrubtions to the various mechanims for rewards payouts.
+Vesting leverages block-height based distribution of $METRIC based on a share distribution. This mechanism is layered and therefore abstracted - so while there is a Vesting Contract which handles the primary vesting schedule and distribution, the Vesting Contract will distribute tokens to the Rewards-Payout contract which will also need to handle vesting schedules and distributions to the various mechanisms for rewards payouts.
 
-The abstraction invovles two actors:
+The abstraction involves two actors:
 
 An `Allocator` can distribute tokens to an `Allocation Group (AG)` at regular intervals.
 
@@ -25,14 +25,14 @@ an Allocator is a smart contract implementation with the following functionality
 2.  Remove Allocation Group
 3.  Retrieve Current Pending token Distribution for Group (pull only)
 4.  Trigger Distribution
-    1. foreach AG, apply distribution method
+    1. for each AG, apply distribution method
 5.  Get Total Shares across all AG
 
 That is not an inclusive list, and there will be permissioned accounts to manage access to functionality.
 
 With that abstraction, oversimplified, we can:
 
-1.  every block, tag X $metric as UNLOCKED within the Alloctor. These need to be calculated on-demand, as the code will not be executed every block.
+1.  every block, tag X $metric as UNLOCKED within the Allocator. These need to be calculated on-demand, as the code will not be executed every block.
 
 2.  then get that amount of UNLOCKED metric at a given time, and distribute amongst shareholders based on their shares/total shares -- if it's push distribution, send it also - if it's pull distribution, lock it up and let it stack.
 
@@ -49,7 +49,7 @@ Heavily Inspired by Sushi's MasterChefv2 - but with a few changes:
 Read this: https://dev.sushi.com/sushiswap/contracts/masterchefv2  
 Also read this: https://soliditydeveloper.com/sushi-swap
 
-In sushi's master chef, the design allows the controller to submit LP contracts for yield farming, and then user's can stake their LP tokens.
+In sushi's master chef, the design allows the controller to submit LP contracts for yield farming, and then users can stake their LP tokens.
 
 In this contract, there is no concept of a user staking their LP tokens - and instead of LP contract, the controller is submitting Allocation Groups.
 
@@ -129,7 +129,7 @@ npm run setup
 
 ## Foundry
 
-Foundry has a [cute guide](https://book.getfoundry.sh/index.html) that will help any questions, just remember that foundry specific commands like `forge test` will need to be run from within the `contracts/` directory.
+Foundry has a [cute guide](https://book.getfoundry.sh/index.html) that will help with any questions, just remember that foundry specific commands like `forge test` will need to be run from within the `contracts/` directory.
 
 ## Hardhat
 
@@ -151,7 +151,7 @@ to deploy to a specific network and to deploy a specific contract you'll need to
 `npx hardhat --network ${networkname} deploy --tags QuestionAPI`
 
 Deployment scripts should have tags and dependencies for example QuestionAPI is a tag with 4 dependencies  
-Each depedency should de deployed in order before the tag is deployed
+Each depedency should be deployed in order before the tag is deployed
 
 ```shell
 npx hardhat accounts
