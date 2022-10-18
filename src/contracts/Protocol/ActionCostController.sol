@@ -25,18 +25,18 @@ contract ActionCostController is Ownable, OnlyApi, IActionCostController {
     constructor(address vault) {
         _vault = IVault(vault);
 
-        actionCost[ACTION.CREATE] = 1e18;
-        actionCost[ACTION.VOTE] = 1e18;
-        actionCost[ACTION.CLAIM] = 1e18;
-        actionCost[ACTION.CHALLENGE_BURN] = 1000e18;
+        actionCost[ACTION.CREATE];
+        actionCost[ACTION.VOTE];
+        actionCost[ACTION.CLAIM];
+        actionCost[ACTION.CHALLENGE_BURN];
         actionCost[ACTION.CHALLENGE_CREATE];
         actionCost[ACTION.PUBLISH];
 
         actionStage[ACTION.CREATE] = STAGE.CREATE_AND_VOTE;
         actionStage[ACTION.VOTE] = STAGE.CREATE_AND_VOTE;
-        actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
         actionStage[ACTION.CHALLENGE_CREATE] = STAGE.CREATE_AND_VOTE;
         actionStage[ACTION.PUBLISH] = STAGE.PUBLISH;
+        actionStage[ACTION.CLAIM] = STAGE.CLAIM_AND_ANSWER;
     }
 
     // ------------------------------------------------------ FUNCTIONS

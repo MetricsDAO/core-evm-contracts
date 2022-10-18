@@ -73,6 +73,18 @@ module.exports = async (hre) => {
   tx = await vault.updateMetric();
   await tx.wait();
 
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(0), ethers.utils.parseEther("1"));
+  await tx.wait();
+
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(1), ethers.utils.parseEther("1"));
+  await tx.wait();
+
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(2), ethers.utils.parseEther("1"));
+  await tx.wait();
+
+  tx = await actionCostController.setActionCost(ethers.BigNumber.from(3), ethers.utils.parseEther("1000"));
+  await tx.wait();
+
   if (whichMetric === "Xmetric") {
     tx = await liveMetric.setTransactor(vault.address, true);
     await tx.wait();

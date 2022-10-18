@@ -74,7 +74,7 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
         STAGE stage
     ) external onlyCostController {
         // Checks if METRIC is locked for a valid stage.
-        if (uint8(stage) > uint8(STAGE.PUBLISH)) revert InvalidStage();
+        if (uint256(stage) > uint256(STAGE.REVIEW)) revert InvalidStage();
         // Checks if there has not been a deposit yet
         if (lockedMetric[questionId][stage][user].status != STATUS.UNINT) revert QuestionHasInvalidStatus();
 
@@ -97,13 +97,11 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
         STAGE stage
     ) external onlyApi {
         // Checks if Metric is withdrawn for a valid stage.
-        if (uint8(stage) > uint8(STAGE.PUBLISH)) revert InvalidStage();
-
-        // TODO if STAGE.PUBLISH
+        if (uint256(stage) > uint256(STAGE.REVIEW)) revert InvalidStage();
 
         if (stage == STAGE.CREATE_AND_VOTE) {
             // Checks that the question is published
-            if (questionStateController.getState(questionId) != STATE.PUBLISHED) revert QuestionNotPublished();
+            if (uint256(questionStateController.getState(questionId)) < uint256(STATE.PUBLISHED)) revert QuestionNotPublished();
 
             // Accounting & changes
             withdrawalAccounting(user, questionId, STAGE.CREATE_AND_VOTE);
@@ -117,6 +115,10 @@ contract Vault is Ownable, OnlyCostController, OnlyApi, VaultEventsAndErrors {
             withdrawalAccounting(user, questionId, STAGE.CREATE_AND_VOTE);
 
             lockedMetric[questionId][STAGE.CREATE_AND_VOTE][user].status = STATUS.UNINT;
+        } else if (stage == STAGE.PUBLISH) {
+            if (questionStateController.getState(questionId) != STATE.COMPLETED) revert QuestionNotInReview();
+
+            withdrawalAccounting(user, questionId, STAGE.PUBLISH);
         } else if (stage == STAGE.CLAIM_AND_ANSWER) {
             if (questionStateController.getState(questionId) != STATE.COMPLETED) revert QuestionNotInReview();
 

@@ -245,6 +245,10 @@ contract QuestionAPI is Ownable, NFTLocked, FunctionLocked, ApiEventsAndErrors {
         _vault.withdrawMetric(_msgSender(), questionId, stage);
     }
 
+    function markComplete(uint256 questionId) public onlyOwner {
+        _questionStateController.markComplete(questionId);
+    }
+
     // ------------------------------------------------------ VIEW FUNCTIONS
 
     function getMetricToken() public view returns (address) {
