@@ -40,6 +40,7 @@ const config: HardhatUserConfig = {
       accounts: process.env.GOERLI_KEY !== undefined ? [process.env.GOERLI_KEY] : [],
     },
     hardhat: {
+      chainId: 31337,
       mining: {
         auto: false,
         interval: 2000,

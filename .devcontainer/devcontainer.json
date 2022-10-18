@@ -1,0 +1,21 @@
+//devcontainer.json
+{
+  "mounts": ["source=${localEnv:HOME}/docker/volumes2/yalc,target=/yalc,type=bind,consistency=cached"],
+  "forwardPorts": [8545],
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "VARIANT": "16-bullseye"
+    }
+  },
+  "features": {
+    "git": "latest"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint"]
+    }
+  },
+  "remoteUser": "node",
+  "postStartCommand": "npm run localnode"
+}

@@ -7,7 +7,9 @@
     "ctest": "npx hardhat clean && npx hardhat test && forge test",
     "setup": "npm i && forge install && forge build && forge test -vv",
     "test:contracts": "forge test -vv",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "localnode": "npm i yalc -g && npm i && npx hardhat node",
+    "localnodetest": "npm i yalc -g && npx hardhat node"
   },
   "files": [
     "deployments"
